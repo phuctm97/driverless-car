@@ -51,15 +51,15 @@ Dựa trên dữ liệu cung cấp từ **[1]**, tính toán các thuộc tính 
 ### 3.	Phân tích trạng thái đường đi [3]
 Dựa trên các thuộc tính của một khung hình cung cấp từ [2], phân tích trạng thái đường đi, cung cấp cho bộ phận Điều khiển phương tiện **[4]**.
 -	Vị trí của làn đường trái/phải so với xe: chuẩn hóa về [-1.0, 1.0]
-  -	Vị trí lề trái khung hình (0) tương đương -1.0.
-  -	Vị trí lề phải khung hình (_VIDEO_FRAME_WIDTH_-1) tương đương 1.0.
+  - Vị trí lề trái khung hình (0) tương đương -1.0.
+  - Vị trí lề phải khung hình (_VIDEO_FRAME_WIDTH_-1) tương đương 1.0.
 -	Góc xoay của làn đường so với xe.
-  -	Giá trị thực tính theo đơn vị độ.
+  - Giá trị thực tính theo đơn vị độ.
 -	Vị trí, độ rộng của các vật cản (nếu có) so với xe.
-  -	Giá trị thực tính theo đơn vị mét.
+  - Giá trị thực tính theo đơn vị mét.
 -	Độ tin cậy của trạng thái.
-  -	Giá trị thực thuộc (0, 1)
-  -	Giá trị càng lớn thì trạng thái đường đi càng chính xác (ngược lại)
+  - Giá trị thực thuộc (0, 1)
+  - Giá trị càng lớn thì trạng thái đường đi càng chính xác (ngược lại)
 
 Mọi thông số về trạng thái đường đi đều lấy Vị trí xe làm Gốc tọa độ O(0,0), lấy Góc xoay của xe làm Góc 0 độ, có thể mô phỏng như sau:
 
