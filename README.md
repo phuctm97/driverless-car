@@ -11,6 +11,11 @@
 
 ## Chu trình vận hành
 
+
+<div id="container" style="text-align:center;">
+    <img src="http://imgur.com/FLhTyiD.png"/>
+</div>
+
 1. Thu thập thông tin 
 2. Tính toán thuộc tính khung hình
 3. Phân tích trạng thái đường đi
