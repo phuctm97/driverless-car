@@ -13,7 +13,7 @@
 
 
 <div id="container" style="text-align:center;">
-    <img src="http://imgur.com/FLhTyiD.png" style="height:100px;"/>
+    <img src="http://imgur.com/FLhTyiD.png"/>
 </div>
 
 1. Thu thập thông tin 
@@ -48,6 +48,18 @@ Dựa trên dữ liệu cung cấp từ **[1]**, tính toán các thuộc tính 
 
 ### 3.	Phân tích trạng thái đường đi
 Dựa trên các thuộc tính của một khung hình cung cấp từ [2], phân tích trạng thái đường đi, cung cấp cho bộ phận Điều khiển phương tiện [4].
+-	Vị trí của làn đường trái/phải so với xe: chuẩn hóa về [-1.0, 1.0]
+- Vị trí lề trái khung hình (0) tương đương -1.0.
+- Vị trí lề phải khung hình (VIDEO_FRAME_WIDTH-1) tương đương 1.0.
+-	Góc xoay của làn đường so với xe.
+  - Tính theo đơn vị độ.
+-	Vị trí, độ rộng của các vật cản (nếu có) so với xe.
+  - Tính theo đơn vị mét.
+Mọi thông số về trạng thái đường đi đều lấy Vị trí xe làm Gốc tọa độ O(0,0), lấy Góc xoay của xe làm Góc 0 độ, có thể mô phỏng như sau:
+
+<div id="container" style="text-align:center;">
+    <img src="http://imgur.com/bQCxxQs.png"/>
+</div>
 
 ### 4.	Điều khiển phương tiện
 Dựa trên trạng thái đường đi cung cấp từ [3] cùng khả năng phần cứng (I), đưa ra quyết định di chuyển vừa đảm bảo an toàn, vừa đảm bảo khả năng thu thập thông tin tiếp theo cho bộ phần Thu thập thông tin [1].
