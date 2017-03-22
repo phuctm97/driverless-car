@@ -32,6 +32,9 @@
     <ClCompile Include="..\Classes\calculator\LineInfo.cpp">
       <Filter>calculator</Filter>
     </ClCompile>
+    <ClCompile Include="..\Classes\analyzer\RoadInfo.cpp">
+      <Filter>analyzer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="shared">
@@ -80,6 +83,9 @@
     </ClInclude>
     <ClInclude Include="..\Classes\calculator\LineInfo.h">
       <Filter>calculator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\analyzer\RoadInfo.h">
+      <Filter>analyzer</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
