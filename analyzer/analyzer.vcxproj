@@ -18,6 +18,9 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Main.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{86FE4AE4-51F3-46CA-A4A3-0204BE419247}</ProjectGuid>
     <RootNamespace>analyzer</RootNamespace>
@@ -120,32 +123,6 @@
       <AdditionalDependencies>opencv_calib3d2413.lib;opencv_contrib2413.lib;opencv_core2413.lib;opencv_features2d2413.lib;opencv_flann2413.lib;opencv_gpu2413.lib;opencv_highgui2413.lib;opencv_imgproc2413.lib;opencv_legacy2413.lib;opencv_ml2413.lib;opencv_nonfree2413.lib;opencv_objdetect2413.lib;opencv_ocl2413.lib;opencv_photo2413.lib;opencv_stitching2413.lib;opencv_superres2413.lib;opencv_ts2413.lib;opencv_video2413.lib;opencv_videostab2413.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="BoundariesJudge.cpp" />
-    <ClCompile Include="CarController.cpp" />
-    <ClCompile Include="EdgeDetector.cpp" />
-    <ClCompile Include="Evaluator.cpp" />
-    <ClCompile Include="FrameInfo.cpp" />
-    <ClCompile Include="JoinerSplitter.cpp" />
-    <ClCompile Include="Line.cpp" />
-    <ClCompile Include="LineDetector.cpp" />
-    <ClCompile Include="Main.cpp" />
-    <ClCompile Include="Params.cpp" />
-    <ClCompile Include="Section.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="BoundariesJudge.h" />
-    <ClInclude Include="CarController.h" />
-    <ClInclude Include="EdgeDetector.h" />
-    <ClInclude Include="Evaluator.h" />
-    <ClInclude Include="FrameInfo.h" />
-    <ClInclude Include="Include.h" />
-    <ClInclude Include="JoinerSplitter.h" />
-    <ClInclude Include="Line.h" />
-    <ClInclude Include="LineDetector.h" />
-    <ClInclude Include="Params.h" />
-    <ClInclude Include="Section.h" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

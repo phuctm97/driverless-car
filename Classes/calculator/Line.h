@@ -1,7 +1,7 @@
 ﻿#ifndef __SB_LINE_H__
 #define __SB_LINE_H__
 
-#include "Include.h"
+#include "../Include.h"
 
 namespace sb
 {
