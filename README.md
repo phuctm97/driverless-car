@@ -13,7 +13,7 @@
 
 
 <div id="container" style="text-align:center;">
-    <img src="http://imgur.com/FLhTyiD.png"/>
+    <img src="http://imgur.com/FLhTyiD.png" style="height:100px;"/>
 </div>
 
 1. Thu thập thông tin 
