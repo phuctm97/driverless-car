@@ -15,6 +15,7 @@ private:
 	double _edgeDetectorBinarizeMaxValue;
 
 public:
+	EdgeDetector() {}
 
 	EdgeDetector( int edgeDetectorKernelSize,
 	              double edgeDetectorLowThresh,

@@ -2,40 +2,37 @@
 
 sb::FrameInfo::FrameInfo() {}
 
-void sb::FrameInfo::create( const cv::Mat& colorFrame,
-                            const sb::JoinerSplitter& spliter,
-                            const sb::EdgeDetector& edgeDetector,
-                            const sb::LineDetector& lineDetector )
+int sb::FrameInfo::create( const cv::Mat& colorImage,
+                           const cv::Mat& depthImage,
+                           const sb::Formatter& formatter,
+                           const sb::EdgeDetector& edgeDetector,
+                           const sb::LineDetector& lineDetector )
 {
 	// 1) reference to new frame
-	_colorFrame.release();
-	_colorFrame = colorFrame;
+	_colorImage.release();
+	if ( formatter.crop( colorImage, _colorImage ) < 0 ) {
+		std::cerr << "Crop image failed." << std::endl;
+		return -1;
+	}
+
+	_depthImage.release();
+	_depthImage = depthImage;
 
 	// 2) generate edges-frame
 	cv::Mat edgesFrame;
 
-	cv::cvtColor( colorFrame, edgesFrame, cv::COLOR_BGR2GRAY );
+	cv::cvtColor( _colorImage, edgesFrame, cv::COLOR_BGR2GRAY );
 
 	edgeDetector.apply( edgesFrame );
 
 	// 3) generate lines in whole frame
 	lineDetector.apply( edgesFrame, _lines );
 
-	// 4) generate sections
-	spliter.splitImageToSections( edgesFrame, _sections );
-
-	// 5) generate lines in each section
-	for ( sb::Section& section : _sections ) {
-		lineDetector.apply( section );
-	}
+	return 0;
 }
 
-const cv::Mat& sb::FrameInfo::getColorFrame() const { return _colorFrame; }
+const cv::Mat& sb::FrameInfo::getColorImage() const { return _colorImage; }
 
-const std::vector<sb::Line>& sb::FrameInfo::getLines() const { return _lines; }
+const cv::Mat& sb::FrameInfo::getDepthImage() const { return _depthImage; }
 
-std::vector<sb::Line>& sb::FrameInfo::getLines() { return _lines; }
-
-const std::vector<sb::Section>& sb::FrameInfo::getSections() const { return _sections; }
-
-std::vector<sb::Section>& sb::FrameInfo::getSections() { return _sections; }
+const std::vector<sb::LineInfo>& sb::FrameInfo::getLines() const { return _lines; }

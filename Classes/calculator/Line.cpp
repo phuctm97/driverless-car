@@ -56,10 +56,6 @@ void sb::Line::setEndingPoint( const cv::Point2d& endingPoint )
 	regenerateCoefs();
 }
 
-const sb::LineRating& sb::Line::getRating() const { return _rating; }
-
-void sb::Line::setRating( const sb::LineRating& rating ) { _rating = rating; }
-
 bool sb::Line::isValid() const { return _a != 0 || _b != 0; }
 
 cv::Point2d sb::Line::getMiddlePoint() const { return (_startingPoint + _endingPoint) * 0.5f; }

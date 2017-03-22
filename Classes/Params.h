@@ -3,102 +3,35 @@
 
 #include "Include.h"
 
+#define PARAMS_YAML_FIELD_NAME "Params"
+
 namespace sb
 {
-class Params
+struct Params
 {
-public:
-	const static cv::String YAML_FIELD_NAME;
+	float CROP_SIZE_WIDTH = 0.8f;
+	float CROP_SIZE_HEIGHT = 0.25f;
 
-private:
+	int EDGE_DETECTOR_KERNEL_SIZE = 3;
+	double EDGE_DETECTOR_LOW_THRESH = 100;
+	double EDGE_DETECTOR_HIGH_THRESH = 200;
 
-	cv::Rect _areaToCrop;
-	std::vector<float> _ratioToSplit;
+	double BINARIZE_THRESH = 200;
+	double BINARIZE_MAX_VALUE = 255;
 
-	int _edgeDetectorKernelSize;
-	double _edgeDetectorLowThresh;
-	double _edgeDetectorHighThresh;
-	double _edgeDetectorBinarizeThresh;
-	double _edgeDetectorBinarizeMaxValue;
+	double HOUGH_LINES_P_RHO = 1;
+	double HOUGH_LINES_P_THETA = CV_2PI / 360;
+	int HOUGH_LINES_P_THRESHOLD = 10;
+	double HOUGH_LINES_P_MIN_LINE_LENGTH = 2;
+	double HOUGH_LINES_P_MAX_LINE_GAP = 7;
 
-	double _houghLinesPRho;
-	double _houghLinesPTheta;
-	int _houghLinesPThreshold;
-	double _houghLinesPMinLineLength;
-	double _houghLinesPMaxLineGap;
-
-public:
-	explicit Params()
-		:
-		_areaToCrop( 0, 0, 0, 0 ),
-		_ratioToSplit( { 0.15f,0.2f,0.2f,0.2f,0.25f } ),
-
-		_edgeDetectorKernelSize( 3 ),
-		_edgeDetectorLowThresh( 100 ),
-		_edgeDetectorHighThresh( 200 ),
-		_edgeDetectorBinarizeThresh( 200 ),
-		_edgeDetectorBinarizeMaxValue( 255 ),
-
-		_houghLinesPRho( 1 ),
-		_houghLinesPTheta( CV_2PI / 360 ),
-		_houghLinesPThreshold( 10 ),
-		_houghLinesPMinLineLength( 2 ),
-		_houghLinesPMaxLineGap( 7 ) {}
-
-	explicit Params( const cv::String& yamlFileName );
-
-	const cv::Rect& getAreaToCrop() const;
-
-	void setAreaToCrop( const cv::Rect& areaToCrop );
-
-	const std::vector<float>& getRatioToSplit() const;
-
-	void setRatioToSplit( const std::vector<float>& sectionRatios );
-
-	int getEdgeDetectorKernelSize() const;
-
-	void setEdgeDetectorKernelSize( int edgeDetectorKernelSize );
-
-	double getEdgeDetectorLowThresh() const;
-
-	void setEdgeDetectorLowThresh( double edgeDetectorLowThresh );
-
-	double getEdgeDetectorHighThresh() const;
-
-	void setEdgeDetectorHighThresh( double edgeDetectorHighThresh );
-
-	double getEdgeDetectorBinarizeThresh() const;
-
-	void setEdgeDetectorBinarizeThresh( double edgeDetectorBinarizeThresh );
-
-	double getEdgeDetectorBinarizeMaxValue() const;
-
-	void setEdgeDetectorBinarizeMaxValue( double edgeDetectorBinarizeMaxValue );
-
-	double getHoughLinesPRho() const;
-
-	void setHoughLinesPRho( double houghLinesPRho );
-
-	double getHoughLinesPTheta() const;
-
-	void setHoughLinesPTheta( double houghLinesPTheta );
-
-	int getHoughLinesPThreshold() const;
-
-	void setHoughLinesPThreshold( int houghLinesPThreshold );
-
-	double getHoughLinesPMinLineLength() const;
-
-	void setHoughLinesPMinLineLength( double houghLinesPMinLineLength );
-
-	double getHoughLinesPMaxLineGap() const;
-
-	void setHoughLinesPMaxLineGap( double houghLinesPMaxLineGap );
-
-	// yaml reader/writer functions
-	void write( cv::FileStorage& fs ) const;
-
+	void load( const cv::String& yamlFileName );
+	
 	void read( const cv::FileNode& node );
+
+	void save( const cv::String& yamlFileName ) const;
+
+	void write( cv::FileStorage& fs ) const;
 };
 
 void write( cv::FileStorage& fs, const std::string&, const sb::Params& data );

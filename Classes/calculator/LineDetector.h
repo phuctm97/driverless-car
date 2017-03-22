@@ -1,7 +1,7 @@
 ﻿#ifndef __SB_LINE_DETECTOR_H__
 #define __SB_LINE_DETECTOR_H__
 
-#include "Section.h"
+#include "LineInfo.h"
 
 namespace sb
 {
@@ -15,6 +15,7 @@ private:
 	double _houghLinesPMaxLineGap;
 
 public:
+	LineDetector() {}
 
 	LineDetector( double houghLinesPRho,
 	              double houghLinesPTheta,
@@ -30,7 +31,8 @@ public:
 	void apply( const cv::Mat& binaryImage,
 	            std::vector<sb::Line>& lines ) const;
 
-	void apply( sb::Section& section ) const;
+	void apply( const cv::Mat& binaryImage,
+							std::vector<sb::LineInfo>& lines ) const;
 };
 }
 #endif //!__SB_LINE_DETECTOR_H__

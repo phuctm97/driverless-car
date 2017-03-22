@@ -1,7 +1,7 @@
 #ifndef __SB_RAW_CONTENT_H__
 #define __SB_RAW_CONTENT_H__
 
-#include "../Include.h"
+#include <opencv2/opencv.hpp>
 
 namespace sb
 {

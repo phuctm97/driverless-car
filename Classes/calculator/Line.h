@@ -5,13 +5,6 @@
 
 namespace sb
 {
-struct LineRating
-{
-	double rateToBeLane = 0;
-	double rateToBeUneven = 0;
-	double rateToBeRight = 0;
-};
-
 // Line Mapping: ax + by + c = 0
 class Line
 {
@@ -28,8 +21,6 @@ private:
 
 	// segment ending point
 	cv::Point2d _endingPoint;
-
-	sb::LineRating _rating;
 
 public:
 	explicit Line( const cv::Point2d& point1,
@@ -70,10 +61,6 @@ public:
 	const cv::Point2d& getEndingPoint() const;
 
 	void setEndingPoint( const cv::Point2d& endingPoint );
-
-	const sb::LineRating& getRating() const;
-
-	void setRating( const sb::LineRating& rating );
 
 	bool isValid() const;
 

@@ -29,16 +29,14 @@ void sb::LineDetector::apply( const cv::Mat& binaryImage,
 	}
 }
 
-void sb::LineDetector::apply( sb::Section& section ) const
+void sb::LineDetector::apply( const cv::Mat& binaryImage, std::vector<sb::LineInfo>& lines ) const
 {
-	std::vector<sb::Line>& lines = section.getLines();
-
 	// reset array
 	lines.clear();
 
 	// apply Hough transform
 	std::vector<cv::Vec4i> houghLinesPOutput;
-	cv::HoughLinesP( section.getDataImage(),
+	cv::HoughLinesP( binaryImage,
 	                 houghLinesPOutput,
 	                 _houghLinesPRho,
 	                 _houghLinesPTheta,
@@ -47,14 +45,14 @@ void sb::LineDetector::apply( sb::Section& section ) const
 	                 _houghLinesPMaxLineGap );
 
 	// generate sb::Line and push to the array
-	for ( const cv::Vec4i& vec : houghLinesPOutput ) {
+	for ( auto vec : houghLinesPOutput ) {
 
-		sb::Line line( section.convertToContainerSpace( cv::Point2d( vec[0], vec[1] ) ),
-		               section.convertToContainerSpace( cv::Point2d( vec[2], vec[3] ) ) );
+		sb::Line line( cv::Point2d( vec[0], vec[1] ),
+		               cv::Point2d( vec[2], vec[3] ) );
 
 		if ( !line.isValid() ) continue;
 
-		lines.push_back( line );
+		lines.push_back( LineInfo( line ) );
 
 	}
 }

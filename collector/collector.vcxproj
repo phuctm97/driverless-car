@@ -123,12 +123,14 @@
   <ItemGroup>
     <ClCompile Include="..\Classes\collector\Collector.cpp" />
     <ClCompile Include="..\Classes\collector\RawContent.cpp" />
+    <ClCompile Include="..\Classes\Params.cpp" />
     <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Classes\collector\Collector.h" />
     <ClInclude Include="..\Classes\collector\RawContent.h" />
     <ClInclude Include="..\Classes\Include.h" />
+    <ClInclude Include="..\Classes\Params.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
