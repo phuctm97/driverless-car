@@ -57,8 +57,8 @@ int main()
 
 		test( rawContent, frameInfo, roadInfo, params );
 
-		std::cout 
-		<< "Executed time: " << timer.milliseconds( "total" ) << ". "
+		std::cout
+				<< "Executed time: " << timer.milliseconds( "total" ) << ". "
 				<< "FPS: " << timer.fps( "total" ) << std::endl;
 
 		if ( cv::waitKey( MAX(1, 66 - timer.milliseconds("total")) ) == KEY_TO_ESCAPE ) break;
