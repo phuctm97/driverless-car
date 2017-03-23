@@ -18,4 +18,6 @@ namespace cv
 typedef cv::Rect_<double> Rect2d;
 }
 
+
+
 #endif //!__INCLUDE_H__
