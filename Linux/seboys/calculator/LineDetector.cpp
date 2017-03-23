@@ -1,58 +1,56 @@
 ﻿#include "LineDetector.h"
 
-void sb::LineDetector::apply( const cv::Mat& binaryImage,
-                              std::vector<sb::Line>& lines ) const
-{
-	// reset array
-	lines.clear();
+void LineDetector::apply(const cv::Mat &binaryImage,
+                         std::vector<Line> &lines) const {
+    // reset array
+    lines.clear();
 
-	// apply Hough transform
-	std::vector<cv::Vec4i> houghLinesPOutput;
-	cv::HoughLinesP( binaryImage,
-	                 houghLinesPOutput,
-	                 _houghLinesPRho,
-	                 _houghLinesPTheta,
-	                 _houghLinesPThreshold,
-	                 _houghLinesPMinLineLength,
-	                 _houghLinesPMaxLineGap );
+    // apply Hough transform
+    std::vector<cv::Vec4i> houghLinesPOutput;
+    cv::HoughLinesP(binaryImage,
+                    houghLinesPOutput,
+                    _houghLinesPRho,
+                    _houghLinesPTheta,
+                    _houghLinesPThreshold,
+                    _houghLinesPMinLineLength,
+                    _houghLinesPMaxLineGap);
 
-	// generate sb::Line and push to the array
-	for ( auto vec : houghLinesPOutput ) {
+    // generate Line and push to the array
+    for (auto vec : houghLinesPOutput) {
 
-		sb::Line line( cv::Point2d( vec[0], vec[1] ),
-		               cv::Point2d( vec[2], vec[3] ) );
+        Line line(cv::Point2d(vec[0], vec[1]),
+                      cv::Point2d(vec[2], vec[3]));
 
-		if ( !line.isValid() ) continue;
+        if (!line.isValid()) continue;
 
-		lines.push_back( line );
+        lines.push_back(line);
 
-	}
+    }
 }
 
-void sb::LineDetector::apply( const cv::Mat& binaryImage, std::vector<sb::LineInfo>& lines ) const
-{
-	// reset array
-	lines.clear();
+void LineDetector::apply(const cv::Mat &binaryImage, std::vector<LineInfo> &lines) const {
+    // reset array
+    lines.clear();
 
-	// apply Hough transform
-	std::vector<cv::Vec4i> houghLinesPOutput;
-	cv::HoughLinesP( binaryImage,
-	                 houghLinesPOutput,
-	                 _houghLinesPRho,
-	                 _houghLinesPTheta,
-	                 _houghLinesPThreshold,
-	                 _houghLinesPMinLineLength,
-	                 _houghLinesPMaxLineGap );
+    // apply Hough transform
+    std::vector<cv::Vec4i> houghLinesPOutput;
+    cv::HoughLinesP(binaryImage,
+                    houghLinesPOutput,
+                    _houghLinesPRho,
+                    _houghLinesPTheta,
+                    _houghLinesPThreshold,
+                    _houghLinesPMinLineLength,
+                    _houghLinesPMaxLineGap);
 
-	// generate sb::Line and push to the array
-	for ( auto vec : houghLinesPOutput ) {
+    // generate Line and push to the array
+    for (auto vec : houghLinesPOutput) {
 
-		sb::Line line( cv::Point2d( vec[0], vec[1] ),
-		               cv::Point2d( vec[2], vec[3] ) );
+        Line line(cv::Point2d(vec[0], vec[1]),
+                      cv::Point2d(vec[2], vec[3]));
 
-		if ( !line.isValid() ) continue;
+        if (!line.isValid()) continue;
 
-		lines.push_back( LineInfo( line ) );
+        lines.push_back(LineInfo(line));
 
-	}
+    }
 }

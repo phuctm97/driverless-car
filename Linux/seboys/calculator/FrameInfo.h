@@ -6,36 +6,32 @@
 #include "EdgeDetector.h"
 #include "LineDetector.h"
 
-namespace sb
-{
-class FrameInfo
-{
+class FrameInfo {
 private:
-	cv::Mat _colorImage;
+    cv::Mat _colorImage;
 
-	cv::Mat _depthImage;
+    cv::Mat _depthImage;
 
-	std::vector<sb::LineInfo> _lines;
+    std::vector<sb::LineInfo> _lines;
 
-	std::vector<sb::LineInfo> _warpedLines;
+    std::vector<sb::LineInfo> _warpedLines;
 
 public:
-	FrameInfo();
+    FrameInfo();
 
-	int create( const cv::Mat& colorImage,
-							 const cv::Mat& depthImage,
-	             const sb::Formatter& formatter,
-	             const sb::EdgeDetector& edgeDetector,
-	             const sb::LineDetector& lineDetector );
+    int create(const cv::Mat &colorImage,
+               const cv::Mat &depthImage,
+               const sb::Formatter &formatter,
+               const sb::EdgeDetector &edgeDetector,
+               const sb::LineDetector &lineDetector);
 
-	const cv::Mat& getColorImage() const;
+    const cv::Mat &getColorImage() const;
 
-	const cv::Mat& getDepthImage() const;
+    const cv::Mat &getDepthImage() const;
 
-	const std::vector<sb::LineInfo>& getLines() const;
+    const std::vector<sb::LineInfo> &getLines() const;
 
-	const std::vector<sb::LineInfo>& getWarpedLines() const;
+    const std::vector<sb::LineInfo> &getWarpedLines() const;
 };
-}
 
 #endif //!__SB_FRAME_INFO_H__

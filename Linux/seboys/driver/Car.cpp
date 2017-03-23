@@ -1,6 +1,6 @@
 #include "driver/Car.h"
 
-int sb::Car::init() {
+int Car::init() {
     ////////  Init PCA9685 driver   ///////////////////////////////////////////
     pca9685 = new PCA9685();
     api_pwm_pca9685_init(pca9685);
@@ -22,7 +22,7 @@ int sb::Car::init() {
     return 0;
 }
 
-int sb::Car::update(int &direction, int &velocity, double &steeringAngle) {
+int Car::update(int &direction, int &velocity, double &steeringAngle) {
     //// Check PCA9685 driver ////////////////////////////////////////////
     if (pca9685->error < 0) {
         cout << endl << "Error: PWM driver" << endl << flush;
@@ -43,11 +43,11 @@ int sb::Car::update(int &direction, int &velocity, double &steeringAngle) {
     return 0;
 }
 
-int sb::Car::getCurrentState() {
+int Car::getCurrentState() {
     return this->currentState;
 }
 
-int sb::Car::release() {
+int Car::release() {
     api_pwm_pca9685_release(pca9685);
     delete this->pca9685;
     this->pca9685 = nullptr;

@@ -1,6 +1,6 @@
 #include "driver/Driver.h"
 
-int sb::Driver::init(const sb::Params &params) {
+int Driver::init(const sb::Params &params) {
     this->car = new Car();
 
     int status = this->car->init();
@@ -13,7 +13,7 @@ int sb::Driver::init(const sb::Params &params) {
     return 0;
 }
 
-int sb::Driver::drive(const sb::RoadInfo &roadInfo) {
+int Driver::drive(const sb::RoadInfo &roadInfo) {
     int direction;
     int vel_add;
     int velocity;
@@ -62,7 +62,7 @@ int sb::Driver::drive(const sb::RoadInfo &roadInfo) {
     return 0;
 }
 
-void sb::Driver::release() {
+void Driver::release() {
     this->car->release();
     delete this->car;
     this->car = nullptr;

@@ -1,6 +1,6 @@
 ﻿#include "EdgeDetector.h"
 
-void sb::EdgeDetector::apply( cv::Mat& image ) const
+void EdgeDetector::apply( cv::Mat& image ) const
 {
 	cv::Canny( image,
 	           image,

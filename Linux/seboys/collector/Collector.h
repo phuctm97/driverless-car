@@ -4,23 +4,21 @@
 #include "../Params.h"
 #include "RawContent.h"
 
-namespace sb
-{
-class Collector
-{
+
+class Collector {
 private:
-	// sample input stream
-	cv::VideoCapture _tempCap;
+    // sample input stream
+    cv::VideoCapture _tempCap;
 
 public:
-	Collector() {}
+    Collector() {}
 
-	int init( const sb::Params& params );
+    int init(const sb::Params &params);
 
-	int collect( sb::RawContent& rawContent );
+    int collect(sb::RawContent &rawContent);
 
-	void release();
+    void release();
 };
-}
+
 
 #endif //!__SB_COLLECTOR_H__

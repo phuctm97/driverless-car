@@ -3,35 +3,30 @@
 
 #include "Line.h"
 
-namespace sb
-{
-class LineInfo
-{
+class LineInfo {
 private:
-	sb::Line _line;
+    sb::Line _line;
 
-	double _length;
+    double _length;
 
-	double _angle;
+    double _angle;
 
 public:
 
-	LineInfo( const sb::Line& line )
-		: _line( line ),
-		  _angle( line.getAngleWithOx() ),
-		  _length( line.getLength() ) {}
+    LineInfo(const sb::Line &line)
+            : _line(line),
+              _angle(line.getAngleWithOx()),
+              _length(line.getLength()) {}
 
-	const sb::Line& getLine() const;
+    const sb::Line &getLine() const;
 
-	const cv::Point2d& getStartingPoint() const;
+    const cv::Point2d &getStartingPoint() const;
 
-	const cv::Point2d& getEndingPoint() const;
+    const cv::Point2d &getEndingPoint() const;
 
-	double getLength() const;
+    double getLength() const;
 
-	double getAngle() const;
+    double getAngle() const;
 };
-
-}
 
 #endif //!__SB_LINE_INFO_H__

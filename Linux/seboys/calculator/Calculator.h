@@ -5,25 +5,23 @@
 #include "../collector/RawContent.h"
 #include "FrameInfo.h"
 
-namespace sb
-{
-class Calculator
-{
+
+class Calculator {
 private:
-	sb::Formatter _formatter;
-	sb::EdgeDetector _edgeDetector;
-	sb::LineDetector _lineDetector;
+    sb::Formatter _formatter;
+    sb::EdgeDetector _edgeDetector;
+    sb::LineDetector _lineDetector;
 
 public:
-	Calculator() {};
+    Calculator() {};
 
-	int init( const sb::Params& params );
+    int init(const sb::Params &params);
 
-	int calculate( const sb::RawContent& rawContent,
-	               sb::FrameInfo& frameInfo ) const;
+    int calculate(const sb::RawContent &rawContent,
+                  sb::FrameInfo &frameInfo) const;
 
-	void release();
+    void release();
 };
-}
+
 
 #endif //!__SB_CALCULATOR_H__

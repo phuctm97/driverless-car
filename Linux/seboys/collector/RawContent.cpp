@@ -1,9 +1,9 @@
 #include "RawContent.h"
 
-const cv::Mat& sb::RawContent::getColorImage() const { return _colorImage; }
+const cv::Mat& RawContent::getColorImage() const { return _colorImage; }
 
-void sb::RawContent::setColorImage( const cv::Mat& colorImage ) { _colorImage = colorImage; }
+void RawContent::setColorImage( const cv::Mat& colorImage ) { _colorImage = colorImage; }
 
-const cv::Mat& sb::RawContent::getDepthImage() const { return _depthImage; }
+const cv::Mat& RawContent::getDepthImage() const { return _depthImage; }
 
-void sb::RawContent::setDepthImage( const cv::Mat& depthImage ) { _depthImage = depthImage; }
+void RawContent::setDepthImage( const cv::Mat& depthImage ) { _depthImage = depthImage; }

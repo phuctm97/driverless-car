@@ -6,27 +6,26 @@
 #include <cmath>
 #include <iostream>
 
-namespace sb {
-    class Car {
-    private:
-        int cport_nr; // port id of uart.
-        char buf_send[BUFF_SIZE]; // buffer to store and recive controller messages.
+class Car {
+private:
+    int cport_nr; // port id of uart.
+    char buf_send[BUFF_SIZE]; // buffer to store and recive controller messages.
 
-        PCA9685 *pca9685; // driver
+    PCA9685 *pca9685; // driver
 
-        int currentState;
+    int currentState;
 
-    public:
-        Car() {}
+public:
+    Car() {}
 
-        int init();
+    int init();
 
-        int update(int &direction, int &velocity, double &steeringAngle);
+    int update(int &direction, int &velocity, double &steeringAngle);
 
-        int release();
+    int release();
 
-        int getCurrentState();
-    };
-}
+    int getCurrentState();
+};
+
 
 #endif //!__SB_CAR_H__

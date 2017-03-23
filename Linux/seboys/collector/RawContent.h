@@ -3,25 +3,23 @@
 
 #include <opencv2/opencv.hpp>
 
-namespace sb
-{
-class RawContent
-{
+
+class RawContent {
 private:
-	cv::Mat _colorImage;
-	cv::Mat _depthImage;
+    cv::Mat _colorImage;
+    cv::Mat _depthImage;
 
 public:
-	RawContent() {}
+    RawContent() {}
 
-	const cv::Mat& getColorImage() const;
+    const cv::Mat &getColorImage() const;
 
-	void setColorImage( const cv::Mat& colorImage );
+    void setColorImage(const cv::Mat &colorImage);
 
-	const cv::Mat& getDepthImage() const;
+    const cv::Mat &getDepthImage() const;
 
-	void setDepthImage( const cv::Mat& depthImage );
+    void setDepthImage(const cv::Mat &depthImage);
 };
-}
+
 
 #endif //!__SB_RAW_CONTENT_H__

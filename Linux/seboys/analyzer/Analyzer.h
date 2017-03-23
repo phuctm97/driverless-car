@@ -5,22 +5,18 @@
 #include "../calculator/FrameInfo.h"
 #include "RoadInfo.h"
 
-namespace sb
-{
-class Analyzer
-{
+class Analyzer {
 private:
 
 public:
-	Analyzer() {}
+    Analyzer() {}
 
-	int init( const sb::Params& params );
+    int init(const sb::Params &params);
 
-	int analyze( const sb::FrameInfo& frameInfo,
-	             sb::RoadInfo& roadInfo ) const;
+    int analyze(const sb::FrameInfo &frameInfo,
+                sb::RoadInfo &roadInfo) const;
 
-	void release();
+    void release();
 };
-}
 
 #endif //!__SB_ANALYZER_H__

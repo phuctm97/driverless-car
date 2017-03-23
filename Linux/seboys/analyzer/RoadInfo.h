@@ -3,36 +3,32 @@
 
 #include "../Include.h"
 
-namespace sb
-{
-class RoadInfo
-{
+class RoadInfo {
 private:
-	cv::Point2d _positionOfLeftLane;
+    cv::Point2d _positionOfLeftLane;
 
-	cv::Point2d _positionOfRightLane;
+    cv::Point2d _positionOfRightLane;
 
-	double _rotationOfLane;
+    double _rotationOfLane;
 
-	std::vector<cv::Rect2d> _obstacleBoxes;
+    std::vector<cv::Rect2d> _obstacleBoxes;
 
-	float _reliability;
+    float _reliability;
 
 public:
-	RoadInfo()
-		: _rotationOfLane( 0 ),
-		  _reliability( 0 ) {}
+    RoadInfo()
+            : _rotationOfLane(0),
+              _reliability(0) {}
 
-	const cv::Point2d& getPositionOfLeftLane() const;
+    const cv::Point2d &getPositionOfLeftLane() const;
 
-	const cv::Point2d& getPositionOfRightLane() const;
+    const cv::Point2d &getPositionOfRightLane() const;
 
-	const std::vector<cv::Rect2d>& getObstacleBoxes() const;
+    const std::vector<cv::Rect2d> &getObstacleBoxes() const;
 
-	double getRotationOfLane() const;
+    double getRotationOfLane() const;
 
-	float getReliability() const;
+    float getReliability() const;
 };
-}
 
 #endif //!__SB_ROAD_INFO_H__

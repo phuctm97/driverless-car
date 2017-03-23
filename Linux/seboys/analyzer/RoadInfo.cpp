@@ -1,11 +1,11 @@
 #include "RoadInfo.h"
 
-const cv::Point2d& sb::RoadInfo::getPositionOfLeftLane() const { return _positionOfLeftLane; }
+const cv::Point2d &RoadInfo::getPositionOfLeftLane() const { return _positionOfLeftLane; }
 
-const cv::Point2d& sb::RoadInfo::getPositionOfRightLane() const { return _positionOfRightLane; }
+const cv::Point2d &RoadInfo::getPositionOfRightLane() const { return _positionOfRightLane; }
 
-const std::vector<cv::Rect2d>& sb::RoadInfo::getObstacleBoxes() const { return _obstacleBoxes; }
+const std::vector<cv::Rect2d> &RoadInfo::getObstacleBoxes() const { return _obstacleBoxes; }
 
-double sb::RoadInfo::getRotationOfLane() const { return _rotationOfLane; }
+double RoadInfo::getRotationOfLane() const { return _rotationOfLane; }
 
-float sb::RoadInfo::getReliability() const { return _reliability; }
+float RoadInfo::getReliability() const { return _reliability; }
