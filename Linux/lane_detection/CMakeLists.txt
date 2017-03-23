@@ -22,3 +22,9 @@ set( source_files
 set( lib_name vanishing-point)
 add_library( ${lib_name} ${source_files} )
 target_link_libraries( ${lib_name} ${OpenCV_LIBS})
+
+
+set( test_exec_name test-vanishing-point)
+add_executable( ${test_exec_name}  test_lane_detection.cpp )
+
+target_link_libraries( ${test_exec_name} ${lib_name} ${OpenCV_LIBS})
