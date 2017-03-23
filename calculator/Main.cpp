@@ -70,36 +70,32 @@ int init( sb::Collector& collector,
 void test( const sb::RawContent& rawContent,
            const sb::FrameInfo& frameInfo )
 {
-	cv::Mat lineImage( frameInfo.getColorImage().size(), CV_8UC3, cv::Scalar::all( 0 ) );
+	int expandHeight = 200;
+	cv::Mat originalImage( frameInfo.getColorImage().rows + expandHeight, frameInfo.getColorImage().cols, CV_8UC3 );
+	cv::Mat warpedImage( frameInfo.getColorImage().rows + expandHeight, frameInfo.getColorImage().cols, CV_8UC3 );
 
-	for( auto line : frameInfo.getLines() ) {
-		cv::line( lineImage, line.getStartingPoint(), line.getEndingPoint(), cv::Scalar( 0, 0, 255 ) );
+	for ( const auto& line : frameInfo.getLines() ) {
+		cv::line(
+			originalImage,
+			line.getStartingPoint() + cv::Point2d( 0, expandHeight ),
+			line.getEndingPoint() + cv::Point2d( 0, expandHeight ),
+			cv::Scalar( 0, 255, 0 ), 1
+		);
 	}
 
-	for( auto line : frameInfo.getLines() ) {
-		cv::Mat tempImage = lineImage.clone();
-
-		cv::line( tempImage, line.getStartingPoint(), line.getEndingPoint(), cv::Scalar( 0, 255, 0 ), 2 );
-
-		std::stringstream stringBuilder;
-
-		stringBuilder << "Length: " << line.getLength();
-		cv::putText( tempImage,
-								 stringBuilder.str(),
-								 cv::Point( 20, 15 ),
-								 cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
-
-		stringBuilder.str( "" );
-
-		stringBuilder << "Angle: " << line.getAngle();
-		cv::putText( tempImage,
-								 stringBuilder.str(),
-								 cv::Point( 20, 35 ),
-								 cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
-
-		cv::imshow( WINDOW_NAME, tempImage );
-		cv::waitKey();
+	for( const auto& line : frameInfo.getWarpedLines() ) {
+		cv::line(
+			warpedImage,
+			line.getStartingPoint() + cv::Point2d( 0, expandHeight ),
+			line.getEndingPoint() + cv::Point2d( 0, expandHeight ),
+			cv::Scalar( 0, 255, 255 ), 1
+		);
 	}
+
+	cv::imshow( "Original", originalImage );
+	cv::imshow( "Warped", warpedImage );
+
+	cv::waitKey();
 }
 
 void release( sb::Collector& collector,

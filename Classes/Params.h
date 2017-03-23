@@ -9,6 +9,9 @@ namespace sb
 {
 struct Params
 {
+	cv::Size COLOR_FRAME_SIZE = cv::Size( 640, 480 );
+	cv::Size DEPTH_FRAME_SIZE = cv::Size( 640, 480 );
+
 	float CROP_SIZE_WIDTH = 0.8f;
 	float CROP_SIZE_HEIGHT = 0.25f;
 
@@ -25,8 +28,11 @@ struct Params
 	double HOUGH_LINES_P_MIN_LINE_LENGTH = 2;
 	double HOUGH_LINES_P_MAX_LINE_GAP = 7;
 
+	cv::Point2f WARP_SRC_QUAD[4];
+	cv::Point2f WARP_DST_QUAD[4];
+
 	void load( const cv::String& yamlFileName );
-	
+
 	void read( const cv::FileNode& node );
 
 	void save( const cv::String& yamlFileName ) const;

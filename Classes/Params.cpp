@@ -23,6 +23,9 @@ void sb::Params::write( cv::FileStorage& fs ) const
 	fs
 			<< "{"
 
+			<< "COLOR_FRAME_SIZE" << COLOR_FRAME_SIZE
+			<< "DEPTH_FRAME_SIZE" << DEPTH_FRAME_SIZE
+
 			<< "CROP_SIZE_WIDTH" << CROP_SIZE_WIDTH
 			<< "CROP_SIZE_HEIGHT" << CROP_SIZE_HEIGHT
 
@@ -39,11 +42,17 @@ void sb::Params::write( cv::FileStorage& fs ) const
 			<< "HOUGH_LINES_P_MIN_LINE_LENGTH" << HOUGH_LINES_P_MIN_LINE_LENGTH
 			<< "HOUGH_LINES_P_MAX_LINE_GAP" << HOUGH_LINES_P_MAX_LINE_GAP
 
+			<< "WARP_SRC_QUAD" << std::vector<cv::Point2f>( WARP_SRC_QUAD, WARP_SRC_QUAD + 4 )
+			<< "WARP_DST_QUAD" << std::vector<cv::Point2f>( WARP_DST_QUAD, WARP_DST_QUAD + 4 )
+
 			<< "}";
 }
 
 void sb::Params::read( const cv::FileNode& node )
 {
+	node["COLOR_FRAME_SIZE"] >> COLOR_FRAME_SIZE;
+	node["DEPTH_FRAME_SIZE"] >> DEPTH_FRAME_SIZE;
+
 	node["CROP_SIZE_WIDTH"] >> CROP_SIZE_WIDTH;
 	node["CROP_SIZE_HEIGHT"] >> CROP_SIZE_HEIGHT;
 
@@ -59,6 +68,14 @@ void sb::Params::read( const cv::FileNode& node )
 	node["HOUGH_LINES_P_THRESHOLD"] >> HOUGH_LINES_P_THRESHOLD;
 	node["HOUGH_LINES_P_MIN_LINE_LENGTH"] >> HOUGH_LINES_P_MIN_LINE_LENGTH;
 	node["HOUGH_LINES_P_MAX_LINE_GAP"] >> HOUGH_LINES_P_MAX_LINE_GAP;
+
+	std::vector<cv::Point2f> srcQuadVec;
+	node["WARP_SRC_QUAD"] >> srcQuadVec;
+	std::copy( srcQuadVec.begin(), srcQuadVec.end(), WARP_SRC_QUAD );
+
+	std::vector<cv::Point2f> dstQuadVec;
+	node["WARP_DST_QUAD"] >> dstQuadVec;
+	std::copy( dstQuadVec.begin(), dstQuadVec.end(), WARP_DST_QUAD );
 }
 
 void sb::write( cv::FileStorage& fs, const std::string&, const sb::Params& data )
