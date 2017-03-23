@@ -19,25 +19,36 @@ void release( sb::Collector& collector,
 
 int main()
 {
+	// Parameters container for every component
 	sb::Params params;
 	params.load( PARAMS_PATH );
 
+	// Timer for performance test
 	sb::Timer timer;
 
+	// Data sent&receive bewteen components
 	sb::RawContent rawContent;
 	sb::FrameInfo frameInfo;
 	sb::RoadInfo roadInfo;
 
+	// Main Components
 	sb::Collector collector;
 	sb::Calculator calculator;
 	sb::Analyzer analyzer;
 
+	// Init components
 	if ( init( collector, calculator, analyzer, params ) < 0 ) {
 		std::cerr << "Init failed." << std::endl;
 		return -1;
 	}
 
+	// Initial values
+	rawContent.create( params );
+	frameInfo.create( params );
+	roadInfo.create( params );
+
 	while ( true ) {
+
 		timer.reset( "total" );
 
 		if ( collector.collect( rawContent ) < 0 ) {
@@ -96,33 +107,50 @@ void test( const sb::RawContent& rawContent,
            const sb::RoadInfo& roadInfo,
            const sb::Params& params )
 {
-	int expandHeight = 200;
+	const cv::Size FRAME_SIZE = frameInfo.getColorImage().size();
 
-	cv::Mat mat1, mat2;
-	mat1 = cv::Mat( frameInfo.getColorImage().rows + expandHeight,
-	                frameInfo.getColorImage().cols,
-	                CV_8UC3 );
-	mat2 = cv::Mat( frameInfo.getColorImage().rows + expandHeight,
-	                frameInfo.getColorImage().cols,
-	                CV_8UC3 );
+	const cv::Point CAR_POSITION( FRAME_SIZE.width / 2, FRAME_SIZE.height );
 
-	for ( const auto& line: frameInfo.getLines() ) {
-		cv::line( mat1,
-		          line.getStartingPoint() + cv::Point2d( 0, expandHeight ),
-		          line.getEndingPoint() + cv::Point2d( 0, expandHeight ),
-		          cv::Scalar( 0, 255, 0 ) );
-	}
+	const cv::Size CAR_SIZE( 25, 40 );
 
-	for ( const auto& line : frameInfo.getWarpedLines() ) {
-		cv::line( mat2,
-		          line.getStartingPoint() + cv::Point2d( 0, expandHeight ),
-		          line.getEndingPoint() + cv::Point2d( 0, expandHeight ),
-		          cv::Scalar( 0, 255, 0 ) );
-	}
+	const cv::Size EXPAND_SIZE( 300, 500 );
 
-	cv::imshow( "Color", frameInfo.getColorImage() );
-	cv::imshow( "Lines", mat1 );
-	cv::imshow( "Warped Lines", mat2 );
+	const sb::Line TOP_LINE( cv::Point2d( 0, 0 ) + cv::Point2d( EXPAND_SIZE.width / 2, EXPAND_SIZE.height / 2 ),
+	                         cv::Point2d( 1, 0 ) + cv::Point2d( EXPAND_SIZE.width / 2, EXPAND_SIZE.height / 2 ) );
+
+	cv::Mat radarImage = cv::Mat::zeros(
+	                                    FRAME_SIZE.height + EXPAND_SIZE.height,
+	                                    FRAME_SIZE.width + EXPAND_SIZE.width,
+	                                    CV_8UC3
+	                                   );
+
+	cv::rectangle( radarImage,
+	               CAR_POSITION - cv::Point( CAR_SIZE.width / 2, 0 ) + cv::Point( EXPAND_SIZE.width / 2, EXPAND_SIZE.height / 2 ),
+	               CAR_POSITION + cv::Point( CAR_SIZE.width / 2, CAR_SIZE.height ) + cv::Point( EXPAND_SIZE.width / 2, EXPAND_SIZE.height / 2 ),
+	               cv::Scalar( 0, 0, 255 ), -1 );
+	cv::rectangle( radarImage,
+	               CAR_POSITION - cv::Point( CAR_SIZE.width / 2, 0 ) + cv::Point( EXPAND_SIZE.width / 2, EXPAND_SIZE.height / 2 ),
+	               CAR_POSITION + cv::Point( CAR_SIZE.width / 2, CAR_SIZE.height ) + cv::Point( EXPAND_SIZE.width / 2, EXPAND_SIZE.height / 2 ),
+	               cv::Scalar( 0, 255, 255 ), 4 );
+
+	cv::Point2d positionOfLeftLane = cv::Point2d( ((roadInfo.getPositionOfLeftLane().x + 1) / 2.0) * FRAME_SIZE.width,
+	                                              CAR_POSITION.y - 20 );
+	cv::Point2d positionOfRightLane = cv::Point2d( ((roadInfo.getPositionOfRightLane().x + 1) / 2.0) * FRAME_SIZE.width,
+	                                               CAR_POSITION.y - 20 );
+
+	cv::circle( radarImage,
+	            positionOfLeftLane + cv::Point2d( EXPAND_SIZE.width / 2, EXPAND_SIZE.height / 2 ),
+	            5, cv::Scalar( 255, 255, 255 ), -1 );
+
+	cv::circle( radarImage,
+	            positionOfRightLane + cv::Point2d( EXPAND_SIZE.width / 2, EXPAND_SIZE.height / 2 ),
+	            5, cv::Scalar( 255, 255, 255 ), -1 );
+
+	cv::imshow( "Full Camera", rawContent.getColorImage() );
+
+	cv::imshow( "Radar", radarImage );
+
+	cv::waitKey();
 }
 
 void release( sb::Collector& collector,

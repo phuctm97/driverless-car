@@ -2,6 +2,11 @@
 
 sb::FrameInfo::FrameInfo() {}
 
+void sb::FrameInfo::create( const sb::Params& params )
+{
+	
+}
+
 int sb::FrameInfo::create( const cv::Mat& colorImage,
                            const cv::Mat& depthImage,
                            const sb::Formatter& formatter,

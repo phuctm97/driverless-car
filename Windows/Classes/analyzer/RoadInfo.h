@@ -2,6 +2,7 @@
 #define __SB_ROAD_INFO_H__
 
 #include "../Include.h"
+#include "../Params.h"
 
 namespace sb
 {
@@ -23,15 +24,30 @@ public:
 		: _rotationOfLane( 0 ),
 		  _reliability( 0 ) {}
 
+	void create( const Params& params );
+
+	void setPositionOfLeftLane( const cv::Point2d& positionOfLeftLane );
+	
 	const cv::Point2d& getPositionOfLeftLane() const;
 
+	void setPositionOfRightLane( const cv::Point2d& positionOfRightLane );
+	
 	const cv::Point2d& getPositionOfRightLane() const;
 
+	void setObstacleBoxes( const std::vector<cv::Rect2d>& obstacleBoxes );
+	
 	const std::vector<cv::Rect2d>& getObstacleBoxes() const;
+	
+	std::vector<cv::Rect2d>& getObstacleBoxes();
+
+	void setRotationOfLane( double rotationOfLane );
 
 	double getRotationOfLane() const;
+	
+	void setReliability( float reliability );
 
 	float getReliability() const;
+
 };
 }
 

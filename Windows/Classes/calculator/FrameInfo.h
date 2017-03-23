@@ -5,6 +5,7 @@
 #include "Formatter.h"
 #include "EdgeDetector.h"
 #include "LineDetector.h"
+#include "../Params.h"
 
 namespace sb
 {
@@ -21,6 +22,8 @@ private:
 
 public:
 	FrameInfo();
+
+	void create( const sb::Params& params );
 
 	int create( const cv::Mat& colorImage,
 							 const cv::Mat& depthImage,
