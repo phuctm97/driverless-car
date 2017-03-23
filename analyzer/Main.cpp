@@ -1,6 +1,7 @@
 #include "../Classes/calculator/Calculator.h"
 #include "../Classes/collector/Collector.h"
 #include "../Classes/analyzer/Analyzer.h"
+#include "../Classes/Timer.h"
 
 int init( sb::Collector& collector,
           sb::Calculator& calculator,
@@ -21,6 +22,8 @@ int main()
 	sb::Params params;
 	params.load( PARAMS_PATH );
 
+	sb::Timer timer;
+
 	sb::RawContent rawContent;
 	sb::FrameInfo frameInfo;
 	sb::RoadInfo roadInfo;
@@ -35,6 +38,7 @@ int main()
 	}
 
 	while ( true ) {
+		timer.reset( "total" );
 
 		if ( collector.collect( rawContent ) < 0 ) {
 			std::cerr << "Collector collects failed." << std::endl;
@@ -53,7 +57,11 @@ int main()
 
 		test( rawContent, frameInfo, roadInfo, params );
 
-		if ( cv::waitKey( 33 ) == KEY_TO_ESCAPE ) break;
+		std::cout 
+		<< "Executed time: " << timer.milliseconds( "total" ) << ". "
+				<< "FPS: " << timer.fps( "total" ) << std::endl;
+
+		if ( cv::waitKey( MAX(1, 66 - timer.milliseconds("total")) ) == KEY_TO_ESCAPE ) break;
 	}
 
 	release( collector, calculator, analyzer );
@@ -88,82 +96,33 @@ void test( const sb::RawContent& rawContent,
            const sb::RoadInfo& roadInfo,
            const sb::Params& params )
 {
-	const cv::Mat& originalImage = rawContent.getColorImage();
-
-	const cv::Size cropRealSize(
-	                            static_cast<int>(params.CROP_SIZE_WIDTH * originalImage.cols),
-	                            static_cast<int>(params.CROP_SIZE_HEIGHT * originalImage.rows)
-	                           );
-
-	const cv::Point2f bias = cv::Point2f(
-	                                     float( (originalImage.cols - cropRealSize.width) / 2 ),
-	                                     float( originalImage.rows - cropRealSize.height )
-	                                    );
-
 	int expandHeight = 200;
-	cv::Mat tempMat( frameInfo.getColorImage().rows + expandHeight, frameInfo.getColorImage().cols, CV_8UC3 );
 
+	cv::Mat mat1, mat2;
+	mat1 = cv::Mat( frameInfo.getColorImage().rows + expandHeight,
+	                frameInfo.getColorImage().cols,
+	                CV_8UC3 );
+	mat2 = cv::Mat( frameInfo.getColorImage().rows + expandHeight,
+	                frameInfo.getColorImage().cols,
+	                CV_8UC3 );
 
-	// copy lines from frame
-	std::vector<sb::Line> lines;
-	for ( const auto& line : frameInfo.getLines() ) {
-		lines.push_back( sb::Line( line.getStartingPoint(),
-		                           line.getEndingPoint() ) );
+	for ( const auto& line: frameInfo.getLines() ) {
+		cv::line( mat1,
+		          line.getStartingPoint() + cv::Point2d( 0, expandHeight ),
+		          line.getEndingPoint() + cv::Point2d( 0, expandHeight ),
+		          cv::Scalar( 0, 255, 0 ) );
 	}
 
-	// show lines
-	tempMat.setTo( cv::Scalar::all( 0 ) );
-	for ( const auto& line : lines ) {
-		cv::line(
-		         tempMat,
-		         line.getStartingPoint() + cv::Point2d( 0, expandHeight ),
-		         line.getEndingPoint() + cv::Point2d( 0, expandHeight ),
-		         cv::Scalar( 0, 255, 255 ), 1
-		        );
+	for ( const auto& line : frameInfo.getWarpedLines() ) {
+		cv::line( mat2,
+		          line.getStartingPoint() + cv::Point2d( 0, expandHeight ),
+		          line.getEndingPoint() + cv::Point2d( 0, expandHeight ),
+		          cv::Scalar( 0, 255, 0 ) );
 	}
 
-	cv::imshow( WINDOW_NAME, tempMat );
-	cv::waitKey();
-
-	// warp lines
-	{
-		cv::Point2f srcQuad[4];
-		cv::Point2f dstQuad[4];
-		for ( int i = 0; i < 4; i++ ) {
-			srcQuad[i] = params.WARP_SRC_QUAD[i] - bias;
-			dstQuad[i] = params.WARP_DST_QUAD[i] - bias;
-		}
-
-		cv::Matx33f warpMatrix = cv::getPerspectiveTransform( srcQuad, dstQuad );
-
-		std::vector<cv::Point2f> startingPoints;
-		std::vector<cv::Point2f> endingPoints;
-		for ( const auto& line : lines ) {
-			startingPoints.push_back( line.getStartingPoint() );
-			endingPoints.push_back( line.getEndingPoint() );
-		}
-
-		cv::perspectiveTransform( startingPoints, startingPoints, warpMatrix );
-		cv::perspectiveTransform( endingPoints, endingPoints, warpMatrix );
-
-		for ( int i = 0; i < static_cast<int>(lines.size()); i++ ) {
-			lines[i] = sb::Line( startingPoints[i], endingPoints[i] );
-		}
-	}
-
-	// show lines
-	tempMat.setTo( cv::Scalar::all( 0 ) );
-	for ( const auto& line : lines ) {
-		cv::line(
-		         tempMat,
-		         line.getStartingPoint() + cv::Point2d( 0, expandHeight ),
-		         line.getEndingPoint() + cv::Point2d( 0, expandHeight ),
-		         cv::Scalar( 0, 255, 255 ), 1
-		        );
-	}
-
-	cv::imshow( WINDOW_NAME, tempMat );
-	cv::waitKey();
+	cv::imshow( "Color", frameInfo.getColorImage() );
+	cv::imshow( "Lines", mat1 );
+	cv::imshow( "Warped Lines", mat2 );
 }
 
 void release( sb::Collector& collector,

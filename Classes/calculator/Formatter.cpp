@@ -28,7 +28,11 @@ int sb::Formatter::crop( const cv::Mat& inputImage, cv::Mat& outputImage ) const
 int sb::Formatter::warp( const std::vector<sb::LineInfo> originalLines,
                          std::vector<sb::LineInfo>& outputLines ) const
 {
+	outputLines.clear();
+
 	const int N_LINES = static_cast<int>(originalLines.size());
+
+	if ( N_LINES == 0 )return 0;
 
 	cv::Matx33f warpMatrix = cv::getPerspectiveTransform( _warpSourceQuad, _warpDestinationQuad );
 
@@ -43,8 +47,6 @@ int sb::Formatter::warp( const std::vector<sb::LineInfo> originalLines,
 	cv::perspectiveTransform( startingPoints, startingPoints, warpMatrix );
 
 	cv::perspectiveTransform( endingPoints, endingPoints, warpMatrix );
-
-	outputLines.clear();
 
 	outputLines.reserve( N_LINES );
 
