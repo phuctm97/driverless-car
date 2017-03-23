@@ -30,6 +30,8 @@
     <ClCompile Include="..\Classes\calculator\LineInfo.cpp" />
     <ClCompile Include="..\Classes\collector\Collector.cpp" />
     <ClCompile Include="..\Classes\collector\RawContent.cpp" />
+    <ClCompile Include="..\Classes\driver\Car.cpp" />
+    <ClCompile Include="..\Classes\driver\Driver.cpp" />
     <ClCompile Include="..\Classes\Params.cpp" />
     <ClCompile Include="..\Classes\Timer.cpp" />
     <ClCompile Include="Main.cpp" />
@@ -46,13 +48,15 @@
     <ClInclude Include="..\Classes\calculator\LineInfo.h" />
     <ClInclude Include="..\Classes\collector\Collector.h" />
     <ClInclude Include="..\Classes\collector\RawContent.h" />
+    <ClInclude Include="..\Classes\driver\Car.h" />
+    <ClInclude Include="..\Classes\driver\Driver.h" />
     <ClInclude Include="..\Classes\Include.h" />
     <ClInclude Include="..\Classes\Params.h" />
     <ClInclude Include="..\Classes\Timer.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{86FE4AE4-51F3-46CA-A4A3-0204BE419247}</ProjectGuid>
-    <RootNamespace>analyzer</RootNamespace>
+    <ProjectGuid>{523EFF91-670A-4B7E-AC8F-03E8C697B632}</ProjectGuid>
+    <RootNamespace>driver</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

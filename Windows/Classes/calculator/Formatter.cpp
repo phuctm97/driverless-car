@@ -1,22 +1,58 @@
 #include "Formatter.h"
 
+sb::Formatter::Formatter( const cv::Rect& cropBox,
+                          const cv::Point2f* warpOriginalSourceQuad,
+                          const cv::Point2f* warpOriginalDestinationQuad )
+	: _cropBox( cropBox )
+{
+	for ( int i = 0; i < 4; i++ ) {
+		_warpSourceQuad[i] = warpOriginalSourceQuad[i] - cv::Point2f( _cropBox.tl() );
+		_warpDestinationQuad[i] = warpOriginalDestinationQuad[i] - cv::Point2f( _cropBox.tl() );
+	}
+}
+
 int sb::Formatter::crop( const cv::Mat& inputImage, cv::Mat& outputImage ) const
 {
-	if ( _cropSize.width > 1 || _cropSize.height > 1 ) {
-		std::cerr << "Invalid crop size." << std::endl;
+	if ( _cropBox.x < 0 || _cropBox.y < 0 ||
+		_cropBox.x + _cropBox.width > inputImage.cols ||
+		_cropBox.y + _cropBox.height > inputImage.rows ) {
+		std::cerr << "Input image and crop box aren't suitable." << std::endl;
 		return -1;
 	}
 
-	cv::Size cropRealSize(
-	                      static_cast<int>(_cropSize.width * inputImage.cols),
-	                      static_cast<int>(_cropSize.height * inputImage.rows)
-	                     );
+	outputImage = inputImage( _cropBox );
 
-	int x, y;
-	x = (inputImage.cols - cropRealSize.width) / 2;
-	y = inputImage.rows - cropRealSize.height;
+	return 0;
+}
 
-	outputImage = inputImage( cv::Rect( x, y, cropRealSize.width, cropRealSize.height ) );
+int sb::Formatter::warp( const std::vector<sb::LineInfo> originalLines,
+                         std::vector<sb::LineInfo>& outputLines ) const
+{
+	outputLines.clear();
+
+	const int N_LINES = static_cast<int>(originalLines.size());
+
+	if ( N_LINES == 0 )return 0;
+
+	cv::Matx33f warpMatrix = cv::getPerspectiveTransform( _warpSourceQuad, _warpDestinationQuad );
+
+	std::vector<cv::Point2f> startingPoints( N_LINES );
+	std::vector<cv::Point2f> endingPoints( N_LINES );
+
+	for ( int i = 0; i < N_LINES; i++ ) {
+		startingPoints[i] = originalLines[i].getStartingPoint();
+		endingPoints[i] = originalLines[i].getEndingPoint();
+	}
+
+	cv::perspectiveTransform( startingPoints, startingPoints, warpMatrix );
+
+	cv::perspectiveTransform( endingPoints, endingPoints, warpMatrix );
+
+	outputLines.reserve( N_LINES );
+
+	for ( int i = 0; i < N_LINES; i++ ) {
+		outputLines.push_back( sb::LineInfo( sb::Line( startingPoints[i], endingPoints[i] ) ) );
+	}
 
 	return 0;
 }

@@ -1,23 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="analyzer">
-      <UniqueIdentifier>{a0c1580b-2f61-45a2-90da-5f7a7dbf5870}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="calculator">
-      <UniqueIdentifier>{37bfd7cc-b34f-4656-8489-48e5be068450}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="collector">
-      <UniqueIdentifier>{c233efa0-927b-4898-85a8-8084ef32d237}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="driver">
-      <UniqueIdentifier>{c0f33a44-ff05-4e65-a668-63f31de3f0da}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="shared">
-      <UniqueIdentifier>{e4423d06-be7b-4e3f-b070-56e66fa0048a}</UniqueIdentifier>
-    </Filter>
-  </ItemGroup>
-  <ItemGroup>
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="..\Classes\Params.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Classes\Timer.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
     <ClCompile Include="..\Classes\analyzer\Analyzer.cpp">
       <Filter>analyzer</Filter>
     </ClCompile>
@@ -57,15 +47,34 @@
     <ClCompile Include="..\Classes\driver\Car.cpp">
       <Filter>driver</Filter>
     </ClCompile>
-    <ClCompile Include="..\Classes\Params.cpp">
-      <Filter>shared</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Classes\Timer.cpp">
-      <Filter>shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <Filter Include="shared">
+      <UniqueIdentifier>{6c212613-19e1-48a8-853c-82c061099f75}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="analyzer">
+      <UniqueIdentifier>{e208c585-2545-4304-8f0c-0fbe9ecad85b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="calculator">
+      <UniqueIdentifier>{73214d90-a131-46c4-9843-3586197ec400}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="collector">
+      <UniqueIdentifier>{9cff8765-ffe1-4733-80fa-4159240ab65d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="driver">
+      <UniqueIdentifier>{fe275e84-7b81-4607-bac7-3a0b2dc7b748}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\Classes\Include.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\Params.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\Timer.h">
+      <Filter>shared</Filter>
+    </ClInclude>
     <ClInclude Include="..\Classes\analyzer\Analyzer.h">
       <Filter>analyzer</Filter>
     </ClInclude>
@@ -104,15 +113,6 @@
     </ClInclude>
     <ClInclude Include="..\Classes\driver\Car.h">
       <Filter>driver</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Classes\Include.h">
-      <Filter>shared</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Classes\Params.h">
-      <Filter>shared</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Classes\Timer.h">
-      <Filter>shared</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

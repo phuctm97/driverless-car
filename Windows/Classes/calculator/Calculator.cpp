@@ -2,7 +2,19 @@
 
 int sb::Calculator::init( const sb::Params& params )
 {
-	_formatter = sb::Formatter( cv::Size2d( params.CROP_SIZE_WIDTH, params.CROP_SIZE_HEIGHT ) );
+	// calculate crop box
+	cv::Size cropSize(
+	                  static_cast<int>(params.CROP_SIZE_WIDTH * params.COLOR_FRAME_SIZE.width),
+	                  static_cast<int>(params.CROP_SIZE_HEIGHT * params.COLOR_FRAME_SIZE.height)
+	                 );
+	cv::Point cropPosition;
+	cropPosition.x = (params.COLOR_FRAME_SIZE.width - cropSize.width) / 2;
+	cropPosition.y = params.COLOR_FRAME_SIZE.height - cropSize.height;
+
+	_formatter = sb::Formatter( cv::Rect( cropPosition.x, cropPosition.y,
+	                                      cropSize.width, cropSize.height ),
+	                            params.WARP_SRC_QUAD,
+	                            params.WARP_DST_QUAD );
 
 	_edgeDetector = sb::EdgeDetector( params.EDGE_DETECTOR_KERNEL_SIZE,
 	                                  params.EDGE_DETECTOR_LOW_THRESH,

@@ -35,6 +35,12 @@
     <ClCompile Include="..\Classes\analyzer\RoadInfo.cpp">
       <Filter>analyzer</Filter>
     </ClCompile>
+    <ClCompile Include="..\Classes\analyzer\Analyzer.cpp">
+      <Filter>analyzer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Classes\Timer.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="shared">
@@ -86,6 +92,12 @@
     </ClInclude>
     <ClInclude Include="..\Classes\analyzer\RoadInfo.h">
       <Filter>analyzer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\analyzer\Analyzer.h">
+      <Filter>analyzer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\Timer.h">
+      <Filter>shared</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

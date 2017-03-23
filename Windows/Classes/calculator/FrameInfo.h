@@ -16,6 +16,9 @@ private:
 	cv::Mat _depthImage;
 
 	std::vector<sb::LineInfo> _lines;
+
+	std::vector<sb::LineInfo> _warpedLines;
+
 public:
 	FrameInfo();
 
@@ -30,6 +33,8 @@ public:
 	const cv::Mat& getDepthImage() const;
 
 	const std::vector<sb::LineInfo>& getLines() const;
+
+	const std::vector<sb::LineInfo>& getWarpedLines() const;
 };
 }
 
