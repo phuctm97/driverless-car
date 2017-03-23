@@ -1,22 +1,118 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    <Filter Include="analyzer">
+      <UniqueIdentifier>{a0c1580b-2f61-45a2-90da-5f7a7dbf5870}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    <Filter Include="calculator">
+      <UniqueIdentifier>{37bfd7cc-b34f-4656-8489-48e5be068450}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    <Filter Include="collector">
+      <UniqueIdentifier>{c233efa0-927b-4898-85a8-8084ef32d237}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="driver">
+      <UniqueIdentifier>{c0f33a44-ff05-4e65-a668-63f31de3f0da}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shared">
+      <UniqueIdentifier>{e4423d06-be7b-4e3f-b070-56e66fa0048a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Main.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\Classes\analyzer\Analyzer.cpp">
+      <Filter>analyzer</Filter>
     </ClCompile>
+    <ClCompile Include="..\Classes\analyzer\RoadInfo.cpp">
+      <Filter>analyzer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Classes\calculator\Calculator.cpp">
+      <Filter>calculator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Classes\calculator\EdgeDetector.cpp">
+      <Filter>calculator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Classes\calculator\Formatter.cpp">
+      <Filter>calculator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Classes\calculator\FrameInfo.cpp">
+      <Filter>calculator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Classes\calculator\Line.cpp">
+      <Filter>calculator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Classes\calculator\LineDetector.cpp">
+      <Filter>calculator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Classes\calculator\LineInfo.cpp">
+      <Filter>calculator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Classes\collector\Collector.cpp">
+      <Filter>collector</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Classes\collector\RawContent.cpp">
+      <Filter>collector</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Classes\driver\Driver.cpp">
+      <Filter>driver</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Classes\driver\Car.cpp">
+      <Filter>driver</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Classes\Params.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Classes\Timer.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\Classes\analyzer\Analyzer.h">
+      <Filter>analyzer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\analyzer\RoadInfo.h">
+      <Filter>analyzer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\calculator\Calculator.h">
+      <Filter>calculator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\calculator\EdgeDetector.h">
+      <Filter>calculator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\calculator\Formatter.h">
+      <Filter>calculator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\calculator\FrameInfo.h">
+      <Filter>calculator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\calculator\Line.h">
+      <Filter>calculator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\calculator\LineDetector.h">
+      <Filter>calculator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\calculator\LineInfo.h">
+      <Filter>calculator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\collector\Collector.h">
+      <Filter>collector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\collector\RawContent.h">
+      <Filter>collector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\driver\Driver.h">
+      <Filter>driver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\driver\Car.h">
+      <Filter>driver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\Include.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\Params.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\Timer.h">
+      <Filter>shared</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

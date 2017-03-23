@@ -1,38 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
-    </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
-    </Filter>
-    <Filter Include="shared">
-      <UniqueIdentifier>{f4126b28-26ba-441c-8051-d831f935fc27}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="analyzer">
-      <UniqueIdentifier>{1887800a-1162-4b8a-95f1-e499cbaa3bb4}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="calculator">
-      <UniqueIdentifier>{47ae40f3-18bc-4e79-8930-05c2228a46e7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="collector">
-      <UniqueIdentifier>{5abaecc9-b848-4be0-8a36-51c73d1109a2}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="driver">
-      <UniqueIdentifier>{9fc2d5db-f4c6-4aaf-b94e-3af58a7778ec}</UniqueIdentifier>
-    </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="Main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
+    <ClCompile Include="Main.cpp" />
     <ClCompile Include="..\Classes\Params.cpp">
       <Filter>shared</Filter>
     </ClCompile>
@@ -78,6 +47,23 @@
     <ClCompile Include="..\Classes\driver\Car.cpp">
       <Filter>driver</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="shared">
+      <UniqueIdentifier>{6c212613-19e1-48a8-853c-82c061099f75}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="analyzer">
+      <UniqueIdentifier>{e208c585-2545-4304-8f0c-0fbe9ecad85b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="calculator">
+      <UniqueIdentifier>{73214d90-a131-46c4-9843-3586197ec400}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="collector">
+      <UniqueIdentifier>{9cff8765-ffe1-4733-80fa-4159240ab65d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="driver">
+      <UniqueIdentifier>{fe275e84-7b81-4607-bac7-3a0b2dc7b748}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Classes\Include.h">
