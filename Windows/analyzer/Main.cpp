@@ -3,6 +3,9 @@
 #include "../Classes/analyzer/Analyzer.h"
 #include "../Classes/Timer.h"
 
+#define WINDOW_EGO_VIEW "Ego-View"
+#define WINDOW_BIRDEYE_VIEW "Birdeye-View"
+
 int init( sb::Collector& collector,
           sb::Calculator& calculator,
           sb::Analyzer& analyzer,
@@ -46,6 +49,10 @@ int main()
 	rawContent.create( params );
 	frameInfo.create( params );
 	roadInfo.create( params );
+
+	cv::namedWindow( WINDOW_EGO_VIEW, CV_WINDOW_AUTOSIZE );
+	cv::namedWindow( WINDOW_BIRDEYE_VIEW, CV_WINDOW_AUTOSIZE );
+	cv::waitKey();
 
 	while ( true ) {
 
@@ -115,8 +122,7 @@ void test( const sb::RawContent& rawContent,
 
 	const cv::Size EXPAND_SIZE( 300, 500 );
 
-	const sb::Line TOP_LINE( cv::Point2d( 0, 0 ) + cv::Point2d( EXPAND_SIZE.width / 2, EXPAND_SIZE.height / 2 ),
-	                         cv::Point2d( 1, 0 ) + cv::Point2d( EXPAND_SIZE.width / 2, EXPAND_SIZE.height / 2 ) );
+	const sb::Line TOP_LINE( cv::Point2d( 0, 0 ), cv::Point2d( 1, 0 ) );
 
 	cv::Mat radarImage = cv::Mat::zeros(
 	                                    FRAME_SIZE.height + EXPAND_SIZE.height,
@@ -124,6 +130,32 @@ void test( const sb::RawContent& rawContent,
 	                                    CV_8UC3
 	                                   );
 
+	cv::Point2d positionOfLeftLane, positionOfRightLane, topPositionOfLeftLane, topPositionOfRightLane;
+
+	positionOfLeftLane = cv::Point2d( ((roadInfo.getPositionOfLeftLane().x + 1) / 2.0) * FRAME_SIZE.width,
+	                                  CAR_POSITION.y - 20 );
+	positionOfRightLane = cv::Point2d( ((roadInfo.getPositionOfRightLane().x + 1) / 2.0) * FRAME_SIZE.width,
+	                                   CAR_POSITION.y - 20 );
+
+	double laneLineAngle = 90 - roadInfo.getRotationOfLane();
+
+	sb::Line leftLaneLine( laneLineAngle, positionOfLeftLane );
+	sb::Line::findIntersection( leftLaneLine, TOP_LINE, topPositionOfLeftLane );
+
+	sb::Line rightLaneLine( laneLineAngle, positionOfRightLane );
+	sb::Line::findIntersection( rightLaneLine, TOP_LINE, topPositionOfRightLane );
+
+	// draw lane
+	cv::line( radarImage,
+	          positionOfLeftLane + cv::Point2d( EXPAND_SIZE.width / 2, EXPAND_SIZE.height / 2 ),
+	          topPositionOfLeftLane + cv::Point2d( EXPAND_SIZE.width / 2, EXPAND_SIZE.height / 2 ),
+	          cv::Scalar( 255, 255, 255 ), 7 );
+	cv::line( radarImage,
+	          positionOfRightLane + cv::Point2d( EXPAND_SIZE.width / 2, EXPAND_SIZE.height / 2 ),
+	          topPositionOfRightLane + cv::Point2d( EXPAND_SIZE.width / 2, EXPAND_SIZE.height / 2 ),
+	          cv::Scalar( 255, 255, 255 ), 7 );
+
+	// draw vehicle
 	cv::rectangle( radarImage,
 	               CAR_POSITION - cv::Point( CAR_SIZE.width / 2, 0 ) + cv::Point( EXPAND_SIZE.width / 2, EXPAND_SIZE.height / 2 ),
 	               CAR_POSITION + cv::Point( CAR_SIZE.width / 2, CAR_SIZE.height ) + cv::Point( EXPAND_SIZE.width / 2, EXPAND_SIZE.height / 2 ),
@@ -133,24 +165,9 @@ void test( const sb::RawContent& rawContent,
 	               CAR_POSITION + cv::Point( CAR_SIZE.width / 2, CAR_SIZE.height ) + cv::Point( EXPAND_SIZE.width / 2, EXPAND_SIZE.height / 2 ),
 	               cv::Scalar( 0, 255, 255 ), 4 );
 
-	cv::Point2d positionOfLeftLane = cv::Point2d( ((roadInfo.getPositionOfLeftLane().x + 1) / 2.0) * FRAME_SIZE.width,
-	                                              CAR_POSITION.y - 20 );
-	cv::Point2d positionOfRightLane = cv::Point2d( ((roadInfo.getPositionOfRightLane().x + 1) / 2.0) * FRAME_SIZE.width,
-	                                               CAR_POSITION.y - 20 );
+	cv::imshow( WINDOW_EGO_VIEW, rawContent.getColorImage() );
 
-	cv::circle( radarImage,
-	            positionOfLeftLane + cv::Point2d( EXPAND_SIZE.width / 2, EXPAND_SIZE.height / 2 ),
-	            5, cv::Scalar( 255, 255, 255 ), -1 );
-
-	cv::circle( radarImage,
-	            positionOfRightLane + cv::Point2d( EXPAND_SIZE.width / 2, EXPAND_SIZE.height / 2 ),
-	            5, cv::Scalar( 255, 255, 255 ), -1 );
-
-	cv::imshow( "Full Camera", rawContent.getColorImage() );
-
-	cv::imshow( "Radar", radarImage );
-
-	cv::waitKey();
+	cv::imshow( WINDOW_BIRDEYE_VIEW, radarImage );
 }
 
 void release( sb::Collector& collector,

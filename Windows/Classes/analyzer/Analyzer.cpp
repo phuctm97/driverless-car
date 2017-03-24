@@ -29,7 +29,7 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 		double rotation = 90 - line.getAngle();
 		double positionX = line.getEndingPoint().x / FRAME_HALF_WIDTH - 1;
 
-		if ( abs( rotation - OLD_ROTATION ) > 15 ) continue;
+		if ( abs( rotation - OLD_ROTATION ) > 20 ) continue;
 
 		if( positionX < 0 ) {
 			if( abs( positionX - OLD_POSITION_X_OF_LEFT_LANE ) > 0.2 ) continue;;
