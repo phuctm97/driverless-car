@@ -7,7 +7,8 @@
 #define CV_2PI 6.2831853
 #define CV_E 2.7182818
 
-#define PARAMS_PATH "../Debug/PARAMS.yaml"
+#define VIDEO_TEST_PAH "../../Debug/video-1.avi"
+#define PARAMS_PATH "../../Debug/PARAMS.yaml"
 
 #define WINDOW_NAME "Window"
 

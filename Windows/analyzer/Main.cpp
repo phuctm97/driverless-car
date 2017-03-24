@@ -111,7 +111,7 @@ void test( const sb::RawContent& rawContent,
 
 	const cv::Point CAR_POSITION( FRAME_SIZE.width / 2, FRAME_SIZE.height );
 
-	const cv::Size CAR_SIZE( 25, 40 );
+	const cv::Size CAR_SIZE( 50, 90 );
 
 	const cv::Size EXPAND_SIZE( 300, 500 );
 

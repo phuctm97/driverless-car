@@ -59,7 +59,7 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 
 	roadInfo.setRotationOfLane( rotation );
 	roadInfo.setPositionOfLeftLane( cv::Point2d( positionXOfLeftLane, 0 ) );
-	roadInfo.setPositionOfLeftLane( cv::Point2d( positionXOfRightLane, 0 ) );
+	roadInfo.setPositionOfRightLane( cv::Point2d( positionXOfRightLane, 0 ) );
 
 	return 0;
 }
