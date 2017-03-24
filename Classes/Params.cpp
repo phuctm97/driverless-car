@@ -45,6 +45,10 @@ void sb::Params::write( cv::FileStorage& fs ) const
 			<< "WARP_SRC_QUAD" << std::vector<cv::Point2f>( WARP_SRC_QUAD, WARP_SRC_QUAD + 4 )
 			<< "WARP_DST_QUAD" << std::vector<cv::Point2f>( WARP_DST_QUAD, WARP_DST_QUAD + 4 )
 
+			<< "INITIAL_ROTATION_OF_LANE" << INITIAL_ROTATION_OF_LANE
+			<< "INITIAL_POSITION_OF_LEFT_LANE" << INITIAL_POSITION_OF_LEFT_LANE
+			<< "INITIAL_POSITION_OF_RIGHT_LANE" << INITIAL_POSITION_OF_RIGHT_LANE
+
 			<< "}";
 }
 
@@ -76,6 +80,10 @@ void sb::Params::read( const cv::FileNode& node )
 	std::vector<cv::Point2f> dstQuadVec;
 	node["WARP_DST_QUAD"] >> dstQuadVec;
 	std::copy( dstQuadVec.begin(), dstQuadVec.end(), WARP_DST_QUAD );
+
+	node["INITIAL_ROTATION_OF_LANE"] >> INITIAL_ROTATION_OF_LANE;
+	node["INITIAL_POSITION_OF_LEFT_LANE"] >> INITIAL_POSITION_OF_LEFT_LANE;
+	node["INITIAL_POSITION_OF_RIGHT_LANE"] >> INITIAL_POSITION_OF_RIGHT_LANE;
 }
 
 void sb::write( cv::FileStorage& fs, const std::string&, const sb::Params& data )

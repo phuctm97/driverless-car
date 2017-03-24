@@ -17,24 +17,34 @@ void release( sb::Collector& collector,
 
 int main()
 {
+	// Parameters container for every component
 	sb::Params params;
 	params.load( PARAMS_PATH );
 
+	// Timer for performance test
 	sb::Timer timer;
 
+	// Data sent&receive bewteen components
 	sb::RawContent rawContent;
 	sb::FrameInfo frameInfo;
 	sb::RoadInfo roadInfo;
 
+	// Main Components
 	sb::Collector collector;
 	sb::Calculator calculator;
 	sb::Analyzer analyzer;
 	sb::Driver driver;
 
+	// Init components
 	if ( init( collector, calculator, analyzer, driver, params ) < 0 ) {
 		std::cerr << "Init failed." << std::endl;
 		return -1;
 	}
+
+	// Initial values
+	rawContent.create( params );
+	frameInfo.create( params );
+	roadInfo.create( params );
 
 	while ( true ) {
 		

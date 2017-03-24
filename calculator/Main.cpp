@@ -70,18 +70,19 @@ int init( sb::Collector& collector,
 void test( const sb::RawContent& rawContent,
            const sb::FrameInfo& frameInfo )
 {
-	int expandHeight = 200;
+	const double FRAME_HALF_WIDTH = frameInfo.getColorImage().cols / 2;
+	const int EXPAND_HEIGHT = 200;
 
 	// create original image
-	cv::Mat originalImage = cv::Mat::zeros( frameInfo.getColorImage().rows + expandHeight,
+	cv::Mat originalImage = cv::Mat::zeros( frameInfo.getColorImage().rows + EXPAND_HEIGHT,
 	                                        frameInfo.getColorImage().cols,
 	                                        CV_8UC3 );
 
 	for ( const auto& line : frameInfo.getLines() ) {
 		cv::line(
 		         originalImage,
-		         line.getStartingPoint() + cv::Point2d( 0, expandHeight ),
-		         line.getEndingPoint() + cv::Point2d( 0, expandHeight ),
+		         line.getStartingPoint() + cv::Point2d( 0, EXPAND_HEIGHT ),
+		         line.getEndingPoint() + cv::Point2d( 0, EXPAND_HEIGHT ),
 		         cv::Scalar( 0, 0, 255 ), 1
 		        );
 	}
@@ -91,8 +92,8 @@ void test( const sb::RawContent& rawContent,
 		cv::Mat tempImage = originalImage.clone();
 
 		cv::line( tempImage,
-		          line.getStartingPoint() + cv::Point2d( 0, expandHeight ),
-		          line.getEndingPoint() + cv::Point2d( 0, expandHeight ),
+		          line.getStartingPoint() + cv::Point2d( 0, EXPAND_HEIGHT ),
+		          line.getEndingPoint() + cv::Point2d( 0, EXPAND_HEIGHT ),
 		          cv::Scalar( 0, 255, 0 ), 2 );
 
 		std::stringstream stringBuilder;
@@ -116,15 +117,15 @@ void test( const sb::RawContent& rawContent,
 	}
 
 	// create warped image
-	cv::Mat warpedImage = cv::Mat::zeros( frameInfo.getColorImage().rows + expandHeight,
+	cv::Mat warpedImage = cv::Mat::zeros( frameInfo.getColorImage().rows + EXPAND_HEIGHT,
 	                                      frameInfo.getColorImage().cols,
 	                                      CV_8UC3 );
 
 	for ( const auto& line : frameInfo.getWarpedLines() ) {
 		cv::line(
 		         warpedImage,
-		         line.getStartingPoint() + cv::Point2d( 0, expandHeight ),
-		         line.getEndingPoint() + cv::Point2d( 0, expandHeight ),
+		         line.getStartingPoint() + cv::Point2d( 0, EXPAND_HEIGHT ),
+		         line.getEndingPoint() + cv::Point2d( 0, EXPAND_HEIGHT ),
 		         cv::Scalar( 0, 0, 255 ), 1
 		        );
 	}
@@ -136,11 +137,14 @@ void test( const sb::RawContent& rawContent,
 		cv::Mat tempImage = warpedImage.clone();
 
 		cv::line( tempImage,
-		          line.getStartingPoint() + cv::Point2d( 0, expandHeight ),
-		          line.getEndingPoint() + cv::Point2d( 0, expandHeight ),
+		          line.getStartingPoint() + cv::Point2d( 0, EXPAND_HEIGHT ),
+		          line.getEndingPoint() + cv::Point2d( 0, EXPAND_HEIGHT ),
 		          cv::Scalar( 0, 255, 0 ), 2 );
 
 		std::stringstream stringBuilder;
+
+		double rotation = 90 - line.getAngle();
+		double positionX = line.getEndingPoint().x / FRAME_HALF_WIDTH - 1;
 
 		stringBuilder << "Length: " << line.getLength();
 		cv::putText( tempImage,
@@ -150,11 +154,19 @@ void test( const sb::RawContent& rawContent,
 
 		stringBuilder.str( "" );
 
-		stringBuilder << "Angle: " << line.getAngle();
+		stringBuilder << "Rotation: " << rotation;
 		cv::putText( tempImage,
 		             stringBuilder.str(),
 		             cv::Point( 20, 35 ),
 		             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
+		
+		stringBuilder.str( "" );
+
+		stringBuilder << "Position X: " << positionX;
+		cv::putText( tempImage,
+								 stringBuilder.str(),
+								 cv::Point( 20, 55 ),
+								 cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
 
 		cv::imshow( WINDOW_NAME, tempImage );
 		cv::waitKey();

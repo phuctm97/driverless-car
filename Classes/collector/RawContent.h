@@ -2,6 +2,7 @@
 #define __SB_RAW_CONTENT_H__
 
 #include <opencv2/opencv.hpp>
+#include "../Params.h"
 
 namespace sb
 {
@@ -13,6 +14,8 @@ private:
 
 public:
 	RawContent() {}
+
+	void create( const sb::Params& params );
 
 	const cv::Mat& getColorImage() const;
 
