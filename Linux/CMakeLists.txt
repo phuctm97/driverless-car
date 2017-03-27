@@ -6,8 +6,8 @@ set(CMAKE_CXX_STANDARD 11)
 
 find_package(OpenCV REQUIRED)
 
-set(OPENNI2_INCLUDE /Users/ubuntu/Downloads/2-Linux/OpenNI-Linux-Arm-2.3/Include)
-set(OPENNI2_REDIST /Users/ubuntu/Downloads/2-Linux/OpenNI-Linux-Arm-2.3/Redist)
+set(OPENNI2_INCLUDE /home/ubuntu/Downloads/2-Linux/OpenNI-Linux-Arm-2.3/Include)
+set(OPENNI2_REDIST /home/ubuntu/Downloads/2-Linux/OpenNI-Linux-Arm-2.3/Redist)
 
 include_directories(${OPENNI2_INCLUDE})
 link_directories(${OPENNI2_REDIST})
