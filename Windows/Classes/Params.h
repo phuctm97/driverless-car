@@ -15,6 +15,8 @@ struct Params
 	float CROP_SIZE_WIDTH = 0.8f;
 	float CROP_SIZE_HEIGHT = 0.25f;
 
+	std::vector<int> SEPERATE_ROWS;
+
 	int EDGE_DETECTOR_KERNEL_SIZE = 3;
 	double EDGE_DETECTOR_LOW_THRESH = 100;
 	double EDGE_DETECTOR_HIGH_THRESH = 200;
@@ -31,9 +33,9 @@ struct Params
 	cv::Point2f WARP_SRC_QUAD[4];
 	cv::Point2f WARP_DST_QUAD[4];
 
-	float INITIAL_ROTATION_OF_LANE = 0;
-	cv::Point2d INITIAL_POSITION_OF_LEFT_LANE = cv::Point2d( -0.7, 0 );
-	cv::Point2d INITIAL_POSITION_OF_RIGHT_LANE = cv::Point2d( 0.7, 0 );
+	std::vector<double> INITIAL_ROTATION_OF_LANES;
+	double INITIAL_POSITION_OF_LEFT_LANE = -0.7;
+	double INITIAL_POSITION_OF_RIGHT_LANE = 0.7;
 
 	void load( const cv::String& yamlFileName );
 

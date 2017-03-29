@@ -50,12 +50,13 @@ int main()
 	frameInfo.create( params );
 	roadInfo.create( params );
 
+#ifdef _DEBUG
 	cv::namedWindow( WINDOW_EGO_VIEW, CV_WINDOW_AUTOSIZE );
 	cv::namedWindow( WINDOW_BIRDEYE_VIEW, CV_WINDOW_AUTOSIZE );
 	cv::waitKey();
+#endif
 
 	while ( true ) {
-
 		timer.reset( "total" );
 
 		if ( collector.collect( rawContent ) < 0 ) {
@@ -73,13 +74,15 @@ int main()
 			break;
 		}
 
-		test( rawContent, frameInfo, roadInfo, params );
-
 		std::cout
 				<< "Executed time: " << timer.milliseconds( "total" ) << ". "
 				<< "FPS: " << timer.fps( "total" ) << std::endl;
 
-		if ( cv::waitKey( MAX(1, 66 - timer.milliseconds("total")) ) == KEY_TO_ESCAPE ) break;
+#ifdef _DEBUG
+		test( rawContent, frameInfo, roadInfo, params );
+
+		if ( cv::waitKey( MAX( 1, 66 - timer.milliseconds( "total" ) ) ) == KEY_TO_ESCAPE ) break;
+#endif
 	}
 
 	release( collector, calculator, analyzer );
@@ -132,12 +135,12 @@ void test( const sb::RawContent& rawContent,
 
 	cv::Point2d positionOfLeftLane, positionOfRightLane, topPositionOfLeftLane, topPositionOfRightLane;
 
-	positionOfLeftLane = cv::Point2d( ((roadInfo.getPositionOfLeftLane().x + 1) / 2.0) * FRAME_SIZE.width,
+	positionOfLeftLane = cv::Point2d( ((roadInfo.getPositionOfLeftLane() + 1) / 2.0) * FRAME_SIZE.width,
 	                                  CAR_POSITION.y - 20 );
-	positionOfRightLane = cv::Point2d( ((roadInfo.getPositionOfRightLane().x + 1) / 2.0) * FRAME_SIZE.width,
+	positionOfRightLane = cv::Point2d( ((roadInfo.getPositionOfRightLane() + 1) / 2.0) * FRAME_SIZE.width,
 	                                   CAR_POSITION.y - 20 );
 
-	double laneLineAngle = 90 - roadInfo.getRotationOfLane();
+	double laneLineAngle = 90 - roadInfo.getRotationOfLanes()[0];
 
 	sb::Line leftLaneLine( laneLineAngle, positionOfLeftLane );
 	sb::Line::findIntersection( leftLaneLine, TOP_LINE, topPositionOfLeftLane );

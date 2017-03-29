@@ -32,6 +32,7 @@ public:
 	            std::vector<sb::Line>& lines ) const;
 
 	void apply( const cv::Mat& binaryImage,
+							const cv::Mat& colorImage, 
 							std::vector<sb::LineInfo>& lines ) const;
 };
 }

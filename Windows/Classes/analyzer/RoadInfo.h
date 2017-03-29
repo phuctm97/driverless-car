@@ -9,11 +9,11 @@ namespace sb
 class RoadInfo
 {
 private:
-	cv::Point2d _positionOfLeftLane;
+	double _positionOfLeftLane;
 
-	cv::Point2d _positionOfRightLane;
+	double _positionOfRightLane;
 
-	double _rotationOfLane;
+	std::vector<double> _rotationOfLanes;
 
 	std::vector<cv::Rect2d> _obstacleBoxes;
 
@@ -21,18 +21,17 @@ private:
 
 public:
 	RoadInfo()
-		: _rotationOfLane( 0 ),
-		  _reliability( 0 ) {}
+		: _reliability( 0 ) {}
 
 	void create( const Params& params );
 
-	void setPositionOfLeftLane( const cv::Point2d& positionOfLeftLane );
+	void setPositionOfLeftLane( double positionOfLeftLane );
 	
-	const cv::Point2d& getPositionOfLeftLane() const;
+	double getPositionOfLeftLane() const;
 
-	void setPositionOfRightLane( const cv::Point2d& positionOfRightLane );
+	void setPositionOfRightLane( double positionOfRightLane );
 	
-	const cv::Point2d& getPositionOfRightLane() const;
+	double getPositionOfRightLane() const;
 
 	void setObstacleBoxes( const std::vector<cv::Rect2d>& obstacleBoxes );
 	
@@ -40,10 +39,10 @@ public:
 	
 	std::vector<cv::Rect2d>& getObstacleBoxes();
 
-	void setRotationOfLane( double rotationOfLane );
+	void setRotationOfLanes( const std::vector<double>& rotationOfLanes );
 
-	double getRotationOfLane() const;
-	
+	const std::vector<double>& getRotationOfLanes() const;
+
 	void setReliability( float reliability );
 
 	float getReliability() const;

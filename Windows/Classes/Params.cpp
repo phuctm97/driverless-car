@@ -29,6 +29,8 @@ void sb::Params::write( cv::FileStorage& fs ) const
 			<< "CROP_SIZE_WIDTH" << CROP_SIZE_WIDTH
 			<< "CROP_SIZE_HEIGHT" << CROP_SIZE_HEIGHT
 
+			<< "SEPERATE_ROWS" << SEPERATE_ROWS
+
 			<< "EDGE_DETECTOR_KERNEL_SIZE" << EDGE_DETECTOR_KERNEL_SIZE
 			<< "EDGE_DETECTOR_LOW_THRESH" << EDGE_DETECTOR_LOW_THRESH
 			<< "EDGE_DETECTOR_HIGH_THRESH" << EDGE_DETECTOR_HIGH_THRESH
@@ -45,9 +47,9 @@ void sb::Params::write( cv::FileStorage& fs ) const
 			<< "WARP_SRC_QUAD" << std::vector<cv::Point2f>( WARP_SRC_QUAD, WARP_SRC_QUAD + 4 )
 			<< "WARP_DST_QUAD" << std::vector<cv::Point2f>( WARP_DST_QUAD, WARP_DST_QUAD + 4 )
 
-			<< "INITIAL_ROTATION_OF_LANE" << INITIAL_ROTATION_OF_LANE
 			<< "INITIAL_POSITION_OF_LEFT_LANE" << INITIAL_POSITION_OF_LEFT_LANE
 			<< "INITIAL_POSITION_OF_RIGHT_LANE" << INITIAL_POSITION_OF_RIGHT_LANE
+			<< "INITIAL_ROTATION_OF_LANES" << INITIAL_ROTATION_OF_LANES
 
 			<< "}";
 }
@@ -59,6 +61,8 @@ void sb::Params::read( const cv::FileNode& node )
 
 	node["CROP_SIZE_WIDTH"] >> CROP_SIZE_WIDTH;
 	node["CROP_SIZE_HEIGHT"] >> CROP_SIZE_HEIGHT;
+
+	node["SEPERATE_ROWS"] >> SEPERATE_ROWS;
 
 	node["EDGE_DETECTOR_KERNEL_SIZE"] >> EDGE_DETECTOR_KERNEL_SIZE;
 	node["EDGE_DETECTOR_LOW_THRESH"] >> EDGE_DETECTOR_LOW_THRESH;
@@ -81,9 +85,9 @@ void sb::Params::read( const cv::FileNode& node )
 	node["WARP_DST_QUAD"] >> dstQuadVec;
 	std::copy( dstQuadVec.begin(), dstQuadVec.end(), WARP_DST_QUAD );
 
-	node["INITIAL_ROTATION_OF_LANE"] >> INITIAL_ROTATION_OF_LANE;
 	node["INITIAL_POSITION_OF_LEFT_LANE"] >> INITIAL_POSITION_OF_LEFT_LANE;
 	node["INITIAL_POSITION_OF_RIGHT_LANE"] >> INITIAL_POSITION_OF_RIGHT_LANE;
+	node["INITIAL_ROTATION_OF_LANES"] >> INITIAL_ROTATION_OF_LANES;
 }
 
 void sb::write( cv::FileStorage& fs, const std::string&, const sb::Params& data )

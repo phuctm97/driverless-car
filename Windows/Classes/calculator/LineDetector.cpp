@@ -29,7 +29,9 @@ void sb::LineDetector::apply( const cv::Mat& binaryImage,
 	}
 }
 
-void sb::LineDetector::apply( const cv::Mat& binaryImage, std::vector<sb::LineInfo>& lines ) const
+void sb::LineDetector::apply( const cv::Mat& binaryImage, 
+															const cv::Mat& colorImage,
+															std::vector<sb::LineInfo>& lines ) const
 {
 	// reset array
 	lines.clear();
@@ -52,7 +54,7 @@ void sb::LineDetector::apply( const cv::Mat& binaryImage, std::vector<sb::LineIn
 
 		if ( !line.isValid() ) continue;
 
-		lines.push_back( LineInfo( line ) );
+		lines.push_back( LineInfo( colorImage, line ) );
 
 	}
 }

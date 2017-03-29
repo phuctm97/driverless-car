@@ -10,6 +10,7 @@ namespace sb
 class Analyzer
 {
 private:
+	int _whiteThresh = 190;
 
 public:
 	Analyzer() {}
@@ -20,6 +21,11 @@ public:
 	             sb::RoadInfo& roadInfo ) const;
 
 	void release();
+
+private:
+	int analyze1( const sb::FrameInfo& frameInfo,
+	              sb::RoadInfo& roadInfo ) const;
+
 };
 }
 

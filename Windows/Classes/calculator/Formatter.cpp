@@ -1,9 +1,10 @@
 #include "Formatter.h"
 
 sb::Formatter::Formatter( const cv::Rect& cropBox,
+                          const std::vector<int>& separateRows,
                           const cv::Point2f* warpOriginalSourceQuad,
                           const cv::Point2f* warpOriginalDestinationQuad )
-	: _cropBox( cropBox )
+	: _cropBox( cropBox ), _separateRows( separateRows )
 {
 	for ( int i = 0; i < 4; i++ ) {
 		_warpSourceQuad[i] = warpOriginalSourceQuad[i] - cv::Point2f( _cropBox.tl() );
@@ -26,13 +27,16 @@ int sb::Formatter::crop( const cv::Mat& inputImage, cv::Mat& outputImage ) const
 }
 
 int sb::Formatter::warp( const std::vector<sb::LineInfo> originalLines,
-                         std::vector<sb::LineInfo>& outputLines ) const
+                         std::vector<sb::LineInfo>& outputLines,
+                         cv::Point2d& topLeftPoint ) const
 {
 	outputLines.clear();
 
 	const int N_LINES = static_cast<int>(originalLines.size());
 
 	if ( N_LINES == 0 )return 0;
+
+	///// warp /////
 
 	cv::Matx33f warpMatrix = cv::getPerspectiveTransform( _warpSourceQuad, _warpDestinationQuad );
 
@@ -48,10 +52,68 @@ int sb::Formatter::warp( const std::vector<sb::LineInfo> originalLines,
 
 	cv::perspectiveTransform( endingPoints, endingPoints, warpMatrix );
 
+	///// push to output array /////
+
 	outputLines.reserve( N_LINES );
 
 	for ( int i = 0; i < N_LINES; i++ ) {
+		// find top left point
+		topLeftPoint.x = MIN( topLeftPoint.x, startingPoints[i].x );
+		topLeftPoint.x = MIN( topLeftPoint.x, endingPoints[i].x );
+		topLeftPoint.y = MIN( topLeftPoint.y, startingPoints[i].y );
+		topLeftPoint.y = MIN( topLeftPoint.y, endingPoints[i].y );
+
 		outputLines.push_back( sb::LineInfo( sb::Line( startingPoints[i], endingPoints[i] ) ) );
+	}
+
+	return 0;
+}
+
+int sb::Formatter::split( const std::vector<sb::LineInfo> warpedLines,
+                          int containerHeight,
+                          std::vector<sb::SectionInfo>& outputSections ) const
+{
+	outputSections.clear();
+
+	const int N_SECTIONS = static_cast<int>(_separateRows.size()) - 1;
+	const int N_LINES = static_cast<int>(warpedLines.size());
+
+	if ( N_SECTIONS <= 0 )return -1;
+
+	///// calculate section borders /////
+
+	outputSections.assign( N_SECTIONS, sb::SectionInfo() );
+
+	for ( int i = 0; i < N_SECTIONS; i++ ) {
+		sb::SectionInfo& sectionInfo = outputSections[i];
+
+		// borders
+		sectionInfo.lowerRow = containerHeight - _separateRows[i];
+		sectionInfo.upperRow = containerHeight - _separateRows[i + 1];
+
+		// lines in section
+		const sb::Line upperLine( cv::Point2d( 0, sectionInfo.upperRow ), cv::Point2d( 1, sectionInfo.upperRow ) );
+		const sb::Line lowerLine( cv::Point2d( 0, sectionInfo.lowerRow ), cv::Point2d( 1, sectionInfo.lowerRow ) );
+
+		sectionInfo.lines.clear();
+		for ( int index = 0; index < N_LINES; index++ ) {
+			const sb::LineInfo& lineInfo = warpedLines[index];
+
+			if ( lineInfo.getStartingPoint().y <= sectionInfo.lowerRow &&
+					 lineInfo.getEndingPoint().y >= sectionInfo.upperRow ) {
+				cv::Vec2d vec;
+
+				cv::Point2d p;
+
+				if( !sb::Line::findIntersection( lineInfo.getLine(), upperLine, p ) ) continue;
+				vec[0] = p.x;
+
+				if( !sb::Line::findIntersection( lineInfo.getLine(), lowerLine, p ) ) continue;
+				vec[1] = p.x;
+
+				sectionInfo.lines.push_back( std::pair<int, cv::Vec2d>( index, vec ) );
+			}
+		}
 	}
 
 	return 0;

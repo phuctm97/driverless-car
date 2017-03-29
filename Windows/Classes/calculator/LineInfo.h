@@ -14,12 +14,12 @@ private:
 
 	double _angle;
 
-public:
+	cv::Vec3b _averageColor;
 
-	LineInfo( const sb::Line& line )
-		: _line( line ),
-		  _angle( line.getAngleWithOx() ),
-		  _length( line.getLength() ) {}
+public:
+	LineInfo( const sb::Line& line );
+
+	LineInfo( const cv::Mat& colorImage, const sb::Line& line );
 
 	const sb::Line& getLine() const;
 
@@ -30,8 +30,12 @@ public:
 	double getLength() const;
 
 	double getAngle() const;
-};
 
+	const cv::Vec3b& getAverageColor() const;
+
+private:
+	void calculateAverageColor( const cv::Mat& colorImage );
+};
 }
 
 #endif //!__SB_LINE_INFO_H__
