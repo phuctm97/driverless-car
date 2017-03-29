@@ -31,6 +31,10 @@ struct Params
 	cv::Point2f WARP_SRC_QUAD[4];
 	cv::Point2f WARP_DST_QUAD[4];
 
+	float INITIAL_ROTATION_OF_LANE = 0;
+	cv::Point2d INITIAL_POSITION_OF_LEFT_LANE = cv::Point2d( -0.7, 0 );
+	cv::Point2d INITIAL_POSITION_OF_RIGHT_LANE = cv::Point2d( 0.7, 0 );
+
 	void load( const cv::String& yamlFileName );
 
 	void read( const cv::FileNode& node );
