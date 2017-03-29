@@ -17,7 +17,10 @@ int main()
 	params.load( PARAMS_PATH );
 
 	sb::RawContent rawContent;
+	rawContent.create( params );
+
 	sb::FrameInfo frameInfo;
+	frameInfo.create( params );
 
 	sb::Collector collector;
 	sb::Calculator calculator;
@@ -105,65 +108,65 @@ void test( const sb::RawContent& rawContent,
 			const sb::LineInfo& line = frameInfo.getLines()[sectionLine.first];
 
 			const sb::LineInfo& warpedLine = frameInfo.getWarpedLines()[sectionLine.first];
-			
+
 			cv::Mat tempImage = warpedImage.clone();
 
 			cv::line( tempImage,
-								cv::Point2d( 0, sectionInfo.lowerRow ) + cv::Point2d( 0, EXPAND_HEIGHT ),
-								cv::Point2d( tempImage.cols - 1, sectionInfo.lowerRow ) + cv::Point2d( EXPAND_WIDTH / 2, EXPAND_HEIGHT ),
-								cv::Scalar( 255, 255, 255 ), 1 );
+			          cv::Point2d( 0, sectionInfo.lowerRow ) + cv::Point2d( 0, EXPAND_HEIGHT ),
+			          cv::Point2d( tempImage.cols - 1, sectionInfo.lowerRow ) + cv::Point2d( EXPAND_WIDTH / 2, EXPAND_HEIGHT ),
+			          cv::Scalar( 255, 255, 255 ), 1 );
 			cv::line( tempImage,
-								cv::Point2d( 0, sectionInfo.upperRow ) + cv::Point2d( 0, EXPAND_HEIGHT ),
-								cv::Point2d( tempImage.cols - 1, sectionInfo.upperRow ) + cv::Point2d( EXPAND_WIDTH / 2, EXPAND_HEIGHT ),
-								cv::Scalar( 255, 255, 255 ), 1 );
+			          cv::Point2d( 0, sectionInfo.upperRow ) + cv::Point2d( 0, EXPAND_HEIGHT ),
+			          cv::Point2d( tempImage.cols - 1, sectionInfo.upperRow ) + cv::Point2d( EXPAND_WIDTH / 2, EXPAND_HEIGHT ),
+			          cv::Scalar( 255, 255, 255 ), 1 );
 			cv::line( tempImage,
-								warpedLine.getStartingPoint() + cv::Point2d( EXPAND_WIDTH / 2, EXPAND_HEIGHT ),
-								warpedLine.getEndingPoint() + cv::Point2d( EXPAND_WIDTH / 2, EXPAND_HEIGHT ),
-								cv::Scalar( 0, 255, 0 ), 2 );
+			          warpedLine.getStartingPoint() + cv::Point2d( EXPAND_WIDTH / 2, EXPAND_HEIGHT ),
+			          warpedLine.getEndingPoint() + cv::Point2d( EXPAND_WIDTH / 2, EXPAND_HEIGHT ),
+			          cv::Scalar( 0, 255, 0 ), 2 );
 
 			std::stringstream stringBuilder;
 
-			double rotation = 90 - warpedLine.getAngle();
-			double upperX = sectionLine.second[0] / FRAME_HALF_WIDTH - 1;
-			double lowerX = sectionLine.second[1] / FRAME_HALF_WIDTH - 1;
+			double rotation = frameInfo.convertToRotation( warpedLine.getAngle() );
+			double upperX = frameInfo.convertXToCoord( sectionLine.second[0] );
+			double lowerX = frameInfo.convertXToCoord( sectionLine.second[1] );
 
 			stringBuilder << "Length: " << warpedLine.getLength();
 			cv::putText( tempImage,
-									 stringBuilder.str(),
-									 cv::Point( 20, 15 ),
-									 cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
+			             stringBuilder.str(),
+			             cv::Point( 20, 15 ),
+			             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
 
 			stringBuilder.str( "" );
 
 			stringBuilder << "Rotation: " << rotation;
 			cv::putText( tempImage,
-									 stringBuilder.str(),
-									 cv::Point( 20, 35 ),
-									 cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
+			             stringBuilder.str(),
+			             cv::Point( 20, 35 ),
+			             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
 
 			stringBuilder.str( "" );
 
 			stringBuilder << "Upper X: " << upperX;
 			cv::putText( tempImage,
-									 stringBuilder.str(),
-									 cv::Point( 20, 55 ),
-									 cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
+			             stringBuilder.str(),
+			             cv::Point( 20, 55 ),
+			             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
 
 			stringBuilder.str( "" );
 
 			stringBuilder << "Lower X: " << lowerX;
 			cv::putText( tempImage,
-									 stringBuilder.str(),
-									 cv::Point( 20, 75 ),
-									 cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
+			             stringBuilder.str(),
+			             cv::Point( 20, 75 ),
+			             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
 
 			stringBuilder.str( "" );
 
 			stringBuilder << "Color: " << line.getAverageColor();
 			cv::putText( tempImage,
-									 stringBuilder.str(),
-									 cv::Point( 20, 95 ),
-									 cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
+			             stringBuilder.str(),
+			             cv::Point( 20, 95 ),
+			             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
 
 			cv::imshow( WINDOW_NAME, tempImage );
 			cv::waitKey();

@@ -10,7 +10,8 @@ namespace sb
 class Analyzer
 {
 private:
-	int _whiteThresh = 190;
+	double _laneWidth = 0.2;
+	double _roadWidth = 0.8;
 
 public:
 	Analyzer() {}

@@ -12,6 +12,8 @@ namespace sb
 class FrameInfo
 {
 private:
+	double _convertCoordCoef;
+
 	cv::Point2d _topLeftPoint;
 
 	cv::Mat _colorImage;
@@ -46,6 +48,22 @@ public:
 	const std::vector<sb::LineInfo>& getWarpedLines() const;
 
 	const std::vector<sb::SectionInfo>& getSections() const;
+
+	double convertXToCoord( double x ) const;
+
+	double convertYToCoord( double y ) const;
+
+	cv::Point2d convertToCoord( const cv::Point2d& point ) const;
+
+	double convertXFromCoord( double x ) const;
+
+	double convertYFromCoord( double y ) const;
+
+	cv::Point2d convertFromCoord( const cv::Point2d& point ) const;
+
+	double convertToRotation( double angle ) const;
+
+	double convertFromRotation( double rotation ) const;
 };
 }
 

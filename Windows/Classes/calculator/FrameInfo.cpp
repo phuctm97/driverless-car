@@ -3,7 +3,10 @@
 sb::FrameInfo::FrameInfo()
 	: _topLeftPoint( 0, 0 ) {}
 
-void sb::FrameInfo::create( const sb::Params& params ) { }
+void sb::FrameInfo::create( const sb::Params& params )
+{
+	_convertCoordCoef = 1.0 / (params.CROP_SIZE_WIDTH * params.COLOR_FRAME_SIZE.width * 0.5);
+}
 
 int sb::FrameInfo::create( const cv::Mat& colorImage,
                            const cv::Mat& depthImage,
@@ -59,3 +62,49 @@ const std::vector<sb::LineInfo>& sb::FrameInfo::getLines() const { return _lines
 const std::vector<sb::LineInfo>& sb::FrameInfo::getWarpedLines() const { return _warpedLines; }
 
 const std::vector<sb::SectionInfo>& sb::FrameInfo::getSections() const { return _sections; }
+
+double sb::FrameInfo::convertXToCoord( double x ) const
+{
+	return (x - _colorImage.cols * 0.5) * _convertCoordCoef;
+}
+
+double sb::FrameInfo::convertYToCoord( double y ) const
+{
+	return (_colorImage.rows - y) * _convertCoordCoef;
+}
+
+cv::Point2d sb::FrameInfo::convertToCoord( const cv::Point2d& point ) const
+{
+	return cv::Point2d(
+	                   convertXToCoord( point.x ),
+	                   convertYToCoord( point.y )
+	                  );
+}
+
+double sb::FrameInfo::convertXFromCoord( double x ) const
+{
+	return (x / _convertCoordCoef) + (_colorImage.cols * 0.5);
+}
+
+double sb::FrameInfo::convertYFromCoord( double y ) const
+{
+	return _colorImage.rows - (y / _convertCoordCoef);
+}
+
+cv::Point2d sb::FrameInfo::convertFromCoord( const cv::Point2d& point ) const
+{
+	return cv::Point2d(
+	                   convertXFromCoord( point.x ),
+	                   convertYFromCoord( point.x )
+	                  );
+}
+
+double sb::FrameInfo::convertToRotation( double angle ) const
+{
+	return 90 - angle;
+}
+
+double sb::FrameInfo::convertFromRotation( double rotation ) const
+{
+	return 90 - rotation;
+}

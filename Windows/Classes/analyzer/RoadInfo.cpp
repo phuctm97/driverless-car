@@ -2,6 +2,9 @@
 
 void sb::RoadInfo::create( const Params& params )
 {
+	_positionOfLeftLane = params.INITIAL_POSITION_OF_LEFT_LANE;
+	_positionOfRightLane = params.INITIAL_POSITION_OF_RIGHT_LANE;
+	_rotationOfLanes = params.INITIAL_ROTATION_OF_LANES;
 }
 
 void sb::RoadInfo::setPositionOfLeftLane( double positionOfLeftLane ) { _positionOfLeftLane = positionOfLeftLane; }

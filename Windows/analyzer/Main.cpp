@@ -31,8 +31,13 @@ int main()
 
 	// Data sent&receive bewteen components
 	sb::RawContent rawContent;
+	rawContent.create( params );
+	
 	sb::FrameInfo frameInfo;
+	frameInfo.create( params );
+	
 	sb::RoadInfo roadInfo;
+	roadInfo.create( params );
 
 	// Main Components
 	sb::Collector collector;
@@ -45,10 +50,6 @@ int main()
 		return -1;
 	}
 
-	// Initial values
-	rawContent.create( params );
-	frameInfo.create( params );
-	roadInfo.create( params );
 
 #ifdef _DEBUG
 	cv::namedWindow( WINDOW_EGO_VIEW, CV_WINDOW_AUTOSIZE );
@@ -121,7 +122,7 @@ void test( const sb::RawContent& rawContent,
 
 	const cv::Point CAR_POSITION( FRAME_SIZE.width / 2, FRAME_SIZE.height );
 
-	const cv::Size CAR_SIZE( 50, 90 );
+	const cv::Size CAR_SIZE( 90, 120 );
 
 	const cv::Size EXPAND_SIZE( 300, 500 );
 
@@ -171,6 +172,8 @@ void test( const sb::RawContent& rawContent,
 	cv::imshow( WINDOW_EGO_VIEW, rawContent.getColorImage() );
 
 	cv::imshow( WINDOW_BIRDEYE_VIEW, radarImage );
+
+	cv::waitKey();
 }
 
 void release( sb::Collector& collector,
