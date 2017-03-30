@@ -17,6 +17,8 @@ private:
 
 	std::vector<cv::Rect2d> _obstacleBoxes;
 
+	std::vector<cv::Point2d> _leftLaneKnots;
+
 	float _reliability;
 
 public:

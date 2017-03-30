@@ -41,12 +41,9 @@ int sb::Calculator::calculate( const sb::RawContent& rawContent,
 
 	frameInfo.setColorImage( colorImage );
 
-	///// Depth image /////
-	frameInfo.setDepthImage( rawContent.getDepthImage() );
-
 	///// Lines //////
-	std::vector<sb::LineInfo> lineInfos;
-	std::vector<sb::LineInfo> warpedLines;
+	std::vector<sb::LineInfo> imageLineInfos;
+	std::vector<sb::LineInfo> realLineInfos;
 
 	// 1) generate edges-frame
 	cv::Mat edgesFrame;
@@ -56,21 +53,21 @@ int sb::Calculator::calculate( const sb::RawContent& rawContent,
 	// 2) generate lines in whole frame
 	std::vector<sb::Line> lines;
 	_lineDetector.apply( edgesFrame, lines );
-	calculateLineInfos( lines, colorImage, lineInfos );
+	calculateLineInfos( lines, colorImage, imageLineInfos );
 
 	// 3) generate warped lines
-	if ( _formatter.warp( lineInfos, warpedLines ) < 0 ) {
+	if ( _formatter.warp( imageLineInfos, realLineInfos ) < 0 ) {
 		std::cerr << "Warp lines failed." << std::endl;
 		return -1;
 	}
 
-	frameInfo.setLineInfos( lineInfos );
-	frameInfo.setWarpedLineInfos( warpedLines );
+	frameInfo.setImageLineInfos( imageLineInfos );
+	frameInfo.setRealLineInfos( realLineInfos );
 
 	///// Sections //////
 	std::vector<sb::SectionInfo> sectionInfos;
 
-	if ( _formatter.split( warpedLines, colorImage.rows, sectionInfos ) < 0 ) {
+	if ( _formatter.split( realLineInfos, sectionInfos ) < 0 ) {
 		std::cerr << "Split sections failed." << std::endl;
 		return -1;
 	}
@@ -81,6 +78,22 @@ int sb::Calculator::calculate( const sb::RawContent& rawContent,
 }
 
 void sb::Calculator::release() {}
+
+double sb::Calculator::convertXToCoord( double x ) const { return _formatter.convertXToCoord( x ); }
+
+double sb::Calculator::convertYToCoord( double y ) const { return _formatter.convertYToCoord( y ); }
+
+cv::Point2d sb::Calculator::convertToCoord( const cv::Point2d& point ) const { return _formatter.convertToCoord( point ); }
+
+double sb::Calculator::convertXFromCoord( double x ) const { return _formatter.convertXFromCoord( x ); }
+
+double sb::Calculator::convertYFromCoord( double y ) const { return _formatter.convertYFromCoord( y ); }
+
+cv::Point2d sb::Calculator::convertFromCoord( const cv::Point2d& point ) const { return _formatter.convertFromCoord( point ); }
+
+double sb::Calculator::convertToRotation( double angle ) const { return _formatter.convertToRotation( angle ); }
+
+double sb::Calculator::convertFromRotation( double rotation ) const { return _formatter.convertFromRotation( rotation ); }
 
 void sb::Calculator::calculateLineInfos( const std::vector<sb::Line>& lines,
                                          const cv::Mat& colorImage,

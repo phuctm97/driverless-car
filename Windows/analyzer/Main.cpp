@@ -57,22 +57,27 @@ int main()
 #endif
 
 	while ( true ) {
-		timer.reset( "total" );
 
+		timer.reset( "collector" );
 		if ( collector.collect( rawContent ) < 0 ) {
 			std::cerr << "Collector collects failed." << std::endl;
 			break;
 		}
+		std::cout << "Collector: " << timer.milliseconds( "collector" ) << "ms." << std::endl;
 
+		timer.reset( "calculator" );
 		if ( calculator.calculate( rawContent, frameInfo ) < 0 ) {
 			std::cerr << "Calculator calculates failed." << std::endl;
 			break;
 		}
+		std::cout << "Calculator: " << timer.milliseconds( "calculator" ) << "ms." << std::endl;
 
+		timer.reset( "analyzer" );
 		if ( analyzer.analyze( frameInfo, roadInfo ) ) {
 			std::cerr << "Analyzer analyzes failed." << std::endl;
 			break;
 		}
+		std::cout << "Analyzer: " << timer.milliseconds( "analyzer" ) << "ms." << std::endl;
 
 		std::cout
 				<< "Executed time: " << timer.milliseconds( "total" ) << ". "
@@ -124,8 +129,7 @@ void test( const sb::RawContent& rawContent,
 
 	const cv::Size CAR_SIZE( 90, 120 );
 
-	const cv::Size EXPAND_SIZE( static_cast<int>(abs( frameInfo.getTopLeftPoint().x )) * 2,
-	                            static_cast<int>(abs( frameInfo.getTopLeftPoint().y )) );
+	const cv::Size EXPAND_SIZE( 900, 700 );
 
 	const cv::Point CAR_POSITION( FRAME_SIZE.width / 2,
 	                              FRAME_SIZE.height );

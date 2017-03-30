@@ -8,7 +8,7 @@ int sb::Analyzer::init( const sb::Params& params )
 
 int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInfo ) const
 {
-	const int N_LINES = static_cast<int>(frameInfo.getWarpedLineInfos().size());
+	const int N_LINES = static_cast<int>(frameInfo.getRealLineInfos().size());
 	const int N_SECTIONS = static_cast<int>(roadInfo.getRotationOfLanes().size());
 
 	///// Old values /////
@@ -47,8 +47,8 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 
 	// independent ratings in whole frame
 	for ( int i = 0; i < N_LINES; i++ ) {
-		const sb::LineInfo& line = frameInfo.getLineInfos()[i];
-		const sb::LineInfo& warpedLine = frameInfo.getWarpedLineInfos()[i];
+		const sb::LineInfo& line = frameInfo.getImageLineInfos()[i];
+		const sb::LineInfo& warpedLine = frameInfo.getRealLineInfos()[i];
 
 		// length
 		_lineRatings[i] += warpedLine.getLength();
@@ -64,7 +64,7 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 
 		for ( int j = 0; j < n_lines; j++ ) {
 			const std::pair<int, cv::Vec2d>& sectionLineInfo = sectionInfo.lines[j];
-			const sb::LineInfo warpedLine = frameInfo.getWarpedLineInfos()[sectionLineInfo.first];
+			const sb::LineInfo warpedLine = frameInfo.getRealLineInfos()[sectionLineInfo.first];
 
 			const int lineIndex = sectionLineInfo.first;
 			const double upperX = frameInfo.convertXToCoord( sectionLineInfo.second[0] );
@@ -97,7 +97,7 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 
 		for ( int j = 0; j < n_lines; j++ ) {
 			const std::pair<int, cv::Vec2d>& sectionLineInfo1 = sectionInfo.lines[j];
-			const sb::LineInfo warpedLine1 = frameInfo.getWarpedLineInfos()[sectionLineInfo1.first];
+			const sb::LineInfo warpedLine1 = frameInfo.getRealLineInfos()[sectionLineInfo1.first];
 
 			double upperX1 = frameInfo.convertXToCoord( sectionLineInfo1.second[0] );
 			double lowerX1 = frameInfo.convertXToCoord( sectionLineInfo1.second[1] );
@@ -107,7 +107,7 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 				if ( j == k ) continue;
 
 				const std::pair<int, cv::Vec2d>& sectionLineInfo2 = sectionInfo.lines[k];
-				const sb::LineInfo warpedLine2 = frameInfo.getWarpedLineInfos()[sectionLineInfo2.first];
+				const sb::LineInfo warpedLine2 = frameInfo.getRealLineInfos()[sectionLineInfo2.first];
 
 				double upperX2 = frameInfo.convertXToCoord( sectionLineInfo2.second[0] );
 				double lowerX2 = frameInfo.convertXToCoord( sectionLineInfo2.second[1] );
@@ -128,7 +128,7 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 	cv::Mat warpedImage( frameInfo.getColorImage().rows + H,
 	                     frameInfo.getColorImage().cols + W, CV_8UC3, cv::Scalar( 0, 0, 0 ) );
 
-	for ( const auto& line : frameInfo.getWarpedLineInfos() ) {
+	for ( const auto& line : frameInfo.getRealLineInfos() ) {
 		cv::line( warpedImage,
 		          line.getStartingPoint() + cv::Point2d( W / 2, H ),
 		          line.getEndingPoint() + cv::Point2d( W / 2, H ),
@@ -147,8 +147,8 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 
 	// debug each lines
 	for ( int i = 0; i < N_LINES; i++ ) {
-		const sb::LineInfo& line = frameInfo.getLineInfos()[i];
-		const sb::LineInfo& warpedLine = frameInfo.getWarpedLineInfos()[i];
+		const sb::LineInfo& line = frameInfo.getImageLineInfos()[i];
+		const sb::LineInfo& warpedLine = frameInfo.getRealLineInfos()[i];
 
 		cv::Mat tempImage = warpedImage.clone();
 		cv::line( tempImage,
@@ -220,7 +220,7 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 
 				if( _lineRatings[lineIndex] < 1500 ) continue;
 
-				sumRotation += frameInfo.convertToRotation( frameInfo.getWarpedLineInfos()[lineIndex].getAngle() );
+				sumRotation += frameInfo.convertToRotation( frameInfo.getRealLineInfos()[lineIndex].getAngle() );
 				n++;
 			}
 
@@ -250,9 +250,9 @@ int sb::Analyzer::analyze1( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadIn
 	int n2 = 0;
 	int n3 = 0;
 
-	for ( int i = 0; i < static_cast<int>(frameInfo.getWarpedLineInfos().size()); i++ ) {
+	for ( int i = 0; i < static_cast<int>(frameInfo.getRealLineInfos().size()); i++ ) {
 
-		const sb::LineInfo& line = frameInfo.getWarpedLineInfos()[i];
+		const sb::LineInfo& line = frameInfo.getRealLineInfos()[i];
 
 		double rotation = 90 - line.getAngle();
 		double positionX = line.getEndingPoint().x / FRAME_HALF_WIDTH - 1;

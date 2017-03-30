@@ -3,24 +3,20 @@
 void sb::FrameInfo::create( const sb::Params& params )
 {
 	// _convertCoordCoef = 1.0 / (params.CROP_SIZE_WIDTH * params.COLOR_FRAME_SIZE.width * 0.5);
-	_convertCoordCoef = params.CONVERT_COORD_COEF;
+	_convertCoordCoef = 1.0; // params.CONVERT_COORD_COEF;
 }
 
 const cv::Mat& sb::FrameInfo::getColorImage() const { return _colorImage; }
 
 void sb::FrameInfo::setColorImage( const cv::Mat& colorImage ) { _colorImage = colorImage; }
 
-const cv::Mat& sb::FrameInfo::getDepthImage() const { return _depthImage; }
+const std::vector<sb::LineInfo>& sb::FrameInfo::getImageLineInfos() const { return _imageLineInfos; }
 
-void sb::FrameInfo::setDepthImage( const cv::Mat& depthImage ) { _depthImage = depthImage; }
+void sb::FrameInfo::setImageLineInfos( const std::vector<sb::LineInfo>& lineInfos ) { _imageLineInfos = lineInfos; }
 
-const std::vector<sb::LineInfo>& sb::FrameInfo::getLineInfos() const { return _lineInfos; }
+const std::vector<sb::LineInfo>& sb::FrameInfo::getRealLineInfos() const { return _realLineInfos; }
 
-void sb::FrameInfo::setLineInfos( const std::vector<sb::LineInfo>& lineInfos ) { _lineInfos = lineInfos; }
-
-const std::vector<sb::LineInfo>& sb::FrameInfo::getWarpedLineInfos() const { return _warpedLineInfos; }
-
-void sb::FrameInfo::setWarpedLineInfos( const std::vector<sb::LineInfo>& warpedLines ) { _warpedLineInfos = warpedLines; }
+void sb::FrameInfo::setRealLineInfos( const std::vector<sb::LineInfo>& warpedLines ) { _realLineInfos = warpedLines; }
 
 const std::vector<sb::SectionInfo>& sb::FrameInfo::getSectionInfos() const { return _sectionInfos; }
 

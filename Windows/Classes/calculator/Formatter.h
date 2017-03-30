@@ -19,7 +19,8 @@ private:
 	std::vector<int> _separateRows;
 
 public:
-	Formatter() {}
+	Formatter()
+		: _convertCoordCoef( 0 ) {}
 
 	Formatter( const cv::Rect& cropBox,
 	           const cv::Point2f* warpOriginalSourceQuad,
@@ -29,11 +30,10 @@ public:
 
 	int crop( const cv::Mat& inputImage, cv::Mat& outputImage ) const;
 
-	int warp( const std::vector<sb::LineInfo> originalLines,
-	          std::vector<sb::LineInfo>& outputLines ) const;
+	int warp( const std::vector<sb::LineInfo> imageLines,
+	          std::vector<sb::LineInfo>& outputRealLines ) const;
 
-	int split( const std::vector<sb::LineInfo> warpedLines,
-	           int containerHeight,
+	int split( const std::vector<sb::LineInfo> realLines,
 	           std::vector<sb::SectionInfo>& outputSections ) const;
 
 	double convertXToCoord( double x ) const;

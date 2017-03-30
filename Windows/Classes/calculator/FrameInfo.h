@@ -15,11 +15,9 @@ private:
 
 	cv::Mat _colorImage;
 
-	cv::Mat _depthImage;
+	std::vector<sb::LineInfo> _imageLineInfos;
 
-	std::vector<sb::LineInfo> _lineInfos;
-
-	std::vector<sb::LineInfo> _warpedLineInfos;
+	std::vector<sb::LineInfo> _realLineInfos;
 
 	std::vector<sb::SectionInfo> _sectionInfos;
 
@@ -33,17 +31,13 @@ public:
 
 	void setColorImage( const cv::Mat& colorImage );
 
-	const cv::Mat& getDepthImage() const;
+	const std::vector<sb::LineInfo>& getImageLineInfos() const;
 
-	void setDepthImage( const cv::Mat& depthImage );
+	void setImageLineInfos( const std::vector<sb::LineInfo>& lineInfos );
 
-	const std::vector<sb::LineInfo>& getLineInfos() const;
+	const std::vector<sb::LineInfo>& getRealLineInfos() const;
 
-	void setLineInfos( const std::vector<sb::LineInfo>& lineInfos );
-
-	const std::vector<sb::LineInfo>& getWarpedLineInfos() const;
-
-	void setWarpedLineInfos( const std::vector<sb::LineInfo>& warpedLines );
+	void setRealLineInfos( const std::vector<sb::LineInfo>& warpedLines );
 
 	const std::vector<sb::SectionInfo>& getSectionInfos() const;
 

@@ -24,6 +24,22 @@ public:
 
 	void release();
 
+	double convertXToCoord( double x ) const;
+
+	double convertYToCoord( double y ) const;
+
+	cv::Point2d convertToCoord( const cv::Point2d& point ) const;
+
+	double convertXFromCoord( double x ) const;
+
+	double convertYFromCoord( double y ) const;
+
+	cv::Point2d convertFromCoord( const cv::Point2d& point ) const;
+
+	double convertToRotation( double angle ) const;
+
+	double convertFromRotation( double rotation ) const;
+
 private:
 	void calculateLineInfos( const std::vector<sb::Line>& lines,
 													 const cv::Mat& colorImage,

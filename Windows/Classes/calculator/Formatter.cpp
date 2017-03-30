@@ -5,7 +5,7 @@ sb::Formatter::Formatter( const cv::Rect& cropBox,
                           const cv::Point2f* warpOriginalDestinationQuad,
                           double convertCoordCoef,
                           const std::vector<int>& separateRows )
-	: _cropBox( cropBox ), _separateRows( separateRows ), _convertCoordCoef( convertCoordCoef )
+	: _cropBox( cropBox ), _convertCoordCoef( convertCoordCoef ), _separateRows( separateRows )
 {
 	cv::Point2f warpSourceQuad[4];
 	cv::Point2f warpDestinationQuad[4];
@@ -32,12 +32,12 @@ int sb::Formatter::crop( const cv::Mat& inputImage, cv::Mat& outputImage ) const
 	return 0;
 }
 
-int sb::Formatter::warp( const std::vector<sb::LineInfo> originalLines,
-                         std::vector<sb::LineInfo>& outputLines ) const
+int sb::Formatter::warp( const std::vector<sb::LineInfo> imageLines,
+                         std::vector<sb::LineInfo>& outputRealLines ) const
 {
-	outputLines.clear();
+	outputRealLines.clear();
 
-	const int N_LINES = static_cast<int>(originalLines.size());
+	const int N_LINES = static_cast<int>(imageLines.size());
 
 	if ( N_LINES == 0 )return 0;
 
@@ -47,8 +47,8 @@ int sb::Formatter::warp( const std::vector<sb::LineInfo> originalLines,
 	std::vector<cv::Point2f> endingPoints( N_LINES );
 
 	for ( int i = 0; i < N_LINES; i++ ) {
-		startingPoints[i] = originalLines[i].getStartingPoint();
-		endingPoints[i] = originalLines[i].getEndingPoint();
+		startingPoints[i] = imageLines[i].getStartingPoint();
+		endingPoints[i] = imageLines[i].getEndingPoint();
 	}
 
 	cv::perspectiveTransform( startingPoints, startingPoints, _warpMatrix );
@@ -57,24 +57,24 @@ int sb::Formatter::warp( const std::vector<sb::LineInfo> originalLines,
 
 	///// push to output array /////
 
-	outputLines.reserve( N_LINES );
+	outputRealLines.reserve( N_LINES );
 
 	for ( int i = 0; i < N_LINES; i++ ) {
-		sb::LineInfo warpedLineInfo( sb::Line( startingPoints[i], endingPoints[i] ), originalLines[i].getAverageColor() );
-		outputLines.push_back( sb::LineInfo( sb::Line( startingPoints[i], endingPoints[i] ) ) );
+		outputRealLines.push_back( sb::LineInfo( sb::Line( convertToCoord( startingPoints[i] ),
+		                                                   convertToCoord( endingPoints[i] ) ),
+		                                         imageLines[i].getAverageColor() ) );
 	}
 
 	return 0;
 }
 
-int sb::Formatter::split( const std::vector<sb::LineInfo> warpedLines,
-                          int containerHeight,
+int sb::Formatter::split( const std::vector<sb::LineInfo> realLines,
                           std::vector<sb::SectionInfo>& outputSections ) const
 {
 	outputSections.clear();
 
 	const int N_SECTIONS = static_cast<int>(_separateRows.size()) - 1;
-	const int N_LINES = static_cast<int>(warpedLines.size());
+	const int N_LINES = static_cast<int>(realLines.size());
 
 	if ( N_SECTIONS <= 0 )return -1;
 
@@ -86,8 +86,8 @@ int sb::Formatter::split( const std::vector<sb::LineInfo> warpedLines,
 		sb::SectionInfo& sectionInfo = outputSections[i];
 
 		// borders
-		sectionInfo.lowerRow = containerHeight - _separateRows[i];
-		sectionInfo.upperRow = containerHeight - _separateRows[i + 1];
+		sectionInfo.upperRow = _separateRows[i + 1];
+		sectionInfo.lowerRow = _separateRows[i];
 
 		// lines in section
 		const sb::Line upperLine( cv::Point2d( 0, sectionInfo.upperRow ), cv::Point2d( 1, sectionInfo.upperRow ) );
@@ -95,10 +95,10 @@ int sb::Formatter::split( const std::vector<sb::LineInfo> warpedLines,
 
 		sectionInfo.lines.clear();
 		for ( int index = 0; index < N_LINES; index++ ) {
-			const sb::LineInfo& lineInfo = warpedLines[index];
+			const sb::LineInfo& lineInfo = realLines[index];
 
-			if ( lineInfo.getStartingPoint().y <= sectionInfo.lowerRow &&
-				lineInfo.getEndingPoint().y >= sectionInfo.upperRow ) {
+			if ( lineInfo.getEndingPoint().y >= sectionInfo.lowerRow &&
+				lineInfo.getStartingPoint().y <= sectionInfo.upperRow ) {
 				cv::Vec2d vec;
 
 				cv::Point2d p;
@@ -149,7 +149,7 @@ cv::Point2d sb::Formatter::convertFromCoord( const cv::Point2d& point ) const
 {
 	return cv::Point2d(
 	                   convertXFromCoord( point.x ),
-	                   convertYFromCoord( point.x )
+	                   convertYFromCoord( point.y )
 	                  );
 }
 

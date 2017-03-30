@@ -10,7 +10,6 @@ namespace sb
 struct Params
 {
 	cv::Size COLOR_FRAME_SIZE = cv::Size( 640, 480 );
-	cv::Size DEPTH_FRAME_SIZE = cv::Size( 640, 480 );
 	cv::Size CROPPED_FRAME_SIZE = cv::Size( 640, 240 );
 
 	std::vector<int> SEPERATE_ROWS;

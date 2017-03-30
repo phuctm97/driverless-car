@@ -10,7 +10,6 @@ class RawContent
 {
 private:
 	cv::Mat _colorImage;
-	cv::Mat _depthImage;
 
 public:
 	RawContent() {}
@@ -20,10 +19,6 @@ public:
 	const cv::Mat& getColorImage() const;
 
 	void setColorImage( const cv::Mat& colorImage );
-
-	const cv::Mat& getDepthImage() const;
-
-	void setDepthImage( const cv::Mat& depthImage );
 };
 }
 
