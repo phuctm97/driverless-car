@@ -74,11 +74,11 @@ void test( const sb::RawContent& rawContent,
            const sb::FrameInfo& frameInfo )
 {
 	const double FRAME_HALF_WIDTH = frameInfo.getColorImage().cols / 2;
-	const int EXPAND_HEIGHT = static_cast<int>(abs( frameInfo.getTopLeftPoint().y ));
-	const int EXPAND_WIDTH = static_cast<int>(abs( frameInfo.getTopLeftPoint().x )) * 2;
+	const int EXPAND_HEIGHT = 700; // static_cast<int>(abs( frameInfo.getTopLeftPoint().y ));
+	const int EXPAND_WIDTH = 900; // static_cast<int>(abs( frameInfo.getTopLeftPoint().x )) * 2;
 
 	// create original image
-	cv::imshow( WINDOW_NAME, frameInfo.getColorImage() );
+	cv::imshow( "Original Image", frameInfo.getColorImage() );
 	cv::waitKey();
 
 	// create warped image
@@ -106,6 +106,15 @@ void test( const sb::RawContent& rawContent,
 			const std::pair<int, cv::Vec2d> sectionLine = sectionInfo.lines[j];
 
 			const sb::LineInfo& line = frameInfo.getLines()[sectionLine.first];
+
+			cv::Mat tempFrame = frameInfo.getColorImage().clone();
+
+			cv::line( tempFrame,
+								line.getStartingPoint(),
+								line.getEndingPoint(),
+								cv::Scalar( 0, 255, 0 ), 2 );
+
+			cv::imshow( "Original Image", tempFrame );
 
 			const sb::LineInfo& warpedLine = frameInfo.getWarpedLines()[sectionLine.first];
 

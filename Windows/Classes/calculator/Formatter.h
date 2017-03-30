@@ -14,6 +14,8 @@ private:
 
 	std::vector<int> _separateRows;
 
+	double _convertCoordCoef;
+
 	cv::Point2f _warpSourceQuad[4];
 
 	cv::Point2f _warpDestinationQuad[4];
@@ -23,6 +25,7 @@ public:
 
 	Formatter( const cv::Rect& cropBox,
 						 const std::vector<int>& separateRows,
+						 double convertCoordCoef,
 	           const cv::Point2f* warpOriginalSourceQuad,
 	           const cv::Point2f* warpOriginalDestinationQuad );
 
@@ -35,6 +38,22 @@ public:
 	int split( const std::vector<sb::LineInfo> warpedLines,
 						 int containerHeight,
 						 std::vector<sb::SectionInfo>& outputSections ) const;
+
+	double convertXToCoord( double x ) const;
+
+	double convertYToCoord( double y ) const;
+
+	cv::Point2d convertToCoord( const cv::Point2d& point ) const;
+
+	double convertXFromCoord( double x ) const;
+
+	double convertYFromCoord( double y ) const;
+
+	cv::Point2d convertFromCoord( const cv::Point2d& point ) const;
+
+	double convertToRotation( double angle ) const;
+
+	double convertFromRotation( double rotation ) const;
 };
 }
 

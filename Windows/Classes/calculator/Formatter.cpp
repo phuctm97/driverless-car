@@ -2,9 +2,10 @@
 
 sb::Formatter::Formatter( const cv::Rect& cropBox,
                           const std::vector<int>& separateRows,
+                          double convertCoordCoef,
                           const cv::Point2f* warpOriginalSourceQuad,
                           const cv::Point2f* warpOriginalDestinationQuad )
-	: _cropBox( cropBox ), _separateRows( separateRows )
+	: _cropBox( cropBox ), _separateRows( separateRows ), _convertCoordCoef( convertCoordCoef )
 {
 	for ( int i = 0; i < 4; i++ ) {
 		_warpSourceQuad[i] = warpOriginalSourceQuad[i] - cv::Point2f( _cropBox.tl() );
@@ -100,15 +101,15 @@ int sb::Formatter::split( const std::vector<sb::LineInfo> warpedLines,
 			const sb::LineInfo& lineInfo = warpedLines[index];
 
 			if ( lineInfo.getStartingPoint().y <= sectionInfo.lowerRow &&
-					 lineInfo.getEndingPoint().y >= sectionInfo.upperRow ) {
+				lineInfo.getEndingPoint().y >= sectionInfo.upperRow ) {
 				cv::Vec2d vec;
 
 				cv::Point2d p;
 
-				if( !sb::Line::findIntersection( lineInfo.getLine(), upperLine, p ) ) continue;
+				if ( !sb::Line::findIntersection( lineInfo.getLine(), upperLine, p ) ) continue;
 				vec[0] = p.x;
 
-				if( !sb::Line::findIntersection( lineInfo.getLine(), lowerLine, p ) ) continue;
+				if ( !sb::Line::findIntersection( lineInfo.getLine(), lowerLine, p ) ) continue;
 				vec[1] = p.x;
 
 				sectionInfo.lines.push_back( std::pair<int, cv::Vec2d>( index, vec ) );
@@ -117,4 +118,50 @@ int sb::Formatter::split( const std::vector<sb::LineInfo> warpedLines,
 	}
 
 	return 0;
+}
+
+double sb::Formatter::convertXToCoord( double x ) const
+{
+	return (x - _cropBox.width * 0.5) * _convertCoordCoef;
+}
+
+double sb::Formatter::convertYToCoord( double y ) const
+{
+	return (_cropBox.height - y) * _convertCoordCoef;
+}
+
+cv::Point2d sb::Formatter::convertToCoord( const cv::Point2d& point ) const
+{
+	return cv::Point2d(
+	                   convertXToCoord( point.x ),
+	                   convertYToCoord( point.y )
+	                  );
+}
+
+double sb::Formatter::convertXFromCoord( double x ) const
+{
+	return (x / _convertCoordCoef) + (_cropBox.width * 0.5);
+}
+
+double sb::Formatter::convertYFromCoord( double y ) const
+{
+	return _cropBox.height - (y / _convertCoordCoef);
+}
+
+cv::Point2d sb::Formatter::convertFromCoord( const cv::Point2d& point ) const
+{
+	return cv::Point2d(
+	                   convertXFromCoord( point.x ),
+	                   convertYFromCoord( point.x )
+	                  );
+}
+
+double sb::Formatter::convertToRotation( double angle ) const
+{
+	return 90 - angle;
+}
+
+double sb::Formatter::convertFromRotation( double rotation ) const
+{
+	return 90 - rotation;
 }

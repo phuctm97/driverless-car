@@ -16,6 +16,7 @@ struct Params
 	float CROP_SIZE_HEIGHT = 0.25f;
 
 	std::vector<int> SEPERATE_ROWS;
+	double CONVERT_COORD_COEF = 1.0 / 40;
 
 	int EDGE_DETECTOR_KERNEL_SIZE = 3;
 	double EDGE_DETECTOR_LOW_THRESH = 100;

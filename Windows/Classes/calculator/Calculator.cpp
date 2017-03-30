@@ -14,6 +14,7 @@ int sb::Calculator::init( const sb::Params& params )
 	_formatter = sb::Formatter( cv::Rect( cropPosition.x, cropPosition.y,
 	                                      cropSize.width, cropSize.height ),
 	                            params.SEPERATE_ROWS,
+	                            params.CONVERT_COORD_COEF,
 	                            params.WARP_SRC_QUAD,
 	                            params.WARP_DST_QUAD );
 

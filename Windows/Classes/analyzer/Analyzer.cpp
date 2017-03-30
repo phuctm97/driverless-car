@@ -13,13 +13,13 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 
 	///// Old values /////
 	std::vector<double> OLD_ROTATIONS = roadInfo.getRotationOfLanes();
-	std::vector<double> OLD_LEFT_POSITIONS( N_SECTIONS, 0 );
-	std::vector<double> OLD_RIGHT_POSITIONS( N_SECTIONS, 0 );
+	std::vector<double> OLD_LEFT_POSITIONS( N_SECTIONS + 1, 0 );
+	std::vector<double> OLD_RIGHT_POSITIONS( N_SECTIONS + 1, 0 );
 
 	OLD_LEFT_POSITIONS[0] = roadInfo.getPositionOfLeftLane();
 	OLD_RIGHT_POSITIONS[0] = roadInfo.getPositionOfRightLane();
 
-	for ( int i = 0; i < N_SECTIONS - 1; i++ ) {
+	for ( int i = 0; i < N_SECTIONS; i++ ) {
 		const int upperRow = frameInfo.getSections()[i].upperRow;
 		const int lowerRow = frameInfo.getSections()[i].lowerRow;
 
@@ -75,14 +75,14 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 			if ( abs( lowerX - OLD_LEFT_POSITIONS[i] ) < 0.25 ) {
 				_sideRatings[lineIndex] -= 1000;
 				_lineRatings[lineIndex] += 100;
-				if( abs(rotation - OLD_ROTATIONS[i]) < 15 ) {
+				if ( abs( rotation - OLD_ROTATIONS[i] ) < 15 ) {
 					_lineRatings[lineIndex] += 1000;
 				}
 			}
 			else if ( abs( lowerX - OLD_RIGHT_POSITIONS[i] ) < 0.25 ) {
 				_sideRatings[lineIndex] += 1000;
 				_lineRatings[lineIndex] += 100;
-				if( abs( rotation - OLD_ROTATIONS[i] ) < 15 ) {
+				if ( abs( rotation - OLD_ROTATIONS[i] ) < 15 ) {
 					_lineRatings[lineIndex] += 1000;
 				}
 			}
@@ -103,9 +103,9 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 			double lowerX1 = frameInfo.convertXToCoord( sectionLineInfo1.second[1] );
 			double rotation1 = frameInfo.convertToRotation( warpedLine1.getAngle() );
 
-			for( int k = 0; k < n_lines; k++ ) {
-				if( j == k ) continue;
-				
+			for ( int k = 0; k < n_lines; k++ ) {
+				if ( j == k ) continue;
+
 				const std::pair<int, cv::Vec2d>& sectionLineInfo2 = sectionInfo.lines[k];
 				const sb::LineInfo warpedLine2 = frameInfo.getWarpedLines()[sectionLineInfo2.first];
 
@@ -119,6 +119,9 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 
 	///// Debug /////
 
+
+	
+	
 	/*// create warped image
 	const int H = static_cast<int>(abs( frameInfo.getTopLeftPoint().y ));
 	const int W = static_cast<int>(abs( frameInfo.getTopLeftPoint().x )) * 2;
@@ -131,12 +134,14 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 		          line.getEndingPoint() + cv::Point2d( W / 2, H ),
 		          cv::Scalar( 0, 0, 255 ), 1 );
 	}
-	for ( int i = 0; i < N_SECTIONS; i++ ) {
+	for ( int i = 0; i < N_SECTIONS + 1; i++ ) {
 		cv::circle( warpedImage,
-		            cv::Point2d( frameInfo.convertXFromCoord( OLD_LEFT_POSITIONS[i] ), frameInfo.getSections()[i].lowerRow ) + cv::Point2d( W / 2, H ),
+		            cv::Point2d( frameInfo.convertXFromCoord( OLD_LEFT_POSITIONS[i] ),
+		                         i < N_SECTIONS ? frameInfo.getSections()[i].lowerRow : frameInfo.getSections()[i - 1].upperRow ) + cv::Point2d( W / 2, H ),
 		            3, cv::Scalar( 255, 255, 255 ), -1 );
 		cv::circle( warpedImage,
-		            cv::Point2d( frameInfo.convertXFromCoord( OLD_RIGHT_POSITIONS[i] ), frameInfo.getSections()[i].lowerRow ) + cv::Point2d( W / 2, H ),
+		            cv::Point2d( frameInfo.convertXFromCoord( OLD_RIGHT_POSITIONS[i] ),
+		                         i < N_SECTIONS ? frameInfo.getSections()[i].lowerRow : frameInfo.getSections()[i - 1].upperRow ) + cv::Point2d( W / 2, H ),
 		            3, cv::Scalar( 255, 255, 255 ), -1 );
 	}
 
@@ -171,9 +176,58 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 		cv::waitKey();
 	}*/
 
-
 	///// Update /////
 
+	//** situation for no lines
+	
+	// position of lanes
+	{
+		double sumPositionXOfLeftLane = 0;
+		double sumPositionXOfRightLane = 0;
+		int n1 = 0;
+		int n2 = 0;
+		for( int i = 0; i < frameInfo.getSections().front().lines.size(); i++ ) {
+			int lineIndex = frameInfo.getSections().front().lines[i].first;
+
+			if( _lineRatings[lineIndex] < 1500 ) continue;
+
+			if( _sideRatings[lineIndex] == 0 ) continue;
+
+			if( _sideRatings[lineIndex] < 0 ) {
+				sumPositionXOfLeftLane += frameInfo.convertXToCoord( frameInfo.getSections().front().lines[i].second[1] );
+				n1++;
+			}
+			else {
+				sumPositionXOfRightLane += frameInfo.convertXToCoord( frameInfo.getSections().front().lines[i].second[1] );
+				n2++;
+			}
+		}
+		roadInfo.setPositionOfLeftLane( sumPositionXOfLeftLane / n1 );
+		roadInfo.setPositionOfRightLane( sumPositionXOfRightLane / n2 );
+	}
+
+	// rotation of lanes
+	{
+		std::vector<double> rotationOfLanes( N_SECTIONS, 0 );
+		for( int i = 0; i < N_SECTIONS; i++ ) {
+			const sb::SectionInfo& sectionInfo = frameInfo.getSections()[i];
+
+			double sumRotation = 0;
+			int n = 0;
+
+			for( int j = 0; j < sectionInfo.lines.size(); j++ ) {
+				int lineIndex = sectionInfo.lines[j].first;
+
+				if( _lineRatings[lineIndex] < 1500 ) continue;
+
+				sumRotation += frameInfo.convertToRotation( frameInfo.getWarpedLines()[lineIndex].getAngle() );
+				n++;
+			}
+
+			rotationOfLanes[i] = sumRotation / n;
+		}
+		roadInfo.setRotationOfLanes( rotationOfLanes );
+	}
 
 	return 0;
 }

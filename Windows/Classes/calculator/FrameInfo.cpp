@@ -5,7 +5,8 @@ sb::FrameInfo::FrameInfo()
 
 void sb::FrameInfo::create( const sb::Params& params )
 {
-	_convertCoordCoef = 1.0 / (params.CROP_SIZE_WIDTH * params.COLOR_FRAME_SIZE.width * 0.5);
+	// _convertCoordCoef = 1.0 / (params.CROP_SIZE_WIDTH * params.COLOR_FRAME_SIZE.width * 0.5);
+	_convertCoordCoef = params.CONVERT_COORD_COEF;
 }
 
 int sb::FrameInfo::create( const cv::Mat& colorImage,
