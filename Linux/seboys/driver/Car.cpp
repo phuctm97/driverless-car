@@ -5,11 +5,11 @@ int Car::init() {
     pca9685 = new PCA9685();
     api_pwm_pca9685_init(pca9685);
 
-    // Start Car Engine
     this->currentState = DIR_FORWARD;
     this->currentVelocity = 30;
     this->currentTheta = 0.0;
 
+    // Start Car Engine
     if (pca9685->error >= 0) {
         api_pwm_set_control(pca9685, this->currentState, this->currentVelocity, this->currentTheta, this->currentState);
     }

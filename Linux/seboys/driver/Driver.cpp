@@ -1,6 +1,6 @@
 #include "driver/Driver.h"
 
-int Driver::init(const sb::Params &params) {
+int Driver::init() {
     this->car = new Car();
 
     int status = this->car->init();
@@ -18,12 +18,12 @@ int Driver::drive(const sb::RoadInfo &roadInfo) {
     int direction = DIR_FORWARD;
 
     float mid_0 = (roadInfo.getLeft(0)  + roadInfo.getRight(0)) / 2.0f;
-    float mid_1 = (roadInfo.getLeft(1) + roadInfo.getRight(1)) / 2.0f;
+    float mid_2 = (roadInfo.getLeft(2) + roadInfo.getRight(2)) / 2.0f;
 
-    float h_1 = 0.25f * VIDEO_FRAME_HEIGHT / VIDEO_FRAME_WIDTH; // ti le 1 phan 4 height tren width
+    float h_2 = 0.25f * VIDEO_FRAME_HEIGHT / VIDEO_FRAME_WIDTH; // ti le 1 phan 4 height tren width
 
-    float road_theta = atan((mid_1 - mid_0) / h_1); // do lech cua duong
-    float theta = atan(mid_2 / h_1); // do lech cua xe so voi tam duong sap den
+    float road_theta = atan((mid_2 - mid_0) / h_2); // do lech cua duong
+    float theta = atan(mid_2 / h_2); // do lech cua xe so voi tam duong sap den
 
     theta = (abs(theta) > abs(road_theta)) ? theta : road_theta;
     theta = (float) theta / CV_PI * 180; // convert to degree
