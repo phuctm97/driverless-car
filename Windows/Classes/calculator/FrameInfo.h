@@ -8,48 +8,48 @@
 
 namespace sb
 {
-
 class FrameInfo
 {
 private:
 	double _convertCoordCoef;
 
-	cv::Point2d _topLeftPoint;
-
 	cv::Mat _colorImage;
 
 	cv::Mat _depthImage;
 
-	std::vector<sb::LineInfo> _lines;
+	std::vector<sb::LineInfo> _lineInfos;
 
-	std::vector<sb::LineInfo> _warpedLines;
+	std::vector<sb::LineInfo> _warpedLineInfos;
 
-	std::vector<sb::SectionInfo> _sections;
+	std::vector<sb::SectionInfo> _sectionInfos;
 
 public:
-	FrameInfo();
+	FrameInfo()
+		: _convertCoordCoef( 1.0 ) {}
 
 	void create( const sb::Params& params );
 
-	int create( const cv::Mat& colorImage,
-	            const cv::Mat& depthImage,
-	            const sb::Formatter& formatter,
-	            const sb::EdgeDetector& edgeDetector,
-	            const sb::LineDetector& lineDetector );
-
 	const cv::Mat& getColorImage() const;
+
+	void setColorImage( const cv::Mat& colorImage );
 
 	const cv::Mat& getDepthImage() const;
 
-	const cv::Point2d& getTopLeftPoint() const;
+	void setDepthImage( const cv::Mat& depthImage );
 
-	const std::vector<sb::LineInfo>& getLines() const;
+	const std::vector<sb::LineInfo>& getLineInfos() const;
 
-	const std::vector<sb::LineInfo>& getWarpedLines() const;
+	void setLineInfos( const std::vector<sb::LineInfo>& lineInfos );
 
-	const std::vector<sb::SectionInfo>& getSections() const;
+	const std::vector<sb::LineInfo>& getWarpedLineInfos() const;
 
-	double convertXToCoord( double x ) const;
+	void setWarpedLineInfos( const std::vector<sb::LineInfo>& warpedLines );
+
+	const std::vector<sb::SectionInfo>& getSectionInfos() const;
+
+	void setSectionInfos( const std::vector<sb::SectionInfo>& sectionInfos );
+
+	/*double convertXToCoord( double x ) const;
 
 	double convertYToCoord( double y ) const;
 
@@ -63,7 +63,7 @@ public:
 
 	double convertToRotation( double angle ) const;
 
-	double convertFromRotation( double rotation ) const;
+	double convertFromRotation( double rotation ) const;*/
 };
 }
 

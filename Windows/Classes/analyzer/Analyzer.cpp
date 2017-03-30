@@ -8,7 +8,7 @@ int sb::Analyzer::init( const sb::Params& params )
 
 int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInfo ) const
 {
-	const int N_LINES = static_cast<int>(frameInfo.getWarpedLines().size());
+	const int N_LINES = static_cast<int>(frameInfo.getWarpedLineInfos().size());
 	const int N_SECTIONS = static_cast<int>(roadInfo.getRotationOfLanes().size());
 
 	///// Old values /////
@@ -20,8 +20,8 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 	OLD_RIGHT_POSITIONS[0] = roadInfo.getPositionOfRightLane();
 
 	for ( int i = 0; i < N_SECTIONS; i++ ) {
-		const int upperRow = frameInfo.getSections()[i].upperRow;
-		const int lowerRow = frameInfo.getSections()[i].lowerRow;
+		const int upperRow = frameInfo.getSectionInfos()[i].upperRow;
+		const int lowerRow = frameInfo.getSectionInfos()[i].lowerRow;
 
 		const sb::Line upperLine( cv::Point2d( 0, upperRow ), cv::Point2d( 1, upperRow ) );
 
@@ -47,8 +47,8 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 
 	// independent ratings in whole frame
 	for ( int i = 0; i < N_LINES; i++ ) {
-		const sb::LineInfo& line = frameInfo.getLines()[i];
-		const sb::LineInfo& warpedLine = frameInfo.getWarpedLines()[i];
+		const sb::LineInfo& line = frameInfo.getLineInfos()[i];
+		const sb::LineInfo& warpedLine = frameInfo.getWarpedLineInfos()[i];
 
 		// length
 		_lineRatings[i] += warpedLine.getLength();
@@ -59,12 +59,12 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 
 	// independent ratings in section
 	for ( int i = 0; i < N_SECTIONS; i++ ) {
-		const sb::SectionInfo& sectionInfo = frameInfo.getSections()[i];
+		const sb::SectionInfo& sectionInfo = frameInfo.getSectionInfos()[i];
 		const int n_lines = static_cast<int>(sectionInfo.lines.size());
 
 		for ( int j = 0; j < n_lines; j++ ) {
 			const std::pair<int, cv::Vec2d>& sectionLineInfo = sectionInfo.lines[j];
-			const sb::LineInfo warpedLine = frameInfo.getWarpedLines()[sectionLineInfo.first];
+			const sb::LineInfo warpedLine = frameInfo.getWarpedLineInfos()[sectionLineInfo.first];
 
 			const int lineIndex = sectionLineInfo.first;
 			const double upperX = frameInfo.convertXToCoord( sectionLineInfo.second[0] );
@@ -92,12 +92,12 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 
 	// dependent ratings
 	for ( int i = 0; i < N_SECTIONS; i++ ) {
-		const sb::SectionInfo& sectionInfo = frameInfo.getSections()[i];
+		const sb::SectionInfo& sectionInfo = frameInfo.getSectionInfos()[i];
 		const int n_lines = static_cast<int>(sectionInfo.lines.size());
 
 		for ( int j = 0; j < n_lines; j++ ) {
 			const std::pair<int, cv::Vec2d>& sectionLineInfo1 = sectionInfo.lines[j];
-			const sb::LineInfo warpedLine1 = frameInfo.getWarpedLines()[sectionLineInfo1.first];
+			const sb::LineInfo warpedLine1 = frameInfo.getWarpedLineInfos()[sectionLineInfo1.first];
 
 			double upperX1 = frameInfo.convertXToCoord( sectionLineInfo1.second[0] );
 			double lowerX1 = frameInfo.convertXToCoord( sectionLineInfo1.second[1] );
@@ -107,7 +107,7 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 				if ( j == k ) continue;
 
 				const std::pair<int, cv::Vec2d>& sectionLineInfo2 = sectionInfo.lines[k];
-				const sb::LineInfo warpedLine2 = frameInfo.getWarpedLines()[sectionLineInfo2.first];
+				const sb::LineInfo warpedLine2 = frameInfo.getWarpedLineInfos()[sectionLineInfo2.first];
 
 				double upperX2 = frameInfo.convertXToCoord( sectionLineInfo2.second[0] );
 				double lowerX2 = frameInfo.convertXToCoord( sectionLineInfo2.second[1] );
@@ -128,7 +128,7 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 	cv::Mat warpedImage( frameInfo.getColorImage().rows + H,
 	                     frameInfo.getColorImage().cols + W, CV_8UC3, cv::Scalar( 0, 0, 0 ) );
 
-	for ( const auto& line : frameInfo.getWarpedLines() ) {
+	for ( const auto& line : frameInfo.getWarpedLineInfos() ) {
 		cv::line( warpedImage,
 		          line.getStartingPoint() + cv::Point2d( W / 2, H ),
 		          line.getEndingPoint() + cv::Point2d( W / 2, H ),
@@ -137,18 +137,18 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 	for ( int i = 0; i < N_SECTIONS + 1; i++ ) {
 		cv::circle( warpedImage,
 		            cv::Point2d( frameInfo.convertXFromCoord( OLD_LEFT_POSITIONS[i] ),
-		                         i < N_SECTIONS ? frameInfo.getSections()[i].lowerRow : frameInfo.getSections()[i - 1].upperRow ) + cv::Point2d( W / 2, H ),
+		                         i < N_SECTIONS ? frameInfo.getSectionInfos()[i].lowerRow : frameInfo.getSectionInfos()[i - 1].upperRow ) + cv::Point2d( W / 2, H ),
 		            3, cv::Scalar( 255, 255, 255 ), -1 );
 		cv::circle( warpedImage,
 		            cv::Point2d( frameInfo.convertXFromCoord( OLD_RIGHT_POSITIONS[i] ),
-		                         i < N_SECTIONS ? frameInfo.getSections()[i].lowerRow : frameInfo.getSections()[i - 1].upperRow ) + cv::Point2d( W / 2, H ),
+		                         i < N_SECTIONS ? frameInfo.getSectionInfos()[i].lowerRow : frameInfo.getSectionInfos()[i - 1].upperRow ) + cv::Point2d( W / 2, H ),
 		            3, cv::Scalar( 255, 255, 255 ), -1 );
 	}
 
 	// debug each lines
 	for ( int i = 0; i < N_LINES; i++ ) {
-		const sb::LineInfo& line = frameInfo.getLines()[i];
-		const sb::LineInfo& warpedLine = frameInfo.getWarpedLines()[i];
+		const sb::LineInfo& line = frameInfo.getLineInfos()[i];
+		const sb::LineInfo& warpedLine = frameInfo.getWarpedLineInfos()[i];
 
 		cv::Mat tempImage = warpedImage.clone();
 		cv::line( tempImage,
@@ -186,19 +186,19 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 		double sumPositionXOfRightLane = 0;
 		int n1 = 0;
 		int n2 = 0;
-		for( int i = 0; i < frameInfo.getSections().front().lines.size(); i++ ) {
-			int lineIndex = frameInfo.getSections().front().lines[i].first;
+		for( int i = 0; i < frameInfo.getSectionInfos().front().lines.size(); i++ ) {
+			int lineIndex = frameInfo.getSectionInfos().front().lines[i].first;
 
 			if( _lineRatings[lineIndex] < 1500 ) continue;
 
 			if( _sideRatings[lineIndex] == 0 ) continue;
 
 			if( _sideRatings[lineIndex] < 0 ) {
-				sumPositionXOfLeftLane += frameInfo.convertXToCoord( frameInfo.getSections().front().lines[i].second[1] );
+				sumPositionXOfLeftLane += frameInfo.convertXToCoord( frameInfo.getSectionInfos().front().lines[i].second[1] );
 				n1++;
 			}
 			else {
-				sumPositionXOfRightLane += frameInfo.convertXToCoord( frameInfo.getSections().front().lines[i].second[1] );
+				sumPositionXOfRightLane += frameInfo.convertXToCoord( frameInfo.getSectionInfos().front().lines[i].second[1] );
 				n2++;
 			}
 		}
@@ -210,7 +210,7 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 	{
 		std::vector<double> rotationOfLanes( N_SECTIONS, 0 );
 		for( int i = 0; i < N_SECTIONS; i++ ) {
-			const sb::SectionInfo& sectionInfo = frameInfo.getSections()[i];
+			const sb::SectionInfo& sectionInfo = frameInfo.getSectionInfos()[i];
 
 			double sumRotation = 0;
 			int n = 0;
@@ -220,7 +220,7 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 
 				if( _lineRatings[lineIndex] < 1500 ) continue;
 
-				sumRotation += frameInfo.convertToRotation( frameInfo.getWarpedLines()[lineIndex].getAngle() );
+				sumRotation += frameInfo.convertToRotation( frameInfo.getWarpedLineInfos()[lineIndex].getAngle() );
 				n++;
 			}
 
@@ -250,9 +250,9 @@ int sb::Analyzer::analyze1( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadIn
 	int n2 = 0;
 	int n3 = 0;
 
-	for ( int i = 0; i < static_cast<int>(frameInfo.getWarpedLines().size()); i++ ) {
+	for ( int i = 0; i < static_cast<int>(frameInfo.getWarpedLineInfos().size()); i++ ) {
 
-		const sb::LineInfo& line = frameInfo.getWarpedLines()[i];
+		const sb::LineInfo& line = frameInfo.getWarpedLineInfos()[i];
 
 		double rotation = 90 - line.getAngle();
 		double positionX = line.getEndingPoint().x / FRAME_HALF_WIDTH - 1;

@@ -26,8 +26,7 @@ void sb::Params::write( cv::FileStorage& fs ) const
 			<< "Group_1" << "<Image manipulating fields>"
 			<< "COLOR_FRAME_SIZE" << COLOR_FRAME_SIZE
 			<< "DEPTH_FRAME_SIZE" << DEPTH_FRAME_SIZE
-			<< "CROP_SIZE_WIDTH" << CROP_SIZE_WIDTH
-			<< "CROP_SIZE_HEIGHT" << CROP_SIZE_HEIGHT
+			<< "CROPPED_FRAME_SIZE" << CROPPED_FRAME_SIZE
 			<< "WARP_SRC_QUAD" << std::vector<cv::Point2f>( WARP_SRC_QUAD, WARP_SRC_QUAD + 4 )
 			<< "WARP_DST_QUAD" << std::vector<cv::Point2f>( WARP_DST_QUAD, WARP_DST_QUAD + 4 )
 
@@ -57,8 +56,7 @@ void sb::Params::read( const cv::FileNode& node )
 {
 	node["COLOR_FRAME_SIZE"] >> COLOR_FRAME_SIZE;
 	node["DEPTH_FRAME_SIZE"] >> DEPTH_FRAME_SIZE;
-	node["CROP_SIZE_WIDTH"] >> CROP_SIZE_WIDTH;
-	node["CROP_SIZE_HEIGHT"] >> CROP_SIZE_HEIGHT;
+	node["CROPPED_FRAME_SIZE"] >> CROPPED_FRAME_SIZE;
 
 	std::vector<cv::Point2f> srcQuadVec;
 	node["WARP_SRC_QUAD"] >> srcQuadVec;
@@ -67,7 +65,6 @@ void sb::Params::read( const cv::FileNode& node )
 	std::vector<cv::Point2f> dstQuadVec;
 	node["WARP_DST_QUAD"] >> dstQuadVec;
 	std::copy( dstQuadVec.begin(), dstQuadVec.end(), WARP_DST_QUAD );
-
 
 	node["EDGE_DETECTOR_KERNEL_SIZE"] >> EDGE_DETECTOR_KERNEL_SIZE;
 	node["EDGE_DETECTOR_LOW_THRESH"] >> EDGE_DETECTOR_LOW_THRESH;

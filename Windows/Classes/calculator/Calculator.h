@@ -23,6 +23,11 @@ public:
 	               sb::FrameInfo& frameInfo ) const;
 
 	void release();
+
+private:
+	void calculateLineInfos( const std::vector<sb::Line>& lines,
+													 const cv::Mat& colorImage,
+													 std::vector<sb::LineInfo>& outputLineInfos ) const;
 };
 }
 

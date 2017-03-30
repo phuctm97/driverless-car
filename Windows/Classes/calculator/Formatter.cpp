@@ -1,16 +1,21 @@
 #include "Formatter.h"
 
 sb::Formatter::Formatter( const cv::Rect& cropBox,
-                          const std::vector<int>& separateRows,
-                          double convertCoordCoef,
                           const cv::Point2f* warpOriginalSourceQuad,
-                          const cv::Point2f* warpOriginalDestinationQuad )
+                          const cv::Point2f* warpOriginalDestinationQuad,
+                          double convertCoordCoef,
+                          const std::vector<int>& separateRows )
 	: _cropBox( cropBox ), _separateRows( separateRows ), _convertCoordCoef( convertCoordCoef )
 {
+	cv::Point2f warpSourceQuad[4];
+	cv::Point2f warpDestinationQuad[4];
+
 	for ( int i = 0; i < 4; i++ ) {
-		_warpSourceQuad[i] = warpOriginalSourceQuad[i] - cv::Point2f( _cropBox.tl() );
-		_warpDestinationQuad[i] = warpOriginalDestinationQuad[i] - cv::Point2f( _cropBox.tl() );
+		warpSourceQuad[i] = warpOriginalSourceQuad[i] - cv::Point2f( _cropBox.tl() );
+		warpDestinationQuad[i] = warpOriginalDestinationQuad[i] - cv::Point2f( _cropBox.tl() );
 	}
+
+	_warpMatrix = cv::getPerspectiveTransform( warpSourceQuad, warpDestinationQuad );
 }
 
 int sb::Formatter::crop( const cv::Mat& inputImage, cv::Mat& outputImage ) const
@@ -28,8 +33,7 @@ int sb::Formatter::crop( const cv::Mat& inputImage, cv::Mat& outputImage ) const
 }
 
 int sb::Formatter::warp( const std::vector<sb::LineInfo> originalLines,
-                         std::vector<sb::LineInfo>& outputLines,
-                         cv::Point2d& topLeftPoint ) const
+                         std::vector<sb::LineInfo>& outputLines ) const
 {
 	outputLines.clear();
 
@@ -39,8 +43,6 @@ int sb::Formatter::warp( const std::vector<sb::LineInfo> originalLines,
 
 	///// warp /////
 
-	cv::Matx33f warpMatrix = cv::getPerspectiveTransform( _warpSourceQuad, _warpDestinationQuad );
-
 	std::vector<cv::Point2f> startingPoints( N_LINES );
 	std::vector<cv::Point2f> endingPoints( N_LINES );
 
@@ -49,21 +51,16 @@ int sb::Formatter::warp( const std::vector<sb::LineInfo> originalLines,
 		endingPoints[i] = originalLines[i].getEndingPoint();
 	}
 
-	cv::perspectiveTransform( startingPoints, startingPoints, warpMatrix );
+	cv::perspectiveTransform( startingPoints, startingPoints, _warpMatrix );
 
-	cv::perspectiveTransform( endingPoints, endingPoints, warpMatrix );
+	cv::perspectiveTransform( endingPoints, endingPoints, _warpMatrix );
 
 	///// push to output array /////
 
 	outputLines.reserve( N_LINES );
 
 	for ( int i = 0; i < N_LINES; i++ ) {
-		// find top left point
-		topLeftPoint.x = MIN( topLeftPoint.x, startingPoints[i].x );
-		topLeftPoint.x = MIN( topLeftPoint.x, endingPoints[i].x );
-		topLeftPoint.y = MIN( topLeftPoint.y, startingPoints[i].y );
-		topLeftPoint.y = MIN( topLeftPoint.y, endingPoints[i].y );
-
+		sb::LineInfo warpedLineInfo( sb::Line( startingPoints[i], endingPoints[i] ), originalLines[i].getAverageColor() );
 		outputLines.push_back( sb::LineInfo( sb::Line( startingPoints[i], endingPoints[i] ) ) );
 	}
 

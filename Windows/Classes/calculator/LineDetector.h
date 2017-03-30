@@ -30,10 +30,6 @@ public:
 
 	void apply( const cv::Mat& binaryImage,
 	            std::vector<sb::Line>& lines ) const;
-
-	void apply( const cv::Mat& binaryImage,
-							const cv::Mat& colorImage, 
-							std::vector<sb::LineInfo>& lines ) const;
 };
 }
 #endif //!__SB_LINE_DETECTOR_H__

@@ -140,13 +140,13 @@ void test( const sb::RawContent& rawContent,
 	std::vector<cv::Point2d> rightLanePositions( N_SECTIONS + 1, cv::Point2d( 0, 0 ) );
 
 	leftLanePositions[0] = cv::Point2d( frameInfo.convertXFromCoord( roadInfo.getPositionOfLeftLane() ),
-	                                    frameInfo.getSections()[0].lowerRow );
+	                                    frameInfo.getSectionInfos()[0].lowerRow );
 	rightLanePositions[0] = cv::Point2d( frameInfo.convertXFromCoord( roadInfo.getPositionOfRightLane() ),
-	                                     frameInfo.getSections()[0].lowerRow );
+	                                     frameInfo.getSectionInfos()[0].lowerRow );
 
 	for ( int i = 0; i < N_SECTIONS; i++ ) {
-		const int upperRow = frameInfo.getSections()[i].upperRow;
-		const int lowerRow = frameInfo.getSections()[i].lowerRow;
+		const int upperRow = frameInfo.getSectionInfos()[i].upperRow;
+		const int lowerRow = frameInfo.getSectionInfos()[i].lowerRow;
 
 		const sb::Line upperLine( cv::Point2d( 0, upperRow ), cv::Point2d( 1, upperRow ) );
 

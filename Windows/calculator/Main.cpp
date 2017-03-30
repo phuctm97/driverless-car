@@ -86,7 +86,7 @@ void test( const sb::RawContent& rawContent,
 	                                      frameInfo.getColorImage().cols + EXPAND_WIDTH,
 	                                      CV_8UC3 );
 
-	for ( const auto& warpedLine : frameInfo.getWarpedLines() ) {
+	for ( const auto& warpedLine : frameInfo.getWarpedLineInfos() ) {
 		cv::line(
 		         warpedImage,
 		         warpedLine.getStartingPoint() + cv::Point2d( EXPAND_WIDTH / 2, EXPAND_HEIGHT ),
@@ -98,14 +98,14 @@ void test( const sb::RawContent& rawContent,
 	cv::destroyWindow( WINDOW_NAME );
 
 	// debug each section
-	for ( int i = 0; i < static_cast<int>(frameInfo.getSections().size()); i++ ) {
-		const sb::SectionInfo& sectionInfo = frameInfo.getSections()[i];
+	for ( int i = 0; i < static_cast<int>(frameInfo.getSectionInfos().size()); i++ ) {
+		const sb::SectionInfo& sectionInfo = frameInfo.getSectionInfos()[i];
 
 		// debug each line in section
 		for ( int j = 0; j < static_cast<int>(sectionInfo.lines.size()); j++ ) {
 			const std::pair<int, cv::Vec2d> sectionLine = sectionInfo.lines[j];
 
-			const sb::LineInfo& line = frameInfo.getLines()[sectionLine.first];
+			const sb::LineInfo& line = frameInfo.getLineInfos()[sectionLine.first];
 
 			cv::Mat tempFrame = frameInfo.getColorImage().clone();
 
@@ -116,7 +116,7 @@ void test( const sb::RawContent& rawContent,
 
 			cv::imshow( "Original Image", tempFrame );
 
-			const sb::LineInfo& warpedLine = frameInfo.getWarpedLines()[sectionLine.first];
+			const sb::LineInfo& warpedLine = frameInfo.getWarpedLineInfos()[sectionLine.first];
 
 			cv::Mat tempImage = warpedImage.clone();
 
@@ -135,9 +135,9 @@ void test( const sb::RawContent& rawContent,
 
 			std::stringstream stringBuilder;
 
-			double rotation = frameInfo.convertToRotation( warpedLine.getAngle() );
-			double upperX = frameInfo.convertXToCoord( sectionLine.second[0] );
-			double lowerX = frameInfo.convertXToCoord( sectionLine.second[1] );
+			double rotation = /*frameInfo.convertToRotation*/( warpedLine.getAngle() );
+			double upperX = /*frameInfo.convertXToCoord*/( sectionLine.second[0] );
+			double lowerX = /*frameInfo.convertXToCoord*/( sectionLine.second[1] );
 
 			stringBuilder << "Length: " << warpedLine.getLength();
 			cv::putText( tempImage,

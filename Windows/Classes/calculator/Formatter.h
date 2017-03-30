@@ -12,32 +12,29 @@ class Formatter
 private:
 	cv::Rect _cropBox;
 
-	std::vector<int> _separateRows;
+	cv::Matx33f _warpMatrix;
 
 	double _convertCoordCoef;
 
-	cv::Point2f _warpSourceQuad[4];
-
-	cv::Point2f _warpDestinationQuad[4];
+	std::vector<int> _separateRows;
 
 public:
 	Formatter() {}
 
 	Formatter( const cv::Rect& cropBox,
-						 const std::vector<int>& separateRows,
-						 double convertCoordCoef,
 	           const cv::Point2f* warpOriginalSourceQuad,
-	           const cv::Point2f* warpOriginalDestinationQuad );
+	           const cv::Point2f* warpOriginalDestinationQuad,
+	           double convertCoordCoef,
+	           const std::vector<int>& separateRows );
 
 	int crop( const cv::Mat& inputImage, cv::Mat& outputImage ) const;
 
 	int warp( const std::vector<sb::LineInfo> originalLines,
-	          std::vector<sb::LineInfo>& outputLines,
-	          cv::Point2d& topLeftPoint ) const;
+	          std::vector<sb::LineInfo>& outputLines ) const;
 
 	int split( const std::vector<sb::LineInfo> warpedLines,
-						 int containerHeight,
-						 std::vector<sb::SectionInfo>& outputSections ) const;
+	           int containerHeight,
+	           std::vector<sb::SectionInfo>& outputSections ) const;
 
 	double convertXToCoord( double x ) const;
 
