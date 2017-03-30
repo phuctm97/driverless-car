@@ -9,14 +9,12 @@ class Driver {
 private:
     sb::Car *car;
 
-    float current_thera_road; // xu huong duong hien tai
+    int cur_velocity;
+    float cur_road_theta; // xu huong duong hien tai
+    double cur_theta;
 
 public:
-    Driver() : direction(DIR_FORWARD),
-               velocity(30),
-               theta(0),
-               current_direction(DIR_BRAKE),
-               current_thera_road(0) {}
+    Driver() {}
 
     int init(const sb::Params &params);
 
