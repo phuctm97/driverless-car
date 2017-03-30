@@ -14,17 +14,19 @@ private:
     PCA9685 *pca9685; // driver
 
     int currentState;
+    int currentVelocity;
+    double currentTheta;
 
 public:
     Car() {}
 
     int init();
-
     int update(int &direction, int &velocity, double &steeringAngle);
-
     int release();
 
     int getCurrentState();
+    int getCurrentVelocity();
+    double getCurrentTheta();
 };
 
 

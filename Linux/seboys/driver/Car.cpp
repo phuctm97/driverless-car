@@ -6,9 +6,12 @@ int Car::init() {
     api_pwm_pca9685_init(pca9685);
 
     // Start Car Engine
-    this->currentState = DIR_BRAKE;
+    this->currentState = DIR_FORWARD;
+    this->currentVelocity = 30;
+    this->currentTheta = 0.0;
+
     if (pca9685->error >= 0) {
-        api_pwm_set_control(pca9685, this->currentState, 0, 0.0, this->currentState);
+        api_pwm_set_control(pca9685, this->currentState, this->currentVelocity, this->currentTheta, this->currentState);
     }
 
     /////////  Init UART here   ///////////////////////////////////////////////
@@ -39,12 +42,10 @@ int Car::update(int &direction, int &velocity, double &steeringAngle) {
     api_pwm_set_control(pca9685, direction, velocity, steeringAngle, currentState);
 
     this->currentState = direction;
+    this->currentVelocity = velocity;
+    this->currentTheta = steeringAngle;
 
     return 0;
-}
-
-int Car::getCurrentState() {
-    return this->currentState;
 }
 
 int Car::release() {
@@ -52,4 +53,16 @@ int Car::release() {
     delete this->pca9685;
     this->pca9685 = nullptr;
     return 0;
+}
+
+int Car::getCurrentState() {
+    return this->currentState;
+}
+
+int getCurrentVelocity() {
+  return this->currentVelocity;
+}
+
+double getCurrentTheta() {
+  return this->currentTheta;
 }

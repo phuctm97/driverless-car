@@ -1,17 +1,13 @@
 #ifndef __SB_DRIVER_H__
 #define __SB_DRIVER_H__
 
-#include "Params.h"
-#include "analyzer/RoadInfo.h"
+#include <opencv2/opencv.hpp>
 #include "driver/Car.h"
 
 class Driver {
 private:
     sb::Car *car;
-
-    int cur_velocity;
     float cur_road_theta; // xu huong duong hien tai
-    double cur_theta;
 
 public:
     Driver() {}
