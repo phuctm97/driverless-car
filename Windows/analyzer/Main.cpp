@@ -2,9 +2,7 @@
 #include "../Classes/collector/Collector.h"
 #include "../Classes/analyzer/Analyzer.h"
 #include "../Classes/Timer.h"
-
-#define WINDOW_EGO_VIEW "Ego-View"
-#define WINDOW_BIRDEYE_VIEW "Birdeye-View"
+#include <conio.h>
 
 int init( sb::Collector& collector,
           sb::Calculator& calculator,
@@ -14,23 +12,27 @@ int init( sb::Collector& collector,
 void test( const sb::Calculator& calculator,
            const sb::RawContent& rawContent,
            const sb::FrameInfo& frameInfo,
-           const sb::RoadInfo& roadInfo,
-           const sb::Params& params );
+           const sb::RoadInfo& roadInfo );
 
 void release( sb::Collector& collector,
               sb::Calculator& calculator,
               sb::Analyzer& analyzer );
 
-int main()
+int main( const int argc, const char** argv )
 {
-	// Parameters container for every component
+	if ( argc < 2 ) {
+		std::cerr << "Can't find argument for Params path" << std::endl;
+		return -1;
+	}
+
+	// Application parameters
 	sb::Params params;
-	params.load( PARAMS_PATH );
+	params.load( argv[1] );
 
 	// Timer for performance test
 	sb::Timer timer;
 
-	// Data sent&receive bewteen components
+	// Data sent&receive between components
 	sb::RawContent rawContent;
 	rawContent.create( params );
 
@@ -40,7 +42,7 @@ int main()
 	sb::RoadInfo roadInfo;
 	roadInfo.create( params );
 
-	// Main Components
+	// Main components
 	sb::Collector collector;
 	sb::Calculator calculator;
 	sb::Analyzer analyzer;
@@ -51,48 +53,106 @@ int main()
 		return -1;
 	}
 
-#ifdef _DEBUG
-	cv::namedWindow( WINDOW_EGO_VIEW, CV_WINDOW_AUTOSIZE );
-	cv::namedWindow( WINDOW_BIRDEYE_VIEW, CV_WINDOW_AUTOSIZE );
-	cv::waitKey();
-#endif
+	// Pressed key
+	char key = 0;
+	std::cout << "Enter 's' to start! ";
+	while ( key != 's' ) std::cin >> key;
+
+	// Timer
+	int timerTickCount = 0;
+	timer.reset( "entire-job" );
+
+	///// <Result-writer> /////
+	cv::VideoWriter colorAvi;
+	if ( argc > 2 ) {
+		colorAvi.open( argv[2], CV_FOURCC( 'M', 'J', 'P', 'G' ), 15, params.COLOR_FRAME_SIZE );
+	}
+
+	cv::FileStorage roadInfoStream;
+	if ( argc > 3 ) {
+		roadInfoStream.open( argv[3], cv::FileStorage::WRITE );
+	}
+	int frameCount = 0;
+	///// </Result-writer> /////
 
 	while ( true ) {
 		timer.reset( "total" );
 
+		////// <Collector> /////
+
 		timer.reset( "collector" );
 		if ( collector.collect( rawContent ) < 0 ) {
-			std::cerr << "Collector collects failed." << std::endl;
+			std::cerr << "Collector collect failed." << std::endl;
 			break;
 		}
 		std::cout << "Collector: " << timer.milliseconds( "collector" ) << "ms." << std::endl;
 
+		////// </Collector> /////
+
+		////// <Calculator> /////
+
 		timer.reset( "calculator" );
 		if ( calculator.calculate( rawContent, frameInfo ) < 0 ) {
-			std::cerr << "Calculator calculates failed." << std::endl;
+			std::cerr << "Calculator calculate failed." << std::endl;
 			break;
 		}
 		std::cout << "Calculator: " << timer.milliseconds( "calculator" ) << "ms." << std::endl;
 
+		////// </Calculator> /////
+
+		////// <Analyzer> /////
+
 		timer.reset( "analyzer" );
 		if ( analyzer.analyze( frameInfo, roadInfo ) ) {
-			std::cerr << "Analyzer analyzes failed." << std::endl;
+			std::cerr << "Analyzer analyze failed." << std::endl;
 			break;
 		}
 		std::cout << "Analyzer: " << timer.milliseconds( "analyzer" ) << "ms." << std::endl;
 
-		std::cout
-				<< "Executed time: " << timer.milliseconds( "total" ) << ". "
-				<< "FPS: " << timer.fps( "total" ) << std::endl;
+		////// </Analyzer> /////
 
-#ifdef _DEBUG
-		test( calculator, rawContent, frameInfo, roadInfo, params );
+		///// <Timer> /////
+		std::cout << "Executed time: " << timer.milliseconds( "total" ) << ". " << "FPS: " << timer.fps( "total" ) << "." << std::endl;
+		timerTickCount++;
+		///// </Timer> /////
 
-		if ( cv::waitKey( MAX( 1, 66 - timer.milliseconds( "total" ) ) ) == KEY_TO_ESCAPE ) break;
-#endif
+		///// <Test> /////
+		test( calculator, rawContent, frameInfo, roadInfo );
+		///// <Test> /////
+
+		///// <Result-writer> /////
+		if( colorAvi.isOpened() && !rawContent.getColorImage().empty() ) {
+			colorAvi << rawContent.getColorImage();
+		}
+		
+		if( roadInfoStream.isOpened() ) {
+			std::stringstream stringBuilder;
+			stringBuilder << "road_" << frameCount++;
+			roadInfoStream << stringBuilder.str() << roadInfo;
+		}
+		///// </Result-writer> /////
+
+		///// <User interuption> /////
+		key = static_cast<char>(_kbhit());
+		if ( key == 'f' ) break;
+		///// </User interuption> /////
 	}
 
+	// Performance conclusion
+	if ( timerTickCount > 0 ) {
+		std::cout << std::endl << "Average executiton time: " << timer.milliseconds( "entire-job" ) / timerTickCount << "ms." << std::endl;
+	}
+
+	// Release components
 	release( collector, calculator, analyzer );
+
+	///// <Result-writer> /////
+	colorAvi.release();
+
+	roadInfoStream << "frame_count" << frameCount;
+	roadInfoStream.release();
+	///// </Result-writer> /////
+
 	return 0;
 }
 
@@ -122,8 +182,7 @@ int init( sb::Collector& collector,
 void test( const sb::Calculator& calculator,
            const sb::RawContent& rawContent,
            const sb::FrameInfo& frameInfo,
-           const sb::RoadInfo& roadInfo,
-           const sb::Params& params )
+           const sb::RoadInfo& roadInfo )
 {
 	///// Init image /////
 	const int N_SECTIONS = static_cast<int>(frameInfo.getSectionInfos().size());
@@ -145,7 +204,7 @@ void test( const sb::Calculator& calculator,
 
 	std::vector<cv::Point2d> leftKnots( N_SECTIONS + 1, cv::Point2d( 0, 0 ) );
 	std::vector<cv::Point2d> rightKnots( N_SECTIONS + 1, cv::Point2d( 0, 0 ) );
-	
+
 	for ( int i = 0; i < N_SECTIONS + 1; i++ ) {
 		leftKnots[i] = calculator.convertFromCoord( roadInfo.getLeftKnots()[i] );
 		rightKnots[i] = calculator.convertFromCoord( roadInfo.getRightKnots()[i] );
@@ -173,11 +232,11 @@ void test( const sb::Calculator& calculator,
 	               CAR_POSITION + cv::Point( CAR_SIZE.width / 2, CAR_SIZE.height ) + cv::Point( EXPAND_SIZE.width / 2, EXPAND_SIZE.height ),
 	               cv::Scalar( 0, 255, 255 ), 4 );
 
-	cv::imshow( WINDOW_EGO_VIEW, rawContent.getColorImage() );
+	cv::imshow( "Ego-view", rawContent.getColorImage() );
 
-	cv::imshow( WINDOW_BIRDEYE_VIEW, radarImage );
+	cv::imshow( "Bird-eye view", radarImage );
 
-	cv::waitKey();
+	cv::waitKey( 33 );
 }
 
 void release( sb::Collector& collector,

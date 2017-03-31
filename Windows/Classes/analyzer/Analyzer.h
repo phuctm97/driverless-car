@@ -29,3 +29,4 @@ public:
 }
 
 #endif //!__SB_ANALYZER_H__
+

@@ -67,3 +67,4 @@ double sb::FrameInfo::convertFromRotation( double rotation ) const
 {
 	return 90 - rotation;
 }*/
+

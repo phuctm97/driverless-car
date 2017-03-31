@@ -48,6 +48,12 @@ void sb::Params::write( cv::FileStorage& fs ) const
 			<< "INITIAL_POSITION_OF_RIGHT_LANE" << INITIAL_POSITION_OF_RIGHT_LANE
 			<< "INITIAL_ROTATION_OF_LANES" << INITIAL_ROTATION_OF_LANES
 
+			<< "Group_4" << "<Parameters for vehicle>"
+			<< "MIN_STEERING_ANGLE" << MIN_STEERING_ANGLE
+			<< "MAX_STEERING_ANGLE" << MAX_STEERING_ANGLE
+			<< "MAX_VELOCITY" << MAX_VELOCITY
+			<< "INITIAL_VELOCITY" << INITIAL_VELOCITY
+
 			<< "}";
 }
 
@@ -80,6 +86,11 @@ void sb::Params::read( const cv::FileNode& node )
 	node["INITIAL_POSITION_OF_LEFT_LANE"] >> INITIAL_POSITION_OF_LEFT_LANE;
 	node["INITIAL_POSITION_OF_RIGHT_LANE"] >> INITIAL_POSITION_OF_RIGHT_LANE;
 	node["INITIAL_ROTATION_OF_LANES"] >> INITIAL_ROTATION_OF_LANES;
+
+	node["MIN_STEERING_ANGLE"] >> MIN_STEERING_ANGLE;
+	node["MAX_STEERING_ANGLE"] >> MAX_STEERING_ANGLE;
+	node["MAX_VELOCITY"] >> MAX_VELOCITY;
+	node["INITIAL_VELOCITY"] >> INITIAL_VELOCITY;
 }
 
 void sb::write( cv::FileStorage& fs, const std::string&, const sb::Params& data )

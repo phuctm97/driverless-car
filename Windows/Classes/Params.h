@@ -5,6 +5,7 @@
 
 #define PARAMS_YAML_FIELD_NAME "Params"
 
+
 namespace sb
 {
 struct Params
@@ -34,6 +35,11 @@ struct Params
 	std::vector<double> INITIAL_ROTATION_OF_LANES;
 	double INITIAL_POSITION_OF_LEFT_LANE = -0.7;
 	double INITIAL_POSITION_OF_RIGHT_LANE = 0.7;
+
+	int MIN_STEERING_ANGLE = -200;
+	int MAX_STEERING_ANGLE = 200;
+	int MAX_VELOCITY = 45;
+	int INITIAL_VELOCITY = 10;
 
 	void load( const cv::String& yamlFileName );
 

@@ -209,3 +209,4 @@ double sb::Line::calculateDistance( const sb::Line& sourceLine,
 {
 	return abs( sourceLine.f( point ) ) / sqrt( sourceLine._a * sourceLine._a + sourceLine._b * sourceLine._b );
 }
+

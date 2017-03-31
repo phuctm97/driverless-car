@@ -14,3 +14,4 @@ void sb::EdgeDetector::apply( cv::Mat& image ) const
 	               _edgeDetectorBinarizeMaxValue,
 	               cv::THRESH_BINARY );
 }
+

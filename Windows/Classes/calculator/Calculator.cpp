@@ -147,3 +147,4 @@ void sb::Calculator::calculateLineInfos( const std::vector<sb::Line>& lines,
 		lineInfo.setAverageColor( averageColor );
 	}
 }
+

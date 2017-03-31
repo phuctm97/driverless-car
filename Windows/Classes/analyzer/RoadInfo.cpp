@@ -45,3 +45,29 @@ const std::vector<cv::Point2d>& sb::RoadInfo::getRightKnots() const { return _ri
 void sb::RoadInfo::setReliability( float reliability ) { _reliability = reliability; }
 
 float sb::RoadInfo::getReliability() const { return _reliability; }
+
+void sb::RoadInfo::read( const cv::FileNode& node )
+{
+	node["LeftKnots"] >> _leftKnots;
+	node["RightKnots"] >> _rightKnots;
+}
+
+void sb::RoadInfo::write( cv::FileStorage& fs ) const
+{
+	fs
+			<< "{"
+			<< "LeftKnots" << _leftKnots
+			<< "RightKnots" << _rightKnots
+			<< "}";
+}
+
+void sb::write( cv::FileStorage& fs, const std::string&, const sb::RoadInfo& data )
+{
+	data.write( fs );
+}
+
+void sb::read( const cv::FileNode& node, sb::RoadInfo& data, const sb::RoadInfo& defaultData )
+{
+	if( node.empty() ) data = defaultData;
+	else data.read( node );
+}

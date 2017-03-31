@@ -1,11 +1,11 @@
 #ifndef __SB_RAW_CONTENT_H__
 #define __SB_RAW_CONTENT_H__
 
-#include <opencv2/opencv.hpp>
 #include "../Params.h"
 
 namespace sb
 {
+
 class RawContent
 {
 private:
@@ -20,6 +20,7 @@ public:
 
 	void setColorImage( const cv::Mat& colorImage );
 };
+
 }
 
 #endif //!__SB_RAW_CONTENT_H__
