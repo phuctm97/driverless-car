@@ -28,3 +28,4 @@ void sb::LineDetector::apply( const cv::Mat& binaryImage,
 
 	}
 }
+

@@ -45,3 +45,4 @@ const std::vector<cv::Point2d>& sb::RoadInfo::getRightKnots() const { return _ri
 void sb::RoadInfo::setReliability( float reliability ) { _reliability = reliability; }
 
 float sb::RoadInfo::getReliability() const { return _reliability; }
+

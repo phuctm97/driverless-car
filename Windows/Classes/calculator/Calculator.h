@@ -44,3 +44,4 @@ private:
 }
 
 #endif //!__SB_CALCULATOR_H__
+

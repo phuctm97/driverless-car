@@ -152,3 +152,4 @@ cv::Point2d sb::Formatter::convertFromCoord( const cv::Point2d& point ) const
 	                   convertYFromCoord( point.y )
 	                  );
 }
+

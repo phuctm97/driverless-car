@@ -6,6 +6,7 @@
 
 namespace sb
 {
+
 class RawContent
 {
 private:
@@ -20,6 +21,7 @@ public:
 
 	void setColorImage( const cv::Mat& colorImage );
 };
+
 }
 
 #endif //!__SB_RAW_CONTENT_H__

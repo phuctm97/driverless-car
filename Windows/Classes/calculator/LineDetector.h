@@ -33,3 +33,4 @@ public:
 };
 }
 #endif //!__SB_LINE_DETECTOR_H__
+

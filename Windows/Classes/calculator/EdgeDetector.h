@@ -33,3 +33,4 @@ public:
 }
 
 #endif //!__SB_EDGE_DETECTOR_H__
+

@@ -51,3 +51,4 @@ public:
 }
 
 #endif //!__SB_FORMATTER_H__
+

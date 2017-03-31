@@ -30,3 +30,4 @@ void sb::LineInfo::setLine( const sb::Line& line )
 }
 
 void sb::LineInfo::setAverageColor( const cv::Vec3b& averageColor ) { _averageColor = averageColor; }
+

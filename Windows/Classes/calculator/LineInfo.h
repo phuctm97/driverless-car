@@ -43,3 +43,4 @@ public:
 }
 
 #endif //!__SB_LINE_INFO_H__
+
