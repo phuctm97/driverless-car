@@ -69,3 +69,13 @@ Mọi thông số về trạng thái đường đi đều lấy Vị trí xe là
 
 ### 4.	Điều khiển phương tiện [4]
 Dựa trên trạng thái đường đi cung cấp từ **[3]** cùng khả năng phần cứng **(I)**, đưa ra quyết định di chuyển vừa đảm bảo an toàn, vừa đảm bảo khả năng thu thập thông tin tiếp theo cho bộ phần Thu thập thông tin **[1]**.
+
+Class Driver
+
+|Name|Type|Mô tả|Thông tin|
+|----|----|-----|---------|
+|car|Car*|con trỏ đến lớp class Car, dùng để điều khiển xe|khởi tạo trong hàm init() và hủy trong hàm release()|
+|cur_road_theta|float|xu hướng của đường trong frame trước đó|khởi tạo với giá trị 0.0|
+|init()||Hàm khởi tạo|Kêu một lần sau khi khởi tạo giá trị|
+|release()||Hàm hủy|Gọi khi không sử dụng|
+|drive()||Hàm điều khiển xe|Truyền vào biến `roadInfo`, hàm sẽ dùng các function `float getLeft(int lane)` và `float getRight(int lane)` để lấy **giá trị hoành độ x** của từng **line** và điều khiển xe|
