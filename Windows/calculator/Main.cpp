@@ -12,10 +12,15 @@ void test( const sb::Calculator& calculator,
 void release( sb::Collector& collector,
               sb::Calculator& calculator );
 
-int main()
+int main( const int argc, const char** argv )
 {
+	if( argc < 2 ) {
+		std::cerr << "Cann't find argument for Params path" << std::endl;
+		return -1;
+	}
+
 	sb::Params params;
-	params.load( PARAMS_PATH );
+	params.load( argv[1] );
 
 	sb::RawContent rawContent;
 	rawContent.create( params );

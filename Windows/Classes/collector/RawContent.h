@@ -1,7 +1,6 @@
 #ifndef __SB_RAW_CONTENT_H__
 #define __SB_RAW_CONTENT_H__
 
-#include <opencv2/opencv.hpp>
 #include "../Params.h"
 
 namespace sb
