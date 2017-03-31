@@ -3,6 +3,7 @@
 
 #include "../Params.h"
 #include "../calculator/FrameInfo.h"
+#include "../calculator/Formatter.h"
 #include "RoadInfo.h"
 
 namespace sb
@@ -10,6 +11,10 @@ namespace sb
 class Analyzer
 {
 private:
+	double _laneWidth = 6;
+	double _roadWidth = 80;
+
+	sb::Formatter _debugFormatter;
 
 public:
 	Analyzer() {}

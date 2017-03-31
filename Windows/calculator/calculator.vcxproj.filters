@@ -43,6 +43,9 @@
     <ClCompile Include="..\Classes\calculator\LineInfo.cpp">
       <Filter>calculator</Filter>
     </ClCompile>
+    <ClCompile Include="..\Classes\calculator\SectionInfo.cpp">
+      <Filter>calculator</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Classes\Include.h">
@@ -76,6 +79,9 @@
       <Filter>calculator</Filter>
     </ClInclude>
     <ClInclude Include="..\Classes\calculator\LineInfo.h">
+      <Filter>calculator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\calculator\SectionInfo.h">
       <Filter>calculator</Filter>
     </ClInclude>
   </ItemGroup>

@@ -10,10 +10,10 @@ namespace sb
 struct Params
 {
 	cv::Size COLOR_FRAME_SIZE = cv::Size( 640, 480 );
-	cv::Size DEPTH_FRAME_SIZE = cv::Size( 640, 480 );
+	cv::Size CROPPED_FRAME_SIZE = cv::Size( 640, 240 );
 
-	float CROP_SIZE_WIDTH = 0.8f;
-	float CROP_SIZE_HEIGHT = 0.25f;
+	std::vector<int> SEPERATE_ROWS;
+	double CONVERT_COORD_COEF = 1.0 / 40;
 
 	int EDGE_DETECTOR_KERNEL_SIZE = 3;
 	double EDGE_DETECTOR_LOW_THRESH = 100;
@@ -31,9 +31,9 @@ struct Params
 	cv::Point2f WARP_SRC_QUAD[4];
 	cv::Point2f WARP_DST_QUAD[4];
 
-	float INITIAL_ROTATION_OF_LANE = 0;
-	cv::Point2d INITIAL_POSITION_OF_LEFT_LANE = cv::Point2d( -0.7, 0 );
-	cv::Point2d INITIAL_POSITION_OF_RIGHT_LANE = cv::Point2d( 0.7, 0 );
+	std::vector<double> INITIAL_ROTATION_OF_LANES;
+	double INITIAL_POSITION_OF_LEFT_LANE = -0.7;
+	double INITIAL_POSITION_OF_RIGHT_LANE = 0.7;
 
 	void load( const cv::String& yamlFileName );
 

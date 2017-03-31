@@ -10,6 +10,17 @@
 
 namespace sb
 {
+struct ControlInfo
+{
+	int direction;
+
+	int velocity;
+
+	double steeringAngle;
+
+	int state;
+};
+
 class Driver
 {
 private:

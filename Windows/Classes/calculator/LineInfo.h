@@ -14,14 +14,17 @@ private:
 
 	double _angle;
 
-public:
+	cv::Point2d _middlePoint;
 
-	LineInfo( const sb::Line& line )
-		: _line( line ),
-		  _angle( line.getAngleWithOx() ),
-		  _length( line.getLength() ) {}
+	cv::Vec3b _averageColor;
+
+public:
+	LineInfo( const sb::Line& line,
+	          const cv::Vec3b& averageColor = cv::Vec3b( 0, 0, 0 ) );
 
 	const sb::Line& getLine() const;
+
+	void setLine( const sb::Line& line );
 
 	const cv::Point2d& getStartingPoint() const;
 
@@ -30,8 +33,13 @@ public:
 	double getLength() const;
 
 	double getAngle() const;
-};
 
+	const cv::Vec3b& getAverageColor() const;
+
+	const cv::Point2d& getMiddlePoint() const;
+
+	void setAverageColor( const cv::Vec3b& averageColor );
+};
 }
 
 #endif //!__SB_LINE_INFO_H__

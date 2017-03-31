@@ -26,6 +26,7 @@
     <ClCompile Include="..\Classes\calculator\Line.cpp" />
     <ClCompile Include="..\Classes\calculator\LineDetector.cpp" />
     <ClCompile Include="..\Classes\calculator\LineInfo.cpp" />
+    <ClCompile Include="..\Classes\calculator\SectionInfo.cpp" />
     <ClCompile Include="..\Classes\collector\Collector.cpp" />
     <ClCompile Include="..\Classes\collector\RawContent.cpp" />
     <ClCompile Include="..\Classes\Params.cpp" />
@@ -39,6 +40,7 @@
     <ClInclude Include="..\Classes\calculator\Line.h" />
     <ClInclude Include="..\Classes\calculator\LineDetector.h" />
     <ClInclude Include="..\Classes\calculator\LineInfo.h" />
+    <ClInclude Include="..\Classes\calculator\SectionInfo.h" />
     <ClInclude Include="..\Classes\collector\Collector.h" />
     <ClInclude Include="..\Classes\collector\RawContent.h" />
     <ClInclude Include="..\Classes\Include.h" />
