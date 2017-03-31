@@ -10,7 +10,7 @@ void release( sb::Collector& collector );
 int main( const int argc, const char** argv )
 {
 	if ( argc < 2 ) {
-		std::cerr << "Cann't find argument for Params path" << std::endl;
+		std::cerr << "Can't find argument for Params path" << std::endl;
 		return -1;
 	}
 
@@ -36,6 +36,8 @@ int main( const int argc, const char** argv )
 
 	// Pressed key
 	char key = 0;
+	std::cout << "Enter 's' to start! ";
+	while ( key != 's' ) std::cin >> key;
 
 	// Timer
 	int timerTickCount = 0;
@@ -55,6 +57,11 @@ int main( const int argc, const char** argv )
 
 		////// </Collector> /////
 
+		///// <Timer> /////
+		std::cout << "Executed time: " << timer.milliseconds( "total" ) << ". " << "FPS: " << timer.fps( "total" ) << "." << std::endl;
+		timerTickCount++;
+		///// </Timer> /////
+
 		///// <Test> //////
 
 		cv::imshow( "Window", rawContent.getColorImage() );
@@ -62,22 +69,14 @@ int main( const int argc, const char** argv )
 
 		///// </Test> /////
 
-		///// <Timer> /////
-	
-		std::cout << "Executed time: " << timer.milliseconds( "total" ) << ". " << "FPS: " << timer.fps( "total" ) << "." << std::endl;
-		timerTickCount++;
-	
-		///// </Timer> /////
-
 		///// <User interuption> /////
 		key = static_cast<char>(_kbhit());
-
 		if ( key == 'f' ) break;
 		///// </User interuption> /////
 	}
 
 	// Performance conclusion
-	if( timerTickCount > 0 ) {
+	if ( timerTickCount > 0 ) {
 		std::cout << std::endl << "Average executiton time: " << timer.milliseconds( "entire-job" ) / timerTickCount << "ms." << std::endl;
 	}
 
