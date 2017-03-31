@@ -57,6 +57,10 @@ int main()
 	cv::waitKey();
 #endif
 
+	std::vector<std::vector<cv::Point2d>> arrayOfLeftKnots;
+	std::vector<std::vector<cv::Point2d>> arrayOfRightKnots;
+
+	timer.reset( "entire_job" );
 	while ( true ) {
 		timer.reset( "total" );
 
@@ -85,6 +89,9 @@ int main()
 				<< "Executed time: " << timer.milliseconds( "total" ) << ". "
 				<< "FPS: " << timer.fps( "total" ) << std::endl;
 
+		arrayOfLeftKnots.push_back( roadInfo.getLeftKnots() );
+		arrayOfRightKnots.push_back( roadInfo.getRightKnots() );
+
 #ifdef _DEBUG
 		test( calculator, rawContent, frameInfo, roadInfo, params );
 
@@ -92,7 +99,18 @@ int main()
 #endif
 	}
 
+	std::cout << "Average executiton time: " << timer.milliseconds( "entire_job" ) / arrayOfLeftKnots.size() << "ms." << std::endl;
+
+	cv::FileStorage roadInfoStream( "road_info.yaml", cv::FileStorage::WRITE );
+	roadInfoStream
+		<< "LEFT_KNOTS" << arrayOfLeftKnots
+		<< "RIGHT_KNOTS" << arrayOfRightKnots;
+	roadInfoStream.release();
+
+
 	release( collector, calculator, analyzer );
+	
+	system( "pause" );
 	return 0;
 }
 
@@ -176,8 +194,6 @@ void test( const sb::Calculator& calculator,
 	cv::imshow( WINDOW_EGO_VIEW, rawContent.getColorImage() );
 
 	cv::imshow( WINDOW_BIRDEYE_VIEW, radarImage );
-
-	cv::waitKey();
 }
 
 void release( sb::Collector& collector,

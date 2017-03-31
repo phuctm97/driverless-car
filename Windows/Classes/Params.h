@@ -36,6 +36,11 @@ struct Params
 	double INITIAL_POSITION_OF_LEFT_LANE = -0.7;
 	double INITIAL_POSITION_OF_RIGHT_LANE = 0.7;
 
+	int MIN_STEERING_ANGLE = -200;
+	int MAX_STEERING_ANGLE = 200;
+	int MAX_VELOCITY = 45;
+	int INITIAL_VELOCITY = 10;
+
 	void load( const cv::String& yamlFileName );
 
 	void read( const cv::FileNode& node );

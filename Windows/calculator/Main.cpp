@@ -140,8 +140,8 @@ void test( const sb::Calculator& calculator,
 			std::stringstream stringBuilder;
 
 			double angle = realLine.getAngle();
-			double upperX = sectionLine.second[0];
-			double lowerX = sectionLine.second[1];
+			double lowerX = sectionLine.second[0];
+			double upperX = sectionLine.second[1];
 
 			stringBuilder << "Length: " << realLine.getLength();
 			cv::putText( tempImage,
