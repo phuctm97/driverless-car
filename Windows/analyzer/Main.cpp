@@ -63,7 +63,15 @@ int main( const int argc, const char** argv )
 	timer.reset( "entire-job" );
 
 	///// <Result-writer> /////
-	cv::FileStorage fs( "road_info.yaml", cv::FileStorage::WRITE );
+	cv::VideoWriter colorAvi;
+	if ( argc > 2 ) {
+		colorAvi.open( argv[2], CV_FOURCC( 'M', 'J', 'P', 'G' ), 15, params.COLOR_FRAME_SIZE );
+	}
+
+	cv::FileStorage roadInfoStream;
+	if ( argc > 3 ) {
+		roadInfoStream.open( argv[3], cv::FileStorage::WRITE );
+	}
 	int frameCount = 0;
 	///// </Result-writer> /////
 
@@ -107,15 +115,21 @@ int main( const int argc, const char** argv )
 		std::cout << "Executed time: " << timer.milliseconds( "total" ) << ". " << "FPS: " << timer.fps( "total" ) << "." << std::endl;
 		timerTickCount++;
 		///// </Timer> /////
-	
+
 		///// <Test> /////
 		test( calculator, rawContent, frameInfo, roadInfo );
 		///// <Test> /////
 
 		///// <Result-writer> /////
-		std::stringstream stringBuilder;
-		stringBuilder << "road_" << frameCount++;
-		fs << stringBuilder.str() << roadInfo;
+		if( colorAvi.isOpened() && !rawContent.getColorImage().empty() ) {
+			colorAvi << rawContent.getColorImage();
+		}
+		
+		if( roadInfoStream.isOpened() ) {
+			std::stringstream stringBuilder;
+			stringBuilder << "road_" << frameCount++;
+			roadInfoStream << stringBuilder.str() << roadInfo;
+		}
 		///// </Result-writer> /////
 
 		///// <User interuption> /////
@@ -133,8 +147,10 @@ int main( const int argc, const char** argv )
 	release( collector, calculator, analyzer );
 
 	///// <Result-writer> /////
-	fs << "frame_count" << frameCount;
-	fs.release();
+	colorAvi.release();
+
+	roadInfoStream << "frame_count" << frameCount;
+	roadInfoStream.release();
 	///// </Result-writer> /////
 
 	return 0;
