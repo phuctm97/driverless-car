@@ -9,6 +9,7 @@ void sb::Params::load( const cv::String& yamlFileName )
 	fs.release();
 }
 
+
 void sb::Params::save( const cv::String& yamlFileName ) const
 {
 	cv::FileStorage fs( yamlFileName, cv::FileStorage::WRITE );

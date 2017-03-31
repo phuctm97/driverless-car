@@ -309,3 +309,4 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 }
 
 void sb::Analyzer::release() { }
+

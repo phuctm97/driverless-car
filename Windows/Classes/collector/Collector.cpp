@@ -39,3 +39,4 @@ void sb::Collector::release()
 	_tempCap.release();
 
 }
+

@@ -8,3 +8,4 @@ void sb::RawContent::create( const sb::Params & params )
 const cv::Mat& sb::RawContent::getColorImage() const { return _colorImage; }
 
 void sb::RawContent::setColorImage( const cv::Mat& colorImage ) { _colorImage = colorImage; }
+

@@ -24,3 +24,4 @@ public:
 }
 
 #endif //!__SB_COLLECTOR_H__
+

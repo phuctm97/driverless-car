@@ -62,3 +62,4 @@ public:
 }
 
 #endif //!__SB_FRAME_INFO_H__
+
