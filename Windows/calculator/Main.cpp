@@ -1,11 +1,14 @@
 #include "../Classes/calculator/Calculator.h"
 #include "../Classes/collector/Collector.h"
+#include "../Classes/Timer.h"
+#include <conio.h>
 
 int init( sb::Collector& collector,
           sb::Calculator& calculator,
           const sb::Params& params );
 
-void test( const sb::Calculator& calculator,
+void test( const sb::Collector& collector,
+           const sb::Calculator& calculator,
            const sb::RawContent& rawContent,
            const sb::FrameInfo& frameInfo );
 
@@ -14,47 +17,91 @@ void release( sb::Collector& collector,
 
 int main( const int argc, const char** argv )
 {
-	if( argc < 2 ) {
-		std::cerr << "Cann't find argument for Params path" << std::endl;
+	if ( argc < 2 ) {
+		std::cerr << "Can't find argument for Params path" << std::endl;
 		return -1;
 	}
 
+	// Application parameters
 	sb::Params params;
 	params.load( argv[1] );
 
+	// Timer for performance test
+	sb::Timer timer;
+
+	// Data sent&receive between components
 	sb::RawContent rawContent;
 	rawContent.create( params );
 
 	sb::FrameInfo frameInfo;
 	frameInfo.create( params );
 
+	// Main components
 	sb::Collector collector;
 	sb::Calculator calculator;
 
+	// Init components
 	if ( init( collector, calculator, params ) < 0 ) {
 		std::cerr << "Init failed." << std::endl;
 		return -1;
 	}
 
-	while ( true ) {
+	// Pressed key
+	char key = 0;
+	std::cout << "Enter 's' to start! ";
+	while( key != 's' ) std::cin >> key;
 
+	// Timer
+	int timerTickCount = 0;
+	timer.reset( "entire-job" );
+
+	while ( true ) {
+		timer.reset( "total" );
+
+		////// <Collector> /////
+
+		timer.reset( "collector" );
 		if ( collector.collect( rawContent ) < 0 ) {
 			std::cerr << "Collector collect failed." << std::endl;
-			release( collector, calculator );
-			return -1;
+			break;
 		}
+		std::cout << "Collector: " << timer.milliseconds( "collector" ) << "ms." << std::endl;
 
+		////// </Collector> /////
+
+
+		////// <Calculator> /////
+
+		timer.reset( "calculator" );
 		if ( calculator.calculate( rawContent, frameInfo ) < 0 ) {
 			std::cerr << "Calculator calculate failed." << std::endl;
-			release( collector, calculator );
-			return -1;
+			break;
 		}
+		std::cout << "Calculator: " << timer.milliseconds( "calculator" ) << "ms." << std::endl;
 
-		test( calculator, rawContent, frameInfo );
+		////// </Calculator> /////
 
-		if ( cv::waitKey( 33 ) == KEY_TO_ESCAPE ) break;
+		///// <Timer> /////
+		std::cout << "Executed time: " << timer.milliseconds( "total" ) << ". " << "FPS: " << timer.fps( "total" ) << "." << std::endl;
+		timerTickCount++;
+		///// </Timer> /////
+
+		///// <Test> /////
+		test( collector, calculator, rawContent, frameInfo );
+		///// </Test> /////
+
+		///// <User interuption> /////
+		key = static_cast<char>(_kbhit());
+		if ( key == 'f' ) break;
+		///// </User interuption> /////
 	}
 
+	// Performance conclusion
+	if ( timerTickCount > 0 ) {
+		std::cout << std::endl << "Average executiton time: " << timer.milliseconds( "entire-job" ) / timerTickCount << "ms." << std::endl;
+	}
+
+	// Release components
 	release( collector, calculator );
 	return 0;
 }
@@ -76,13 +123,14 @@ int init( sb::Collector& collector,
 	return 0;
 }
 
-void test( const sb::Calculator& calculator,
+void test( const sb::Collector& collector,
+           const sb::Calculator& calculator,
            const sb::RawContent& rawContent,
            const sb::FrameInfo& frameInfo )
 {
 	const double FRAME_HALF_WIDTH = frameInfo.getColorImage().cols / 2;
 	const int EXPAND_HEIGHT = 900;
-	const int EXPAND_WIDTH = 700;
+	const int EXPAND_WIDTH = 1200;
 
 	// create real image
 	cv::Mat realImage = cv::Mat::zeros( frameInfo.getColorImage().rows + EXPAND_HEIGHT,
@@ -104,7 +152,7 @@ void test( const sb::Calculator& calculator,
 		        );
 	}
 
-	cv::destroyWindow( WINDOW_NAME );
+	cv::destroyWindow( "Window" );
 
 	// debug each section
 	for ( int i = 0; i < static_cast<int>(frameInfo.getSectionInfos().size()); i++ ) {
@@ -186,7 +234,7 @@ void test( const sb::Calculator& calculator,
 			             cv::Point( 20, 95 ),
 			             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
 
-			cv::imshow( WINDOW_NAME, tempImage );
+			cv::imshow( "Window", tempImage );
 			cv::waitKey();
 		}
 	}

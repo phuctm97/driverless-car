@@ -30,6 +30,7 @@
     <ClCompile Include="..\Classes\collector\Collector.cpp" />
     <ClCompile Include="..\Classes\collector\RawContent.cpp" />
     <ClCompile Include="..\Classes\Params.cpp" />
+    <ClCompile Include="..\Classes\Timer.cpp" />
     <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -45,6 +46,7 @@
     <ClInclude Include="..\Classes\collector\RawContent.h" />
     <ClInclude Include="..\Classes\Include.h" />
     <ClInclude Include="..\Classes\Params.h" />
+    <ClInclude Include="..\Classes\Timer.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{837AD18D-D2B6-4AB3-BAC9-CB8146DC0C30}</ProjectGuid>
