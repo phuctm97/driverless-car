@@ -57,8 +57,8 @@ int main()
 	cv::waitKey();
 #endif
 
-	std::vector<std::vector<cv::Point2d>> arrayOfLeftKnots;
-	std::vector<std::vector<cv::Point2d>> arrayOfRightKnots;
+	cv::FileStorage roadInfoStream( "road_info.yaml", cv::FileStorage::WRITE );
+	int frameCount = 0;
 
 	timer.reset( "entire_job" );
 	while ( true ) {
@@ -89,8 +89,10 @@ int main()
 				<< "Executed time: " << timer.milliseconds( "total" ) << ". "
 				<< "FPS: " << timer.fps( "total" ) << std::endl;
 
-		arrayOfLeftKnots.push_back( roadInfo.getLeftKnots() );
-		arrayOfRightKnots.push_back( roadInfo.getRightKnots() );
+		std::stringstream stringBuilder;
+		stringBuilder << "road_" << frameCount++;
+
+		roadInfoStream << stringBuilder.str() << roadInfo;
 
 #ifdef _DEBUG
 		test( calculator, rawContent, frameInfo, roadInfo, params );
@@ -99,17 +101,13 @@ int main()
 #endif
 	}
 
-	std::cout << "Average executiton time: " << timer.milliseconds( "entire_job" ) / arrayOfLeftKnots.size() << "ms." << std::endl;
+	std::cout << "Average executiton time: " << timer.milliseconds( "entire_job" ) / frameCount << "ms." << std::endl;
 
-	cv::FileStorage roadInfoStream( "road_info.yaml", cv::FileStorage::WRITE );
-	roadInfoStream
-		<< "LEFT_KNOTS" << arrayOfLeftKnots
-		<< "RIGHT_KNOTS" << arrayOfRightKnots;
+	roadInfoStream << "frame_count" << frameCount;
 	roadInfoStream.release();
 
-
 	release( collector, calculator, analyzer );
-	
+
 	system( "pause" );
 	return 0;
 }
@@ -163,7 +161,7 @@ void test( const sb::Calculator& calculator,
 
 	std::vector<cv::Point2d> leftKnots( N_SECTIONS + 1, cv::Point2d( 0, 0 ) );
 	std::vector<cv::Point2d> rightKnots( N_SECTIONS + 1, cv::Point2d( 0, 0 ) );
-	
+
 	for ( int i = 0; i < N_SECTIONS + 1; i++ ) {
 		leftKnots[i] = calculator.convertFromCoord( roadInfo.getLeftKnots()[i] );
 		rightKnots[i] = calculator.convertFromCoord( roadInfo.getRightKnots()[i] );

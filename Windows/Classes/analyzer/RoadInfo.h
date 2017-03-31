@@ -25,13 +25,13 @@ public:
 	void create( const Params& params );
 
 	void setObstacleBoxes( const std::vector<cv::Rect2d>& obstacleBoxes );
-	
+
 	const std::vector<cv::Rect2d>& getObstacleBoxes() const;
 
 	void setLeftKnots( const std::vector<cv::Point2d>& leftKnots );
 
 	const std::vector<cv::Point2d>& getLeftKnots() const;
-	
+
 	void setRightKnots( const std::vector<cv::Point2d>& rightKnots );
 
 	const std::vector<cv::Point2d>& getRightKnots() const;
@@ -40,8 +40,14 @@ public:
 
 	float getReliability() const;
 
+	void read( const cv::FileNode& node );
+
+	void write( cv::FileStorage& fs ) const;
 };
+
+void write( cv::FileStorage& fs, const std::string&, const sb::RoadInfo& data );
+
+void read( const cv::FileNode& node, sb::RoadInfo& data, const sb::RoadInfo& defaultData = sb::RoadInfo() );
 }
 
 #endif //!__SB_ROAD_INFO_H__
-
