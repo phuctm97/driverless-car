@@ -47,10 +47,6 @@ public:
 	double convertYFromCoord( double y ) const;
 
 	cv::Point2d convertFromCoord( const cv::Point2d& point ) const;
-
-	double convertToRotation( double angle ) const;
-
-	double convertFromRotation( double rotation ) const;
 };
 }
 

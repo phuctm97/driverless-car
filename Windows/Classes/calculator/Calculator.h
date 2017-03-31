@@ -36,10 +36,6 @@ public:
 
 	cv::Point2d convertFromCoord( const cv::Point2d& point ) const;
 
-	double convertToRotation( double angle ) const;
-
-	double convertFromRotation( double rotation ) const;
-
 private:
 	void calculateLineInfos( const std::vector<sb::Line>& lines,
 													 const cv::Mat& colorImage,

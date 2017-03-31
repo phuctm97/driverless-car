@@ -14,6 +14,8 @@ private:
 
 	double _angle;
 
+	cv::Point2d _middlePoint;
+
 	cv::Vec3b _averageColor;
 
 public:
@@ -33,6 +35,8 @@ public:
 	double getAngle() const;
 
 	const cv::Vec3b& getAverageColor() const;
+
+	const cv::Point2d& getMiddlePoint() const;
 
 	void setAverageColor( const cv::Vec3b& averageColor );
 };

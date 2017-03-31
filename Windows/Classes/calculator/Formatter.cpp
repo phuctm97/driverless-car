@@ -60,8 +60,8 @@ int sb::Formatter::warp( const std::vector<sb::LineInfo> imageLines,
 	outputRealLines.reserve( N_LINES );
 
 	for ( int i = 0; i < N_LINES; i++ ) {
-		outputRealLines.push_back( sb::LineInfo( sb::Line( convertToCoord( startingPoints[i] ),
-		                                                   convertToCoord( endingPoints[i] ) ),
+		outputRealLines.push_back( sb::LineInfo( sb::Line( convertToCoord( endingPoints[i] ),
+		                                                   convertToCoord( startingPoints[i] ) ),
 		                                         imageLines[i].getAverageColor() ) );
 	}
 
@@ -103,10 +103,10 @@ int sb::Formatter::split( const std::vector<sb::LineInfo> realLines,
 
 				cv::Point2d p;
 
-				if ( !sb::Line::findIntersection( lineInfo.getLine(), upperLine, p ) ) continue;
+				if ( !sb::Line::findIntersection( lineInfo.getLine(), lowerLine, p ) ) continue;
 				vec[0] = p.x;
 
-				if ( !sb::Line::findIntersection( lineInfo.getLine(), lowerLine, p ) ) continue;
+				if ( !sb::Line::findIntersection( lineInfo.getLine(), upperLine, p ) ) continue;
 				vec[1] = p.x;
 
 				sectionInfo.lines.push_back( std::pair<int, cv::Vec2d>( index, vec ) );
@@ -151,14 +151,4 @@ cv::Point2d sb::Formatter::convertFromCoord( const cv::Point2d& point ) const
 	                   convertXFromCoord( point.x ),
 	                   convertYFromCoord( point.y )
 	                  );
-}
-
-double sb::Formatter::convertToRotation( double angle ) const
-{
-	return 90 - angle;
-}
-
-double sb::Formatter::convertFromRotation( double rotation ) const
-{
-	return 90 - rotation;
 }

@@ -3,6 +3,7 @@
 
 #include "../Params.h"
 #include "../calculator/FrameInfo.h"
+#include "../calculator/Formatter.h"
 #include "RoadInfo.h"
 
 namespace sb
@@ -10,8 +11,10 @@ namespace sb
 class Analyzer
 {
 private:
-	double _laneWidth = 0.2;
-	double _roadWidth = 0.8;
+	double _laneWidth = 6;
+	double _roadWidth = 80;
+
+	sb::Formatter _debugFormatter;
 
 public:
 	Analyzer() {}
@@ -22,11 +25,6 @@ public:
 	             sb::RoadInfo& roadInfo ) const;
 
 	void release();
-
-private:
-	int analyze1( const sb::FrameInfo& frameInfo,
-	              sb::RoadInfo& roadInfo ) const;
-
 };
 }
 

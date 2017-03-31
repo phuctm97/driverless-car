@@ -91,10 +91,6 @@ double sb::Calculator::convertYFromCoord( double y ) const { return _formatter.c
 
 cv::Point2d sb::Calculator::convertFromCoord( const cv::Point2d& point ) const { return _formatter.convertFromCoord( point ); }
 
-double sb::Calculator::convertToRotation( double angle ) const { return _formatter.convertToRotation( angle ); }
-
-double sb::Calculator::convertFromRotation( double rotation ) const { return _formatter.convertFromRotation( rotation ); }
-
 void sb::Calculator::calculateLineInfos( const std::vector<sb::Line>& lines,
                                          const cv::Mat& colorImage,
                                          std::vector<sb::LineInfo>& outputLineInfos ) const

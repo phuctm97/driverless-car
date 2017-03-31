@@ -3,21 +3,18 @@
 
 #include "../Include.h"
 #include "../Params.h"
+#include "../calculator/LineInfo.h"
 
 namespace sb
 {
 class RoadInfo
 {
 private:
-	double _positionOfLeftLane;
+	std::vector<cv::Point2d> _leftKnots;
 
-	double _positionOfRightLane;
-
-	std::vector<double> _rotationOfLanes;
+	std::vector<cv::Point2d> _rightKnots;
 
 	std::vector<cv::Rect2d> _obstacleBoxes;
-
-	std::vector<cv::Point2d> _leftLaneKnots;
 
 	float _reliability;
 
@@ -27,23 +24,17 @@ public:
 
 	void create( const Params& params );
 
-	void setPositionOfLeftLane( double positionOfLeftLane );
-	
-	double getPositionOfLeftLane() const;
-
-	void setPositionOfRightLane( double positionOfRightLane );
-	
-	double getPositionOfRightLane() const;
-
 	void setObstacleBoxes( const std::vector<cv::Rect2d>& obstacleBoxes );
 	
 	const std::vector<cv::Rect2d>& getObstacleBoxes() const;
+
+	void setLeftKnots( const std::vector<cv::Point2d>& leftKnots );
+
+	const std::vector<cv::Point2d>& getLeftKnots() const;
 	
-	std::vector<cv::Rect2d>& getObstacleBoxes();
+	void setRightKnots( const std::vector<cv::Point2d>& rightKnots );
 
-	void setRotationOfLanes( const std::vector<double>& rotationOfLanes );
-
-	const std::vector<double>& getRotationOfLanes() const;
+	const std::vector<cv::Point2d>& getRightKnots() const;
 
 	void setReliability( float reliability );
 

@@ -76,8 +76,8 @@ void test( const sb::Calculator& calculator,
            const sb::FrameInfo& frameInfo )
 {
 	const double FRAME_HALF_WIDTH = frameInfo.getColorImage().cols / 2;
-	const int EXPAND_HEIGHT = 0;
-	const int EXPAND_WIDTH = 0;
+	const int EXPAND_HEIGHT = 900;
+	const int EXPAND_WIDTH = 700;
 
 	// create real image
 	cv::Mat realImage = cv::Mat::zeros( frameInfo.getColorImage().rows + EXPAND_HEIGHT,
@@ -139,7 +139,7 @@ void test( const sb::Calculator& calculator,
 
 			std::stringstream stringBuilder;
 
-			double rotation = realLine.getAngle();
+			double angle = realLine.getAngle();
 			double upperX = sectionLine.second[0];
 			double lowerX = sectionLine.second[1];
 
@@ -151,7 +151,7 @@ void test( const sb::Calculator& calculator,
 
 			stringBuilder.str( "" );
 
-			stringBuilder << "Rotation: " << rotation;
+			stringBuilder << "Angle: " << angle;
 			cv::putText( tempImage,
 			             stringBuilder.str(),
 			             cv::Point( 20, 35 ),

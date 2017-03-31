@@ -11,7 +11,8 @@ int init( sb::Collector& collector,
           sb::Analyzer& analyzer,
           const sb::Params& params );
 
-void test( const sb::RawContent& rawContent,
+void test( const sb::Calculator& calculator,
+           const sb::RawContent& rawContent,
            const sb::FrameInfo& frameInfo,
            const sb::RoadInfo& roadInfo,
            const sb::Params& params );
@@ -57,6 +58,7 @@ int main()
 #endif
 
 	while ( true ) {
+		timer.reset( "total" );
 
 		timer.reset( "collector" );
 		if ( collector.collect( rawContent ) < 0 ) {
@@ -84,7 +86,7 @@ int main()
 				<< "FPS: " << timer.fps( "total" ) << std::endl;
 
 #ifdef _DEBUG
-		test( rawContent, frameInfo, roadInfo, params );
+		test( calculator, rawContent, frameInfo, roadInfo, params );
 
 		if ( cv::waitKey( MAX( 1, 66 - timer.milliseconds( "total" ) ) ) == KEY_TO_ESCAPE ) break;
 #endif
@@ -117,13 +119,14 @@ int init( sb::Collector& collector,
 	return 0;
 }
 
-void test( const sb::RawContent& rawContent,
+void test( const sb::Calculator& calculator,
+           const sb::RawContent& rawContent,
            const sb::FrameInfo& frameInfo,
            const sb::RoadInfo& roadInfo,
            const sb::Params& params )
 {
 	///// Init image /////
-	const int N_SECTIONS = static_cast<int>(roadInfo.getRotationOfLanes().size());
+	const int N_SECTIONS = static_cast<int>(frameInfo.getSectionInfos().size());
 
 	const cv::Size FRAME_SIZE = frameInfo.getColorImage().size();
 
@@ -140,43 +143,23 @@ void test( const sb::RawContent& rawContent,
 
 	///// Calculate lane positions /////
 
-	std::vector<cv::Point2d> leftLanePositions( N_SECTIONS + 1, cv::Point2d( 0, 0 ) );
-	std::vector<cv::Point2d> rightLanePositions( N_SECTIONS + 1, cv::Point2d( 0, 0 ) );
-
-	leftLanePositions[0] = cv::Point2d( frameInfo.convertXFromCoord( roadInfo.getPositionOfLeftLane() ),
-	                                    frameInfo.getSectionInfos()[0].lowerRow );
-	rightLanePositions[0] = cv::Point2d( frameInfo.convertXFromCoord( roadInfo.getPositionOfRightLane() ),
-	                                     frameInfo.getSectionInfos()[0].lowerRow );
-
-	for ( int i = 0; i < N_SECTIONS; i++ ) {
-		const int upperRow = frameInfo.getSectionInfos()[i].upperRow;
-		const int lowerRow = frameInfo.getSectionInfos()[i].lowerRow;
-
-		const sb::Line upperLine( cv::Point2d( 0, upperRow ), cv::Point2d( 1, upperRow ) );
-
-		sb::Line line;
-		cv::Point2d p;
-
-		line = sb::Line( frameInfo.convertFromRotation( roadInfo.getRotationOfLanes()[i] ), leftLanePositions[i] );
-
-		sb::Line::findIntersection( line, upperLine, p );
-		leftLanePositions[i + 1] = p;
-
-		line = sb::Line( frameInfo.convertFromRotation( roadInfo.getRotationOfLanes()[i] ), rightLanePositions[i] );
-
-		sb::Line::findIntersection( line, upperLine, p );
-		rightLanePositions[i + 1] = p;
+	std::vector<cv::Point2d> leftKnots( N_SECTIONS + 1, cv::Point2d( 0, 0 ) );
+	std::vector<cv::Point2d> rightKnots( N_SECTIONS + 1, cv::Point2d( 0, 0 ) );
+	
+	for ( int i = 0; i < N_SECTIONS + 1; i++ ) {
+		leftKnots[i] = calculator.convertFromCoord( roadInfo.getLeftKnots()[i] );
+		rightKnots[i] = calculator.convertFromCoord( roadInfo.getRightKnots()[i] );
 	}
 
 	// draw lane
 	for ( int i = 0; i < N_SECTIONS; i++ ) {
 		cv::line( radarImage,
-		          leftLanePositions[i] + cv::Point2d( EXPAND_SIZE.width / 2, EXPAND_SIZE.height ),
-		          leftLanePositions[i + 1] + cv::Point2d( EXPAND_SIZE.width / 2, EXPAND_SIZE.height ),
+		          leftKnots[i] + cv::Point2d( EXPAND_SIZE.width / 2, EXPAND_SIZE.height ),
+		          leftKnots[i + 1] + cv::Point2d( EXPAND_SIZE.width / 2, EXPAND_SIZE.height ),
 		          cv::Scalar( 255, 255, 255 ), 7 );
 		cv::line( radarImage,
-		          rightLanePositions[i] + cv::Point2d( EXPAND_SIZE.width / 2, EXPAND_SIZE.height ),
-		          rightLanePositions[i + 1] + cv::Point2d( EXPAND_SIZE.width / 2, EXPAND_SIZE.height ),
+		          rightKnots[i] + cv::Point2d( EXPAND_SIZE.width / 2, EXPAND_SIZE.height ),
+		          rightKnots[i + 1] + cv::Point2d( EXPAND_SIZE.width / 2, EXPAND_SIZE.height ),
 		          cv::Scalar( 255, 255, 255 ), 7 );
 	}
 
