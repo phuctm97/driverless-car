@@ -160,7 +160,7 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 
 	///// Debug /////
 
-	// create real image
+	/*// create real image
 	const int W = 900;
 	const int H = 700;
 	cv::Mat realImage( frameInfo.getColorImage().rows + H,
@@ -190,7 +190,7 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 	}
 
 	cv::imshow( "Test Analyzer", realImage );
-	cv::waitKey();
+	cv::waitKey();*/
 
 	/*
 	// debug each lines
