@@ -43,6 +43,13 @@ int main( const int argc, const char** argv )
 	int timerTickCount = 0;
 	timer.reset( "entire-job" );
 
+	///// <Result-writer> /////
+	cv::VideoWriter colorAvi;
+	if ( argc > 2 ) {
+		colorAvi.open( argv[2], CV_FOURCC( 'M', 'J', 'P', 'G' ), 15, params.COLOR_FRAME_SIZE );
+	}
+	///// </Result-writer> /////
+
 	while ( true ) {
 		timer.reset( "total" );
 
@@ -69,6 +76,12 @@ int main( const int argc, const char** argv )
 
 		///// </Test> /////
 
+		///// <Result-writer> /////
+		if ( colorAvi.isOpened() && !rawContent.getColorImage().empty() ) {
+			colorAvi << rawContent.getColorImage();
+		}
+		///// </Result-writer> /////
+
 		///// <User interuption> /////
 		key = static_cast<char>(_kbhit());
 		if ( key == 'f' ) break;
@@ -82,6 +95,11 @@ int main( const int argc, const char** argv )
 
 	// Release components
 	release( collector );
+
+	///// <Result-writer> /////
+	colorAvi.release();
+	///// </Result-writer> /////
+
 	return 0;
 }
 
