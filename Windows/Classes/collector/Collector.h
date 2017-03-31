@@ -1,7 +1,6 @@
 #ifndef __SB_COLLECTOR_H__
 #define __SB_COLLECTOR_H__
 
-#include "../Params.h"
 #include "RawContent.h"
 
 namespace sb

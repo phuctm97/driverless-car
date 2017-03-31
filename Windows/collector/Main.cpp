@@ -1,39 +1,87 @@
 #include "../Classes/collector/Collector.h"
+#include "../Classes/Timer.h"
+#include <conio.h>
 
 int init( sb::Collector& collector,
           const sb::Params& params );
 
-void test( const sb::RawContent& rawContent );
-
 void release( sb::Collector& collector );
 
-int main()
+int main( const int argc, const char** argv )
 {
+	if ( argc < 2 ) {
+		std::cerr << "Cann't find argument for Params path" << std::endl;
+		return -1;
+	}
+
+	// Application parameters
 	sb::Params params;
-	params.load( PARAMS_PATH );
+	params.load( argv[1] );
 
+	// Timer for performance test
+	sb::Timer timer;
+
+	// Data sent&receive between components
 	sb::RawContent rawContent;
+	rawContent.create( params );
 
+	// Main components
 	sb::Collector collector;
 
+	// Init components
 	if ( init( collector, params ) < 0 ) {
 		std::cerr << "Init failed." << std::endl;
 		return -1;
 	}
 
-	while ( true ) {
+	// Pressed key
+	char key = 0;
 
+	// Timer
+	int timerTickCount = 0;
+	timer.reset( "entire-job" );
+
+	while ( true ) {
+		timer.reset( "total" );
+
+		////// <Collector> /////
+
+		timer.reset( "collector" );
 		if ( collector.collect( rawContent ) < 0 ) {
 			std::cerr << "Collector collect failed." << std::endl;
-			release( collector );
-			return -1;
+			break;
 		}
+		std::cout << "Collector: " << timer.milliseconds( "collector" ) << "ms." << std::endl;
 
-		test( rawContent );
+		////// </Collector> /////
 
-		if ( cv::waitKey( 33 ) == KEY_TO_ESCAPE ) break;
+		///// <Test> //////
+
+		cv::imshow( "Window", rawContent.getColorImage() );
+		cv::waitKey( 33 );
+
+		///// </Test> /////
+
+		///// <Timer> /////
+	
+		std::cout << "Executed time: " << timer.milliseconds( "total" ) << ". " << "FPS: " << timer.fps( "total" ) << "." << std::endl;
+		timerTickCount++;
+	
+		///// </Timer> /////
+
+		///// <User interuption> /////
+		key = static_cast<char>(_kbhit());
+
+		if ( key == 'f' ) break;
+		///// </User interuption> /////
 	}
 
+	// Performance conclusion
+	if( timerTickCount > 0 ) {
+		std::cout << std::endl << "Average executiton time: " << timer.milliseconds( "entire-job" ) / timerTickCount << "ms." << std::endl;
+	}
+
+	// Release components
 	release( collector );
 	return 0;
 }
@@ -47,11 +95,6 @@ int init( sb::Collector& collector,
 	}
 
 	return 0;
-}
-
-void test( const sb::RawContent& rawContent )
-{
-	cv::imshow( WINDOW_NAME, rawContent.getColorImage() );
 }
 
 void release( sb::Collector& collector )
