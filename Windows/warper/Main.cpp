@@ -18,6 +18,8 @@ struct WarpData
 		cv::Point2f( -1, -1 ),
 		cv::Point2f( -1, -1 ) };
 
+	std::vector<cv::Point2d> specificPoints = { cv::Point2d( -1, -1 ), cv::Point2d( -1, -1 ) };
+
 	cv::String fileToSave;
 };
 
@@ -31,7 +33,9 @@ int parseCommands( const int argc, const char** argv,
 
 void saveData( WarpData* warpData );
 
-void onMouse( int event, int x, int y, int flags, void* userdata );
+void onMouseGeneratingWarpMatrix( int event, int x, int y, int flags, void* userdata );
+
+void onMouseGeneratingConvertCoef( int event, int x, int y, int flags, void* userdata );
 
 int main( const int argc, const char** argv )
 {
@@ -58,13 +62,17 @@ int doModeGenerate( const int argc, const char** argv )
 
 	cv::imshow( WINDOW_NAME, warpData.image );
 
-	cv::setMouseCallback( WINDOW_NAME, onMouse, &warpData );
+	cv::setMouseCallback( WINDOW_NAME, onMouseGeneratingWarpMatrix, &warpData );
 
 	cv::waitKey( 0 );
 
-	saveData( &warpData );
+	cv::setMouseCallback( WINDOW_NAME, onMouseGeneratingConvertCoef, &warpData );
+
+	cv::waitKey( 0 );
 
 	cv::setMouseCallback( WINDOW_NAME, NULL );
+
+	saveData( &warpData );
 
 	return 0;
 }
@@ -72,9 +80,9 @@ int doModeGenerate( const int argc, const char** argv )
 int doModeTest( const int argc, const char** argv )
 {
 	cv::Mat srcImage;
-	
+
 	cv::Mat dstImage;
-	
+
 	cv::String fileToLoad;
 
 	// load source image and yaml
@@ -88,17 +96,17 @@ int doModeTest( const int argc, const char** argv )
 
 		// load srcQuad and dstQuad
 		std::vector<cv::Point2f> srcQuadVec;
-		std::vector<cv::Point2f> dstQuadVec; 
-		
+		std::vector<cv::Point2f> dstQuadVec;
+
 		cv::FileStorage fs( fileToLoad, cv::FileStorage::READ );
 		fs["WARP_SRC_QUAD"] >> srcQuadVec;
 		fs["WARP_DST_QUAD"] >> dstQuadVec;
 		fs.release();
-		
+
 		std::copy( srcQuadVec.begin(), srcQuadVec.end(), srcQuad );
 		std::copy( dstQuadVec.begin(), dstQuadVec.end(), dstQuad );
 
-		cv::Mat warpMat = cv::getPerspectiveTransform( srcQuad, dstQuad );		
+		cv::Mat warpMat = cv::getPerspectiveTransform( srcQuad, dstQuad );
 
 		cv::warpPerspective( srcImage, dstImage, warpMat, srcImage.size() );
 	}
@@ -149,14 +157,29 @@ void saveData( WarpData* warpData )
 		warpData->dstQuad[3] = temp;
 	}
 
+	double realDistance;
+	std::cout << "Real distance between two specific points: ";
+	std::cin >> realDistance;
+
+	double imageDistance;
+
+	// warp two specific points
+	cv::Matx33f warpMatrix = cv::getPerspectiveTransform( warpData->srcQuad, warpData->dstQuad );
+	cv::perspectiveTransform( warpData->specificPoints, warpData->specificPoints, warpMatrix );
+
+	// calculate image distance between them
+	cv::Point2d diff = warpData->specificPoints[0] - warpData->specificPoints[1];
+	imageDistance = std::sqrt( diff.x * diff.x + diff.y * diff.y );
+
 	// save to disk
 	cv::FileStorage fs( warpData->fileToSave, cv::FileStorage::WRITE );
 	fs << "WARP_SRC_QUAD" << std::vector<cv::Point2f>( warpData->srcQuad, warpData->srcQuad + 4 );
 	fs << "WARP_DST_QUAD" << std::vector<cv::Point2f>( warpData->dstQuad, warpData->dstQuad + 4 );
+	fs << "CONVERT_COEF" << realDistance / imageDistance;
 	fs.release();
 }
 
-void onMouse( int event, int x, int y, int flags, void* userdata )
+void onMouseGeneratingWarpMatrix( int event, int x, int y, int flags, void* userdata )
 {
 	WarpData* warpData = static_cast<WarpData*>(userdata);
 
@@ -180,6 +203,11 @@ void onMouse( int event, int x, int y, int flags, void* userdata )
 
 	case cv::EVENT_MOUSEMOVE: {
 		cv::Mat tempImage = warpData->image.clone();
+
+		cv::putText( tempImage,
+		             "Generate warp matrix: 4 source quad & 4 destination quad",
+		             cv::Point( 20, 15 ),
+		             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
 
 		int i;
 		for ( i = 0; i < 4; i++ ) {
@@ -245,6 +273,43 @@ void onMouse( int event, int x, int y, int flags, void* userdata )
 				          warpData->dstQuad[0],
 				          cv::Point2f( static_cast<float>(x), static_cast<float>(y) ),
 				          cv::Scalar( 0, 255, 255 ), 2 );
+			}
+		}
+
+		cv::imshow( WINDOW_NAME, tempImage );
+	}
+		break;
+	}
+}
+
+void onMouseGeneratingConvertCoef( int event, int x, int y, int flags, void* userdata )
+{
+	WarpData* warpData = static_cast<WarpData*>(userdata);
+
+	switch ( event ) {
+	case cv::EVENT_LBUTTONDOWN: {
+
+		for ( int i = 0; i < 2; i++ ) {
+			if ( warpData->specificPoints[i].x < 0 ) {
+				warpData->specificPoints[i] = cv::Point2f( static_cast<float>(x), static_cast<float>(y) );
+				return;
+			}
+		}
+
+	}
+		break;
+
+	case cv::EVENT_MOUSEMOVE: {
+		cv::Mat tempImage = warpData->image.clone();
+
+		cv::putText( tempImage,
+		             "Choose 2 specificPoints for distance converting",
+		             cv::Point( 20, 15 ),
+		             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
+
+		for ( int i = 0; i < 2; i++ ) {
+			if ( warpData->specificPoints[i].x >= 0 ) {
+				cv::circle( tempImage, warpData->specificPoints[i], 3, cv::Scalar( 0, 0, 255 ), -1 );
 			}
 		}
 

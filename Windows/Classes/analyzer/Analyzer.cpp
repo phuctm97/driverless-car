@@ -3,6 +3,9 @@
 
 int sb::Analyzer::init( const sb::Params& params )
 {
+	_laneWidth = params.LANE_WIDTH;
+	_roadWidth = params.INITIAL_POSITION_OF_RIGHT_LANE - params.INITIAL_POSITION_OF_LEFT_LANE;
+
 	cv::Point cropPosition;
 	cropPosition.x = (params.COLOR_FRAME_SIZE.width - params.CROPPED_FRAME_SIZE.width) / 2;
 	cropPosition.y = params.COLOR_FRAME_SIZE.height - params.CROPPED_FRAME_SIZE.height;
@@ -19,6 +22,14 @@ int sb::Analyzer::init( const sb::Params& params )
 
 int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInfo ) const
 {
+	return analyze2( frameInfo, roadInfo );
+}
+
+void sb::Analyzer::release() { }
+
+int sb::Analyzer::analyze1( const sb::FrameInfo& frameInfo,
+                            sb::RoadInfo& roadInfo ) const
+{
 	const int N_LINES = static_cast<int>(frameInfo.getRealLineInfos().size());
 	const int N_SECTIONS = static_cast<int>(frameInfo.getSectionInfos().size());
 
@@ -31,7 +42,6 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 		oldAngles[i] = line.getAngleWithOx();
 	}
 	///// </Old-values> /////
-
 
 	///// <Ratings> /////
 	//* 1) sử dụng hàm cộng với các hằng số cộng cao/thấp tương úng với tính chất thuộc tính
@@ -47,6 +57,7 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 
 		//** color
 		//lineRatings[i] += (realLine.getAverageColor()[0] + realLine.getAverageColor()[1] + realLine.getAverageColor()[2]) / 3;
+
 	}
 
 	// independent ratings in section
@@ -159,7 +170,6 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 	}
 	///// </Ratings> /////
 
-
 	///// <Debug> /////
 
 	// create real image
@@ -192,7 +202,6 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 	cv::imshow( "Test Analyzer", realImage );
 	cv::waitKey();
 
-	
 	// debug each lines
 	for ( int i = 0; i < N_LINES; i++ ) {
 		// if ( lineRatings[i] < 2000 ) continue;
@@ -308,5 +317,284 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 	return 0;
 }
 
-void sb::Analyzer::release() { }
+int sb::Analyzer::analyze2( const sb::FrameInfo& frameInfo,
+                            sb::RoadInfo& roadInfo ) const
+{
+	const int N_LINES = static_cast<int>(frameInfo.getRealLineInfos().size());
+	const int N_SECTIONS = static_cast<int>(frameInfo.getSectionInfos().size());
 
+	///// <Old-values> /////
+	std::vector<cv::Point2d> oldLeftKnots = roadInfo.getLeftKnots();
+	std::vector<cv::Point2d> oldRightKnots = roadInfo.getRightKnots();
+	std::vector<double> oldAngles( N_SECTIONS, 0 );
+	for ( int i = 0; i < N_SECTIONS; i++ ) {
+		sb::Line line( oldLeftKnots[i], oldLeftKnots[i + 1] );
+		oldAngles[i] = line.getAngleWithOx();
+	}
+	///// </Old-values> /////
+
+	std::vector<std::vector<int>> lineVotes( N_LINES );
+	std::vector<std::vector<int>> sideVotes( N_LINES );
+
+	///// <Ratings> //////
+	//* Tính toán độ quan trọng bằng cách thêm n vote cho factor có độ quan trọng n
+
+	// independent ratings in whole frame *importance
+	/*for ( int i = 0; i < N_LINES; i++ ) {
+		const sb::LineInfo& realLine = frameInfo.getRealLineInfos()[i];
+
+		// color *importance
+		{
+			int
+					b = realLine.getAverageColor()[0],
+					g = realLine.getAverageColor()[1],
+					r = realLine.getAverageColor()[2];
+			double colorAvg = (b + g + r) / 3;
+			double colorDiff = (abs( b - g ) + abs( b - r ) + abs( g - r )) / 3;
+
+			// color criterias
+			if ( colorAvg > 170 && colorDiff < 50 ) {
+				colorAvg = std::exp( MIN( colorAvg, 255 ) * 0.018 );
+				colorDiff = (-std::log( MIN( colorDiff+0.1, 255 ) * 86.378 ) + 11) * 10;
+
+				//* coef
+				double color_scale = 0.6 * colorAvg + (1 - 0.6) * colorDiff;
+				lineVotes[i].push_back( static_cast<int>(color_scale) );
+			}
+		}
+	}*/
+
+	// independent ratings with old values
+	/*for ( int i = 0; i < N_SECTIONS; i++ ) {
+		const sb::SectionInfo& section = frameInfo.getSectionInfos()[i];
+		const int n_lines = static_cast<int>(section.lines.size());
+
+		for ( int j = 0; j < n_lines; j++ ) {
+			const std::pair<int, cv::Vec2d>& lineInfo = section.lines[j];
+			const sb::LineInfo realLine = frameInfo.getRealLineInfos()[lineInfo.first];
+
+			const int lineIndex = lineInfo.first;
+			const double lowerX = lineInfo.second[0];
+			const double upperX = lineInfo.second[1];
+			const double angle = realLine.getAngle();
+
+			// old state
+			double positionDiff = abs( lowerX - oldLeftKnots[i].x );
+			double angleDiff = abs( angle - oldAngles[i] );
+
+			// old state criterias
+			if ( 1 ) {
+				
+			}
+
+		}
+	}*/
+
+	// dependent ratings
+	for ( int i = 0; i < N_SECTIONS; i++ ) { // section
+		const sb::SectionInfo& section = frameInfo.getSectionInfos()[i];
+		const int n_lines = static_cast<int>(section.lines.size());
+
+		for ( int j = 0; j < n_lines; j++ ) { // 1st line
+			const std::pair<int, cv::Vec2d>& lineInfo1 = section.lines[j];
+			const sb::LineInfo& realLine1 = frameInfo.getRealLineInfos()[lineInfo1.first];
+
+			int index1 = lineInfo1.first;
+			double lowerX1 = lineInfo1.second[0];
+			double upperX1 = lineInfo1.second[1];
+			double angle1 = realLine1.getAngle();
+			double length1 = realLine1.getLength();
+
+			for ( int k = 0; k < n_lines; k++ ) { // 2nd line
+				if ( j == k ) continue;
+
+				const std::pair<int, cv::Vec2d>& lineInfo2 = section.lines[k];
+				const sb::LineInfo& realLine2 = frameInfo.getRealLineInfos()[lineInfo2.first];
+
+				int index2 = lineInfo2.first;
+				double lowerX2 = lineInfo2.second[0];
+				double upperX2 = lineInfo2.second[1];
+				double angle2 = realLine2.getAngle();
+				double length2 = realLine2.getLength();
+
+				// same lane 
+				{
+					double laneDiff = abs( abs( lowerX1 - lowerX2 ) - _laneWidth );
+					double angleDiff = abs( angle1 - angle2 );
+
+					if ( angleDiff < 7 && laneDiff < (0.5 * _laneWidth) ) {
+						laneDiff = -std::exp( laneDiff * 4.6 / (0.5 * _laneWidth) ) + 101;
+						angleDiff = -std::exp( angleDiff * 4.6 / 7 ) + 101;
+
+						double samelane_scale = 0.5 * angleDiff + (1 - 0.5) * laneDiff;
+
+						int importance = 5; // half-of-important
+						for ( ; importance > 0; importance-- ) {
+							lineVotes[index1].push_back( static_cast<int>(samelane_scale) );
+							lineVotes[index2].push_back( static_cast<int>(samelane_scale) );
+						}
+					}
+				}
+
+				// opposite lane 
+				{
+					double roadDiff = abs( abs( lowerX1 - lowerX2 ) - _roadWidth );
+					double angleDiff = abs( angle1 - angle2 );
+
+					if ( angleDiff < 15 && roadDiff < 2 * _laneWidth ) {
+						roadDiff = -std::exp( roadDiff * 4.6 / (2 * _laneWidth) ) + 101;
+						angleDiff = -std::exp( angleDiff * 4.6 / 15 ) + 101;
+
+						double oppositelane_scale = 0.6 * angleDiff + (1 - 0.6) * roadDiff;
+
+						int importance = 5; // half-of-important
+						for ( ; importance > 0; importance-- ) {
+							lineVotes[index1].push_back( static_cast<int>(oppositelane_scale) );
+							lineVotes[index2].push_back( static_cast<int>(oppositelane_scale) );
+						}
+					}
+				}
+
+			}
+		}
+	}
+
+	///// <Ratings> //////
+	std::vector<int> lineRatings( N_LINES, 0 );
+
+	// shared fields
+	int numberOfVotedLines = 0;
+	int totalNumberOfVotes = 0;
+	int avgNumberOfVotes = 0;
+	int totalRating = 0;
+	int avgRating = 0;
+
+	for ( const auto& lineVote: lineVotes ) {
+		if ( lineVote.empty() ) continue;
+
+		numberOfVotedLines++;
+		for ( const auto& rating: lineVote ) {
+			totalNumberOfVotes++;
+			totalRating += rating;
+		}
+	}
+	avgNumberOfVotes = totalNumberOfVotes / numberOfVotedLines;
+	avgRating = totalRating / totalNumberOfVotes;
+
+	// individual line ranking
+
+	for ( int i = 0; i < N_LINES; i++ ) {
+		if ( lineVotes[i].empty() ) continue;;
+
+		int thisNumberOfVotes = 0;
+		int thisRating = 0;
+
+		for ( const auto& rating: lineVotes[i] ) {
+			thisNumberOfVotes++;
+			thisRating += rating;
+		}
+
+		thisRating /= thisNumberOfVotes;
+
+		lineRatings[i] = ((avgNumberOfVotes * avgRating) + (thisNumberOfVotes * thisRating)) / (avgNumberOfVotes + thisNumberOfVotes);
+	}
+
+	///// </Rankings> //////
+
+	///// <Debug> /////
+	{
+
+		// create real image
+		const int W = 900;
+		const int H = 700;
+		cv::Mat realImage( frameInfo.getColorImage().rows + H,
+		                   frameInfo.getColorImage().cols + W, CV_8UC3,
+		                   cv::Scalar( 0, 0, 0 ) );
+
+		for ( int i = 0; i < N_LINES; i++ ) {
+			const auto& line = frameInfo.getRealLineInfos()[i];
+
+			cv::line( realImage,
+			          _debugFormatter.convertFromCoord( line.getStartingPoint() ) + cv::Point2d( W / 2, H ),
+			          _debugFormatter.convertFromCoord( line.getEndingPoint() ) + cv::Point2d( W / 2, H ),
+			          lineRatings[i] >= 80 ? cv::Scalar( 0, 255, 0 ) : cv::Scalar( 0, 0, 255 ), 1 );
+		}
+
+		/*for ( int i = 0; i < N_SECTIONS; i++ ) {
+			cv::line( realImage,
+			          _debugFormatter.convertFromCoord( oldLeftKnots[i] ) + cv::Point2d( W / 2, H ),
+			          _debugFormatter.convertFromCoord( oldLeftKnots[i + 1] ) + cv::Point2d( W / 2, H ),
+			          cv::Scalar( 170, 170, 170 ), 3 );
+			cv::line( realImage,
+			          _debugFormatter.convertFromCoord( oldRightKnots[i] ) + cv::Point2d( W / 2, H ),
+			          _debugFormatter.convertFromCoord( oldRightKnots[i + 1] ) + cv::Point2d( W / 2, H ),
+			          cv::Scalar( 170, 170, 170 ), 3 );
+		}*/
+
+		cv::imshow( "Test Analyzer", realImage );
+		cv::waitKey();
+
+		// debug each lines
+		for ( int i = 0; i < N_LINES; i++ ) {
+			if ( lineVotes[i].empty() ) continue;
+
+			const sb::LineInfo& realLine = frameInfo.getRealLineInfos()[i];
+
+			cv::Mat tempImage = realImage.clone();
+			cv::line( tempImage,
+			          _debugFormatter.convertFromCoord( realLine.getStartingPoint() ) + cv::Point2d( W / 2, H ),
+			          _debugFormatter.convertFromCoord( realLine.getEndingPoint() ) + cv::Point2d( W / 2, H ),
+			          cv::Scalar( 0, 255, 255 ), 2 );
+
+			std::stringstream stringBuilder;
+
+			stringBuilder << "Votes: " << cv::format( cv::Mat( lineVotes[i] ), "C" );
+			cv::putText( tempImage,
+			             stringBuilder.str(),
+			             cv::Point( 20, 15 ),
+			             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
+
+			stringBuilder.str( "" );
+
+			stringBuilder << "Rating: " << lineRatings[i];
+			cv::putText( tempImage,
+			             stringBuilder.str(),
+			             cv::Point( 20, 45 ),
+			             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
+
+			stringBuilder.str( "" );
+
+			cv::imshow( "Test2", tempImage );
+			cv::waitKey();
+		}
+	}
+	///// </Debug> /////
+
+	///// </Ratings> //////
+
+	return 0;
+}
+
+int sb::Analyzer::analyze3( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInfo ) const
+{
+	// Bước 1: Sử dụng một cửa sổ vừa nhỏ đủ chứa một làn đường, quét ngang phần dưới khung hình
+	// Bước 2: Vote cho những đường có khả năng tạo thành 1 làn đường (song song, cách nhau một khoảng gần bằng độ rộng làn đường)
+	// Bước 3: Tính điểm đánh giá cho những đường vừa vote
+	// Bước 4: Nếu đánh giá đủ cao để xem là làn đường đến bước 5, ngược lại quay lại bước 1 nhưng với phần khung hình cao hơn
+	// Bước 5: Trượt cửa sổ chiều của làn đường đó
+	// Bước 6: Vừa trượt vừa tìm những đường nối tiếp làn đường đó
+	// Bước 7: Tìm càng được càng nhiều đường nối, đánh giá càng cao
+	// Bước 8: Nếu điểm đủ cao, xác định đó là 1 trường hợp làn đường có thể
+	// Bước 9: Tiếp tục tìm tương tự
+	// Bước 10: Nếu tồn tại làn có đánh giá đủ cao thứ 2
+	// Bước 11: Xét quan hệ giữa 2 làn tìm đường
+	// Bước 12: Nếu các quan hệ hợp lý tạo thành làn đường thì đó là làn thứ hai. Kết thúc
+	// Bước 13: Tiếp tục tìm tương tự.
+	// Bước 14: Nếu tồn tại làn có đánh giá đủ cao thứ n
+	// Bước 15: Xét quan hệ với các làn còn lại
+	// Bước 16: Nếu quan hệ hợp lý tạo thành làn đường. Kết thúc.
+	// Bước 17: Không tìm được thêm làn nào. Xác định làn tìm được là trái hay phải dựa trên quan hệ với trạng thái cũ
+	// Bước 19: Nếu khoogn tìm được làn nào hợp lý cả, sử dụng kết quả tìm được gợi ý làn đường
+
+	return 0;
+}
