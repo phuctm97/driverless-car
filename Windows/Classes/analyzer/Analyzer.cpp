@@ -22,7 +22,7 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 	const int N_LINES = static_cast<int>(frameInfo.getRealLineInfos().size());
 	const int N_SECTIONS = static_cast<int>(frameInfo.getSectionInfos().size());
 
-	///// Old values /////
+	///// <Old-values> /////
 	std::vector<cv::Point2d> oldLeftKnots = roadInfo.getLeftKnots();
 	std::vector<cv::Point2d> oldRightKnots = roadInfo.getRightKnots();
 	std::vector<double> oldAngles( N_SECTIONS, 0 );
@@ -30,8 +30,10 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 		sb::Line line( oldLeftKnots[i], oldLeftKnots[i + 1] );
 		oldAngles[i] = line.getAngleWithOx();
 	}
+	///// </Old-values> /////
 
-	///// Ratings /////
+
+	///// <Ratings> /////
 	//* 1) sử dụng hàm cộng với các hằng số cộng cao/thấp tương úng với tính chất thuộc tính
 	//* 2) sử dụng hàm nhân cho mỗi thuộc tính đáp ứng
 	//* 3) sử dụng các hàm số có đồ thị đúng yêu cầu
@@ -40,15 +42,12 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 	std::vector<double> sideRatings( N_LINES, 0 );
 
 	// independent ratings in whole frame
-	/*for ( int i = 0; i < N_LINES; i++ ) {
+	for ( int i = 0; i < N_LINES; i++ ) {
 		const sb::LineInfo& realLine = frameInfo.getRealLineInfos()[i];
 
-		// length
-		_lineRatings[i] += realLine.getLength();
-
 		//** color
-		_lineRatings[i] += 5.0 * (realLine.getAverageColor()[0] + realLine.getAverageColor()[1] + realLine.getAverageColor()[2]) / 3;
-	}*/
+		//lineRatings[i] += (realLine.getAverageColor()[0] + realLine.getAverageColor()[1] + realLine.getAverageColor()[2]) / 3;
+	}
 
 	// independent ratings in section
 	for ( int i = 0; i < N_SECTIONS; i++ ) {
@@ -129,7 +128,7 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 						sideRatings[index1] = MIN( tempSideRatings[index1], tempSideRatings[index2] ) - 1000;
 						sideRatings[index2] = sideRatings[index1];
 					}
-					if ( tempSideRatings[index1] > 0 || tempSideRatings[index2] > 0 ) {
+					else {
 						sideRatings[index1] = MAX( tempSideRatings[index1], tempSideRatings[index2] ) + 1000;
 						sideRatings[index2] = sideRatings[index1];
 					}
@@ -144,6 +143,7 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 					lineRatings[index2] = lineRatings[index1];
 
 					double sideRating = MAX( abs( tempSideRatings[index1] ), abs( tempSideRatings[index2] ) );
+
 					if ( tempSideRatings[index1] < tempSideRatings[index2] ) {
 						tempSideRatings[index1] = -sideRating;
 						tempSideRatings[index2] = sideRating;
@@ -157,10 +157,12 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 			}
 		}
 	}
+	///// </Ratings> /////
 
-	///// Debug /////
 
-	/*// create real image
+	///// <Debug> /////
+
+	// create real image
 	const int W = 900;
 	const int H = 700;
 	cv::Mat realImage( frameInfo.getColorImage().rows + H,
@@ -168,8 +170,6 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 	                   cv::Scalar( 0, 0, 0 ) );
 
 	for ( int i = 0; i < N_LINES; i++ ) {
-		if ( lineRatings[i] < 2000 ) continue;
-
 		const auto& line = frameInfo.getRealLineInfos()[i];
 
 		cv::line( realImage,
@@ -190,12 +190,12 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 	}
 
 	cv::imshow( "Test Analyzer", realImage );
-	cv::waitKey();*/
+	cv::waitKey();
 
-	/*
+	
 	// debug each lines
 	for ( int i = 0; i < N_LINES; i++ ) {
-		if ( lineRatings[i] < 2000 ) continue;
+		// if ( lineRatings[i] < 2000 ) continue;
 
 		const sb::LineInfo& realLine = frameInfo.getRealLineInfos()[i];
 
@@ -225,7 +225,7 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 		cv::waitKey();
 	}
 
-	*/
+	///// </Debug> /////
 
 	///// Update /////
 

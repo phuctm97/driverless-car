@@ -2,7 +2,6 @@
 
 int sb::Calculator::init( const sb::Params& params )
 {
-	//** calculate crop box (considering use camera crop, dont crop manually)
 	cv::Point cropPosition;
 	cropPosition.x = (params.COLOR_FRAME_SIZE.width - params.CROPPED_FRAME_SIZE.width) / 2;
 	cropPosition.y = params.COLOR_FRAME_SIZE.height - params.CROPPED_FRAME_SIZE.height;
@@ -38,6 +37,9 @@ int sb::Calculator::calculate( const sb::RawContent& rawContent,
 		std::cerr << "Crop image failed." << std::endl;
 		return -1;
 	}
+
+	// flip to natural direction ( input image from camera was flipped )
+	cv::flip( colorImage, colorImage, 1 );
 
 	frameInfo.setColorImage( colorImage );
 
@@ -93,7 +95,7 @@ cv::Point2d sb::Calculator::convertFromCoord( const cv::Point2d& point ) const {
 
 void sb::Calculator::calculateLineInfos( const std::vector<sb::Line>& lines,
                                          const cv::Mat& colorImage,
-                                         std::vector<sb::LineInfo>& outputLineInfos ) const
+                                         std::vector<sb::LineInfo>& outputLineInfos )
 {
 	outputLineInfos.clear();
 	outputLineInfos.assign( lines.size(), sb::Line() );
@@ -147,4 +149,3 @@ void sb::Calculator::calculateLineInfos( const std::vector<sb::Line>& lines,
 		lineInfo.setAverageColor( averageColor );
 	}
 }
-

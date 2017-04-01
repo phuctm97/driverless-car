@@ -37,9 +37,9 @@ public:
 	cv::Point2d convertFromCoord( const cv::Point2d& point ) const;
 
 private:
-	void calculateLineInfos( const std::vector<sb::Line>& lines,
+	static void calculateLineInfos( const std::vector<sb::Line>& lines,
 													 const cv::Mat& colorImage,
-													 std::vector<sb::LineInfo>& outputLineInfos ) const;
+													 std::vector<sb::LineInfo>& outputLineInfos );
 };
 }
 
