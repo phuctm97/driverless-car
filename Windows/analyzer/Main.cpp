@@ -53,6 +53,9 @@ int main( const int argc, const char** argv )
 		return -1;
 	}
 
+	cv::namedWindow( "Ego-view", CV_WINDOW_KEEPRATIO );
+	cv::namedWindow( "Birdeye-view", CV_WINDOW_KEEPRATIO );
+
 	// Pressed key
 	char key = 0;
 	std::cout << "Enter 's' to start! ";
@@ -74,6 +77,7 @@ int main( const int argc, const char** argv )
 	}
 	int frameCount = 0;
 	///// </Result-writer> /////
+
 
 	while ( true ) {
 		timer.reset( "total" );
@@ -232,9 +236,9 @@ void test( const sb::Calculator& calculator,
 	               CAR_POSITION + cv::Point( CAR_SIZE.width / 2, CAR_SIZE.height ) + cv::Point( EXPAND_SIZE.width / 2, EXPAND_SIZE.height ),
 	               cv::Scalar( 0, 255, 255 ), 4 );
 
-	cv::imshow( "Ego-view", rawContent.getColorImage() );
+	cv::imshow( "Ego-view", frameInfo.getColorImage() );
 
-	cv::imshow( "Bird-eye view", radarImage );
+	cv::imshow( "Birdeye-view", radarImage );
 
 	cv::waitKey( 33 );
 }
