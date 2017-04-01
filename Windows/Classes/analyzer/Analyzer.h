@@ -11,13 +11,14 @@ namespace sb
 class Analyzer
 {
 private:
-	double _laneWidth = 6;
-	double _roadWidth = 80;
+	double _laneWidth;
+	double _roadWidth;
 
 	sb::Formatter _debugFormatter;
 
 public:
-	Analyzer() {}
+	Analyzer()
+		: _laneWidth( 0 ), _roadWidth( 0 ) {}
 
 	int init( const sb::Params& params );
 
@@ -25,8 +26,17 @@ public:
 	             sb::RoadInfo& roadInfo ) const;
 
 	void release();
+
+private:
+	int analyze1( const sb::FrameInfo& frameInfo,
+	              sb::RoadInfo& roadInfo ) const;
+
+	int analyze2( const sb::FrameInfo& frameInfo,
+	              sb::RoadInfo& roadInfo ) const;
+
+	int analyze3( const sb::FrameInfo& frameInfo,
+	              sb::RoadInfo& roadInfo ) const;
 };
 }
 
 #endif //!__SB_ANALYZER_H__
-
