@@ -74,6 +74,10 @@ public:
 
 	double getDistance( const cv::Point2d& point ) const;
 
+	cv::Point2d getNormalizedHorizontalVector() const;
+
+	cv::Point2d getNormalizedVerticalVector() const;
+
 	sb::Line rotate( double alpha,
 	                 bool degree = true ) const;
 

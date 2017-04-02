@@ -3,7 +3,6 @@
 
 #include "../Include.h"
 #include "LineInfo.h"
-#include "SectionInfo.h"
 
 namespace sb
 {
@@ -16,8 +15,6 @@ private:
 
 	double _convertCoordCoef;
 
-	std::vector<int> _separateRows;
-
 public:
 	Formatter()
 		: _convertCoordCoef( 0 ) {}
@@ -25,16 +22,12 @@ public:
 	Formatter( const cv::Rect& cropBox,
 	           const cv::Point2f* warpOriginalSourceQuad,
 	           const cv::Point2f* warpOriginalDestinationQuad,
-	           double convertCoordCoef,
-	           const std::vector<int>& separateRows );
+	           double convertCoordCoef );
 
 	int crop( const cv::Mat& inputImage, cv::Mat& outputImage ) const;
 
 	int warp( const std::vector<sb::LineInfo> imageLines,
 	          std::vector<sb::LineInfo>& outputRealLines ) const;
-
-	int split( const std::vector<sb::LineInfo> realLines,
-	           std::vector<sb::SectionInfo>& outputSections ) const;
 
 	double convertXToCoord( double x ) const;
 
@@ -42,11 +35,15 @@ public:
 
 	cv::Point2d convertToCoord( const cv::Point2d& point ) const;
 
+	cv::Rect2d convertToCoord( const cv::Rect2d& rect ) const;
+
 	double convertXFromCoord( double x ) const;
 
 	double convertYFromCoord( double y ) const;
 
 	cv::Point2d convertFromCoord( const cv::Point2d& point ) const;
+
+	cv::Rect2d convertFromCoord( const cv::Rect2d& rect ) const;
 };
 }
 

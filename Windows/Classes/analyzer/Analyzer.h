@@ -6,19 +6,22 @@
 #include "../calculator/Formatter.h"
 #include "RoadInfo.h"
 
+#define MAX_ACCEPTABLE_ANGLE_DIFF 5
+
 namespace sb
 {
 class Analyzer
 {
 private:
-	double _laneWidth;
-	double _roadWidth;
+	double _minLandWidth;
+	double _maxLandWidth;
+	double _minRoadWidth;
+	double _maxRoadWidth;
 
 	sb::Formatter _debugFormatter;
 
 public:
-	Analyzer()
-		: _laneWidth( 0 ), _roadWidth( 0 ) {}
+	Analyzer() {}
 
 	int init( const sb::Params& params );
 
@@ -36,6 +39,15 @@ private:
 
 	int analyze3( const sb::FrameInfo& frameInfo,
 	              sb::RoadInfo& roadInfo ) const;
+
+	int analyze4( const sb::FrameInfo& frameInfo,
+	              sb::RoadInfo& roadInfo ) const;
+
+	bool segmentIntersectRectangle( const cv::Point2d& p1,
+	                                const cv::Point2d& p2,
+	                                const cv::Rect2d& rect ) const;
+
+	void drawCandidate( const cv::Vec6d& candidate ) const;
 };
 }
 

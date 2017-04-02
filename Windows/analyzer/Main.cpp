@@ -53,9 +53,6 @@ int main( const int argc, const char** argv )
 		return -1;
 	}
 
-	cv::namedWindow( "Ego-view", CV_WINDOW_KEEPRATIO );
-	cv::namedWindow( "Birdeye-view", CV_WINDOW_KEEPRATIO );
-
 	// Pressed key
 	char key = 0;
 	std::cout << "Enter 's' to start! ";
@@ -189,7 +186,7 @@ void test( const sb::Calculator& calculator,
            const sb::RoadInfo& roadInfo )
 {
 	///// Init image /////
-	const int N_SECTIONS = static_cast<int>(frameInfo.getSectionInfos().size());
+	/*const int N_SECTIONS = static_cast<int>(frameInfo.getSectionInfos().size());
 
 	const cv::Size FRAME_SIZE = frameInfo.getColorImage().size();
 
@@ -240,7 +237,7 @@ void test( const sb::Calculator& calculator,
 
 	cv::imshow( "Birdeye-view", radarImage );
 
-	cv::waitKey( 33 );
+	cv::waitKey( 33 );*/
 }
 
 void release( sb::Collector& collector,
