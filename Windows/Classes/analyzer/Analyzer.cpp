@@ -1,8 +1,8 @@
 ﻿#include "Analyzer.h"
 #include "../collector/RawContent.h"
 
-sb::LanePart::LanePart( const cv::Point2d& _position, double _angle, double _width, double _length )
-	: position( _position ), angle( _angle ), width( _width ), length( _length ) {}
+sb::LanePart::LanePart( const cv::Point2d& _position, double _angle, double _width )
+	: position( _position ), angle( _angle ), width( _width ) {}
 
 bool sb::LanePart::operator==( const sb::LanePart& other ) const
 {
@@ -667,7 +667,7 @@ int sb::Analyzer::find_first_lane_parts( const std::vector<sb::LineInfo>& lines,
 			else pos = first_point.y < second_point.y ? first_point : second_point;
 
 			/// 2) add to good couples
-			sb::LanePart lane_part( pos, angle, width, MAX(first_line.getLength(), second_line.getLength()) );
+			sb::LanePart lane_part( pos, angle, width );
 
 			if ( std::find( first_lane_parts.cbegin(), first_lane_parts.cend(), lane_part )
 				!= first_lane_parts.cend() )
@@ -681,6 +681,7 @@ int sb::Analyzer::find_first_lane_parts( const std::vector<sb::LineInfo>& lines,
 }
 
 int sb::Analyzer::calculate_lane_part_vertices( const sb::LanePart& lane_part,
+                                                double lane_part_length,
                                                 cv::Point2d* vertices ) const
 {
 	vertices[0] = lane_part.position;
@@ -703,7 +704,7 @@ int sb::Analyzer::calculate_lane_part_vertices( const sb::LanePart& lane_part,
 		horizontal_vec = cv::Point2d( vertical_vec.y, -vertical_vec.x );
 	}
 
-	vertices[1] = vertices[0] + vertical_vec * lane_part.length;
+	vertices[1] = vertices[0] + vertical_vec * lane_part_length;
 	vertices[2] = vertices[1] + horizontal_vec * lane_part.width;
 	vertices[3] = vertices[0] + horizontal_vec * lane_part.width;
 
@@ -819,7 +820,7 @@ int sb::Analyzer::analyze3( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadIn
 				cv::Mat temp_image_1 = temp_image.clone();
 
 				cv::Point2d vertices[4];
-				calculate_lane_part_vertices( lane_part, vertices );
+				calculate_lane_part_vertices( lane_part, window_move.y, vertices );
 
 				for ( int v = 0; v < 4; v++ ) {
 					cv::line( temp_image,

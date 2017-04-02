@@ -18,9 +18,7 @@ struct LanePart
 
 	double angle;
 
-	double length;
-
-	LanePart( const cv::Point2d& _position, double _angle, double _width, double _length );
+	LanePart( const cv::Point2d& _position, double _angle, double _width );
 
 	bool operator==( const sb::LanePart& other ) const;
 };
@@ -64,6 +62,7 @@ private:
 	                           std::vector<sb::LanePart>& first_lane_parts ) const;
 
 	int calculate_lane_part_vertices( const sb::LanePart& lane_part,
+																		double lane_part_length,
 	                                  cv::Point2d* vertices ) const;
 
 	int analyze3( const sb::FrameInfo& frameInfo,
