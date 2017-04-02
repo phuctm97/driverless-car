@@ -33,6 +33,10 @@ public:
 
 	double convertYToCoord( double y ) const;
 
+	double convertLengthToCoord( double length ) const;
+
+	double convertLengthFromCoord( double length ) const;
+
 	cv::Point2d convertToCoord( const cv::Point2d& point ) const;
 
 	cv::Rect2d convertToCoord( const cv::Rect2d& rect ) const;
