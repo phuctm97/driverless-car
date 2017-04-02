@@ -77,6 +77,16 @@ double sb::Formatter::convertYToCoord( double y ) const
 	return (_cropBox.height - y) * _convertCoordCoef;
 }
 
+double sb::Formatter::convertLengthToCoord( double length ) const
+{
+	return length*_convertCoordCoef;
+}
+
+double sb::Formatter::convertLengthFromCoord( double length ) const
+{
+	return length / _convertCoordCoef;
+}
+
 cv::Point2d sb::Formatter::convertToCoord( const cv::Point2d& point ) const
 {
 	return cv::Point2d(
