@@ -3,9 +3,8 @@
 sb::Formatter::Formatter( const cv::Rect& cropBox,
                           const cv::Point2f* warpOriginalSourceQuad,
                           const cv::Point2f* warpOriginalDestinationQuad,
-                          double convertCoordCoef,
-                          const std::vector<int>& separateRows )
-	: _cropBox( cropBox ), _convertCoordCoef( convertCoordCoef ), _separateRows( separateRows )
+                          double convertCoordCoef )
+	: _cropBox( cropBox ), _convertCoordCoef( convertCoordCoef )
 {
 	cv::Point2f warpSourceQuad[4];
 	cv::Point2f warpDestinationQuad[4];
@@ -68,55 +67,6 @@ int sb::Formatter::warp( const std::vector<sb::LineInfo> imageLines,
 	return 0;
 }
 
-int sb::Formatter::split( const std::vector<sb::LineInfo> realLines,
-                          std::vector<sb::SectionInfo>& outputSections ) const
-{
-	outputSections.clear();
-
-	const int N_SECTIONS = static_cast<int>(_separateRows.size()) - 1;
-	const int N_LINES = static_cast<int>(realLines.size());
-
-	if ( N_SECTIONS <= 0 )return -1;
-
-	///// calculate section borders /////
-
-	outputSections.assign( N_SECTIONS, sb::SectionInfo() );
-
-	for ( int i = 0; i < N_SECTIONS; i++ ) {
-		sb::SectionInfo& sectionInfo = outputSections[i];
-
-		// borders
-		sectionInfo.upperRow = _separateRows[i + 1];
-		sectionInfo.lowerRow = _separateRows[i];
-
-		// lines in section
-		const sb::Line upperLine( cv::Point2d( 0, sectionInfo.upperRow ), cv::Point2d( 1, sectionInfo.upperRow ) );
-		const sb::Line lowerLine( cv::Point2d( 0, sectionInfo.lowerRow ), cv::Point2d( 1, sectionInfo.lowerRow ) );
-
-		sectionInfo.lines.clear();
-		for ( int index = 0; index < N_LINES; index++ ) {
-			const sb::LineInfo& lineInfo = realLines[index];
-
-			if ( lineInfo.getEndingPoint().y >= sectionInfo.lowerRow &&
-				lineInfo.getStartingPoint().y <= sectionInfo.upperRow ) {
-				cv::Vec2d vec;
-
-				cv::Point2d p;
-
-				if ( !sb::Line::findIntersection( lineInfo.getLine(), lowerLine, p ) ) continue;
-				vec[0] = p.x;
-
-				if ( !sb::Line::findIntersection( lineInfo.getLine(), upperLine, p ) ) continue;
-				vec[1] = p.x;
-
-				sectionInfo.lines.push_back( std::pair<int, cv::Vec2d>( index, vec ) );
-			}
-		}
-	}
-
-	return 0;
-}
-
 double sb::Formatter::convertXToCoord( double x ) const
 {
 	return (x - _cropBox.width * 0.5) * _convertCoordCoef;
@@ -133,6 +83,16 @@ cv::Point2d sb::Formatter::convertToCoord( const cv::Point2d& point ) const
 	                   convertXToCoord( point.x ),
 	                   convertYToCoord( point.y )
 	                  );
+}
+
+cv::Rect2d sb::Formatter::convertToCoord( const cv::Rect2d& rect ) const
+{
+	return cv::Rect2d(
+	                  convertXToCoord( rect.x ),
+	                  convertYToCoord( rect.y ),
+	                  rect.width * _convertCoordCoef,
+	                  rect.height * _convertCoordCoef
+	                 );
 }
 
 double sb::Formatter::convertXFromCoord( double x ) const
@@ -153,3 +113,12 @@ cv::Point2d sb::Formatter::convertFromCoord( const cv::Point2d& point ) const
 	                  );
 }
 
+cv::Rect2d sb::Formatter::convertFromCoord( const cv::Rect2d& rect ) const
+{
+	return cv::Rect2d(
+	                  convertXFromCoord( rect.x ),
+	                  convertYFromCoord( rect.y ),
+	                  rect.width / _convertCoordCoef,
+	                  rect.height / _convertCoordCoef
+	                 );
+}

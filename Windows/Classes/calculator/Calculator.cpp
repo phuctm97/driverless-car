@@ -10,8 +10,7 @@ int sb::Calculator::init( const sb::Params& params )
 	                                      params.CROPPED_FRAME_SIZE.width, params.CROPPED_FRAME_SIZE.height ),
 	                            params.WARP_SRC_QUAD,
 	                            params.WARP_DST_QUAD,
-	                            params.CONVERT_COORD_COEF,
-	                            params.SEPERATE_ROWS );
+	                            params.CONVERT_COORD_COEF );
 
 	_edgeDetector = sb::EdgeDetector( params.EDGE_DETECTOR_KERNEL_SIZE,
 	                                  params.EDGE_DETECTOR_LOW_THRESH,
@@ -65,16 +64,6 @@ int sb::Calculator::calculate( const sb::RawContent& rawContent,
 
 	frameInfo.setImageLineInfos( imageLineInfos );
 	frameInfo.setRealLineInfos( realLineInfos );
-
-	///// Sections //////
-	std::vector<sb::SectionInfo> sectionInfos;
-
-	if ( _formatter.split( realLineInfos, sectionInfos ) < 0 ) {
-		std::cerr << "Split sections failed." << std::endl;
-		return -1;
-	}
-
-	frameInfo.setSectionInfos( sectionInfos );
 
 	return 0;
 }
