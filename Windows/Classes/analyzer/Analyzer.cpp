@@ -1,12 +1,50 @@
 ﻿#include "Analyzer.h"
 #include "../collector/RawContent.h"
 
-sb::LanePart::LanePart( const cv::Point2d& _position, double _angle, double _width )
-	: position( _position ), angle( _angle ), width( _width ) {}
+sb::LanePart::LanePart( const cv::Point2d& _position, double _angle, double _width, double _length )
+	: position( _position ), angle( _angle ), width( _width )
+{
+	if ( _length > 0 )
+		calculateVertices( _length );
+}
 
 bool sb::LanePart::operator==( const sb::LanePart& other ) const
 {
-	return position == other.position && width == other.width && angle == other.angle;
+	double angle_diff = abs( angle - other.angle );
+	double width_diff = abs( width - other.width );
+
+	cv::Point2d pos_diff = position - other.position;
+	double pos_distance = std::sqrt( pos_diff.x * pos_diff.x + pos_diff.y * pos_diff.y );
+
+	// **argument to be set
+	return angle_diff <= 2 && width_diff <= 2 && pos_distance <= 2;
+}
+
+void sb::LanePart::calculateVertices( double _length )
+{
+	vertices[0] = position;
+
+	cv::Point2d horizontal_vec, vertical_vec;
+
+	// calculate vectors 
+	{
+		if ( angle == 90 )
+			vertical_vec = cv::Point2d( 0, 1 );
+		else if ( angle > 90 )
+			vertical_vec = cv::Point2d( 1, tan( -angle * CV_2PI / 360 ) );
+		else
+			vertical_vec = -cv::Point2d( 1, tan( -angle * CV_2PI / 360 ) );
+
+		double vertical_vec_length = std::sqrt( vertical_vec.x * vertical_vec.x +
+		                                       vertical_vec.y * vertical_vec.y );
+		vertical_vec = cv::Point2d( vertical_vec.x / vertical_vec_length,
+		                            vertical_vec.y / vertical_vec_length );
+		horizontal_vec = cv::Point2d( vertical_vec.y, -vertical_vec.x );
+	}
+
+	vertices[1] = vertices[0] + vertical_vec * _length;
+	vertices[2] = vertices[1] + horizontal_vec * width;
+	vertices[3] = vertices[0] + horizontal_vec * width;
 }
 
 int sb::Analyzer::init( const sb::Params& params )
@@ -19,6 +57,10 @@ int sb::Analyzer::init( const sb::Params& params )
 	// loosen criteras
 	_minLandWidth *= 0.9;
 	_maxLandWidth *= 1.1;
+
+	_windowSize = cv::Size( static_cast<int>(_maxLandWidth + 2), static_cast<int>(_maxLandWidth + 2) );
+	_windowMove = cv::Point2d( 10, 10 );
+	_topRightCorner = cv::Point2d( 100, 100 ); //** need to be set
 
 	// debug //
 	cv::Point cropPosition;
@@ -40,1064 +82,21 @@ int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInf
 
 void sb::Analyzer::release() { }
 
-int sb::Analyzer::analyze1( const sb::FrameInfo& frameInfo,
-                            sb::RoadInfo& roadInfo ) const
+int sb::Analyzer::move_window( cv::Rect2d& window ) const
 {
-	/*
-	const int N_LINES = static_cast<int>(frameInfo.getRealLineInfos().size());
-	const int N_SECTIONS = static_cast<int>(frameInfo.getSectionInfos().size());
-
-	///// <Old-values> /////
-	std::vector<cv::Point2d> oldLeftKnots = roadInfo.getLeftKnots();
-	std::vector<cv::Point2d> oldRightKnots = roadInfo.getRightKnots();
-	std::vector<double> oldAngles( N_SECTIONS, 0 );
-	for ( int i = 0; i < N_SECTIONS; i++ ) {
-		sb::Line line( oldLeftKnots[i], oldLeftKnots[i + 1] );
-		oldAngles[i] = line.getAngleWithOx();
-	}
-	///// </Old-values> /////
-
-	///// <Ratings> /////
-	//* 1) sử dụng hàm cộng với các hằng số cộng cao/thấp tương úng với tính chất thuộc tính
-	//* 2) sử dụng hàm nhân cho mỗi thuộc tính đáp ứng
-	//* 3) sử dụng các hàm số có đồ thị đúng yêu cầu
-
-	std::vector<double> lineRatings( N_LINES, 0 );
-	std::vector<double> sideRatings( N_LINES, 0 );
-
-	// independent ratings in whole frame
-	for ( int i = 0; i < N_LINES; i++ ) {
-		const sb::LineInfo& realLine = frameInfo.getRealLineInfos()[i];
-
-		//** color
-		//lineRatings[i] += (realLine.getAverageColor()[0] + realLine.getAverageColor()[1] + realLine.getAverageColor()[2]) / 3;
-
-	}
-
-	// independent ratings in section
-	for ( int i = 0; i < N_SECTIONS; i++ ) {
-		const sb::SectionInfo& sectionInfo = frameInfo.getSectionInfos()[i];
-		const int n_lines = static_cast<int>(sectionInfo.lines.size());
-
-		for ( int j = 0; j < n_lines; j++ ) {
-			const std::pair<int, cv::Vec2d>& sectionLineInfo = sectionInfo.lines[j];
-			const sb::LineInfo realLine = frameInfo.getRealLineInfos()[sectionLineInfo.first];
-
-			const int lineIndex = sectionLineInfo.first;
-			const double angle = realLine.getAngle();
-			const double length = realLine.getLength();
-			const double lowerX = sectionLineInfo.second[0];
-			const double upperX = sectionLineInfo.second[1];
-
-			//** position and rotation
-
-			if ( abs( lowerX - oldLeftKnots[i].x ) < 15 ) {
-				sideRatings[lineIndex] -= 500;
-				lineRatings[lineIndex] += 100;
-				if ( abs( angle - oldAngles[i] ) < 15 ) {
-					lineRatings[lineIndex] += 1000;
-					sideRatings[lineIndex] -= 1000;
-				}
-			}
-			if ( abs( lowerX - oldRightKnots[i].x ) < 15 ) {
-				sideRatings[lineIndex] += 500;
-				lineRatings[lineIndex] += 100;
-				if ( abs( angle - oldAngles[i] ) < 15 ) {
-					lineRatings[lineIndex] += 1000;
-					sideRatings[lineIndex] += 1000;
-				}
-			}
-		}
-
-	}
-
-	std::vector<double> tempLineRatings( lineRatings );
-	std::vector<double> tempSideRatings( sideRatings );
-
-	// dependent ratings
-	for ( int i = 0; i < N_SECTIONS; i++ ) { // section
-		const sb::SectionInfo& sectionInfo = frameInfo.getSectionInfos()[i];
-		const int n_lines = static_cast<int>(sectionInfo.lines.size());
-
-		for ( int j = 0; j < n_lines; j++ ) { // 1st line
-			const std::pair<int, cv::Vec2d>& sectionLineInfo1 = sectionInfo.lines[j];
-			const sb::LineInfo& realLine1 = frameInfo.getRealLineInfos()[sectionLineInfo1.first];
-
-			int index1 = sectionLineInfo1.first;
-			double angle1 = realLine1.getAngle();
-			double length1 = realLine1.getLength();
-			double lowerX1 = sectionLineInfo1.second[0];
-			double upperX1 = sectionLineInfo1.second[1];
-
-			for ( int k = 0; k < n_lines; k++ ) { // 2nd line
-				if ( j == k ) continue;
-
-				const std::pair<int, cv::Vec2d>& sectionLineInfo2 = sectionInfo.lines[k];
-				const sb::LineInfo& realLine2 = frameInfo.getRealLineInfos()[sectionLineInfo2.first];
-
-				int index2 = sectionLineInfo2.first;
-				double angle2 = realLine2.getAngle();
-				double length2 = realLine2.getLength();
-				double lowerX2 = sectionLineInfo2.second[0];
-				double upperX2 = sectionLineInfo2.second[1];
-
-				// same lane
-				if ( tempSideRatings[index1] * tempSideRatings[index2] >= 0
-					&& abs( angle1 - angle2 ) < 10
-					&& abs( abs( lowerX1 - lowerX2 ) - _laneWidth ) < 10 ) {
-
-					lineRatings[index1] = MAX( tempLineRatings[index1], tempLineRatings[index2] ) + 1000;
-					lineRatings[index2] = lineRatings[index1];
-
-					if ( tempSideRatings[index1] < 0 || tempSideRatings[index2] < 0 ) {
-						sideRatings[index1] = MIN( tempSideRatings[index1], tempSideRatings[index2] ) - 1000;
-						sideRatings[index2] = sideRatings[index1];
-					}
-					else {
-						sideRatings[index1] = MAX( tempSideRatings[index1], tempSideRatings[index2] ) + 1000;
-						sideRatings[index2] = sideRatings[index1];
-					}
-				}
-
-				// opposite lane
-				if ( tempSideRatings[index1] * tempSideRatings[index2] <= 0
-					&& abs( angle1 - angle2 ) < 15
-					&& abs( abs( lowerX1 - lowerX2 ) - _roadWidth ) < 20 ) {
-
-					lineRatings[index1] = MAX( tempLineRatings[index1], tempLineRatings[index2] ) + 1000;
-					lineRatings[index2] = lineRatings[index1];
-
-					double sideRating = MAX( abs( tempSideRatings[index1] ), abs( tempSideRatings[index2] ) );
-
-					if ( tempSideRatings[index1] < tempSideRatings[index2] ) {
-						tempSideRatings[index1] = -sideRating;
-						tempSideRatings[index2] = sideRating;
-					}
-					else if ( tempSideRatings[index1] > tempSideRatings[index2] ) {
-						tempSideRatings[index1] = sideRating;
-						tempSideRatings[index2] = -sideRating;
-					}
-
-				}
-			}
-		}
-	}
-	///// </Ratings> /////
-
-	///// <Debug> /////
-	
-	// create real image
-	const int W = 900;
-	const int H = 700;
-	cv::Mat realImage( frameInfo.getColorImage().rows + H,
-	                   frameInfo.getColorImage().cols + W, CV_8UC3,
-	                   cv::Scalar( 0, 0, 0 ) );
-
-	for ( int i = 0; i < N_LINES; i++ ) {
-		const auto& line = frameInfo.getRealLineInfos()[i];
-
-		cv::line( realImage,
-		          _debugFormatter.convertFromCoord( line.getStartingPoint() ) + cv::Point2d( W / 2, H ),
-		          _debugFormatter.convertFromCoord( line.getEndingPoint() ) + cv::Point2d( W / 2, H ),
-		          sideRatings[i] < 0 ? cv::Scalar( 0, 0, 255 ) : cv::Scalar( 0, 255, 255 ),
-		          1 );
-	}
-	for ( int i = 0; i < N_SECTIONS; i++ ) {
-		cv::line( realImage,
-		          _debugFormatter.convertFromCoord( oldLeftKnots[i] ) + cv::Point2d( W / 2, H ),
-		          _debugFormatter.convertFromCoord( oldLeftKnots[i + 1] ) + cv::Point2d( W / 2, H ),
-		          cv::Scalar( 170, 170, 170 ), 3 );
-		cv::line( realImage,
-		          _debugFormatter.convertFromCoord( oldRightKnots[i] ) + cv::Point2d( W / 2, H ),
-		          _debugFormatter.convertFromCoord( oldRightKnots[i + 1] ) + cv::Point2d( W / 2, H ),
-		          cv::Scalar( 170, 170, 170 ), 3 );
-	}
-
-	cv::imshow( "Test Analyzer", realImage );
-	cv::waitKey();
-
-	// debug each lines
-	for ( int i = 0; i < N_LINES; i++ ) {
-		// if ( lineRatings[i] < 2000 ) continue;
-
-		const sb::LineInfo& realLine = frameInfo.getRealLineInfos()[i];
-
-		cv::Mat tempImage = realImage.clone();
-		cv::line( tempImage,
-		          _debugFormatter.convertFromCoord( realLine.getStartingPoint() ) + cv::Point2d( W / 2, H ),
-		          _debugFormatter.convertFromCoord( realLine.getEndingPoint() ) + cv::Point2d( W / 2, H ),
-		          cv::Scalar( 0, 255, 0 ), 2 );
-
-		std::stringstream stringBuilder;
-
-		stringBuilder << "Line Rating: " << lineRatings[i];
-		cv::putText( tempImage,
-		             stringBuilder.str(),
-		             cv::Point( 20, 15 ),
-		             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
-
-		stringBuilder.str( "" );
-
-		stringBuilder << "Side Rating: " << sideRatings[i];
-		cv::putText( tempImage,
-		             stringBuilder.str(),
-		             cv::Point( 20, 35 ),
-		             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
-
-		cv::imshow( "Test2", tempImage );
-		cv::waitKey();
-	}
-	
-	///// </Debug> /////
-
-	///// Update /////
-
-	//** situation for no lines
-	std::vector<cv::Point2d> leftKnots( oldLeftKnots );
-	std::vector<cv::Point2d> rightKnots( oldRightKnots );
-
-	// first couple of knots
-	{
-		double sumPositionXOfLeftLane = 0;
-		double sumPositionXOfRightLane = 0;
-		int n1 = 0;
-		int n2 = 0;
-		for ( int i = 0; i < frameInfo.getSectionInfos().front().lines.size(); i++ ) {
-			int lineIndex = frameInfo.getSectionInfos().front().lines[i].first;
-
-			if ( lineRatings[lineIndex] < 2000 ) continue;
-
-			if ( sideRatings[lineIndex] < 0 ) {
-				sumPositionXOfLeftLane += frameInfo.getSectionInfos().front().lines[i].second[0];
-				n1++;
-			}
-			if ( sideRatings[lineIndex] > 0 ) {
-				sumPositionXOfRightLane += frameInfo.getSectionInfos().front().lines[i].second[0];
-				n2++;
-			}
-		}
-
-		if ( n1 > 0 ) {
-			leftKnots[0].x = sumPositionXOfLeftLane / n1;
-		}
-		if ( n2 > 0 ) {
-			rightKnots[0].x = sumPositionXOfRightLane / n2;
-		}
-	}
-
-	// left knots
-	{
-		std::vector<double> angles( oldAngles );
-		for ( int i = 0; i < N_SECTIONS; i++ ) {
-			const sb::SectionInfo& sectionInfo = frameInfo.getSectionInfos()[i];
-
-			double sumRotation = 0;
-			int n = 0;
-
-			for ( int j = 0; j < sectionInfo.lines.size(); j++ ) {
-				int lineIndex = sectionInfo.lines[j].first;
-
-				if ( lineRatings[lineIndex] < 2000 ) continue;
-
-				sumRotation += frameInfo.getRealLineInfos()[lineIndex].getAngle();
-				n++;
-			}
-
-			if ( n > 0 ) {
-				angles[i] = sumRotation / n;
-			}
-		}
-
-		for ( int i = 0; i < N_SECTIONS; i++ ) {
-			const int upperRow = static_cast<int>(leftKnots[i + 1].y);
-
-			const sb::Line upperLine( cv::Point2d( 0, upperRow ), cv::Point2d( 1, upperRow ) );
-
-			sb::Line line;
-
-			line = sb::Line( angles[i], leftKnots[i] );
-
-			sb::Line::findIntersection( line, upperLine, leftKnots[i + 1] );
-
-			line = sb::Line( angles[i], rightKnots[i] );
-
-			sb::Line::findIntersection( line, upperLine, rightKnots[i + 1] );
-		}
-	}
-
-	roadInfo.setLeftKnots( leftKnots );
-	roadInfo.setRightKnots( rightKnots );
-	*/
-	return 0;
-}
-
-int sb::Analyzer::analyze2( const sb::FrameInfo& frameInfo,
-                            sb::RoadInfo& roadInfo ) const
-{
-	/*	const int N_LINES = static_cast<int>(frameInfo.getRealLineInfos().size());
-		const int N_SECTIONS = static_cast<int>(frameInfo.getSectionInfos().size());
-	
-		///// <Old-values> /////
-		std::vector<cv::Point2d> oldLeftKnots = roadInfo.getLeftKnots();
-		std::vector<cv::Point2d> oldRightKnots = roadInfo.getRightKnots();
-		std::vector<double> oldAngles( N_SECTIONS, 0 );
-		for ( int i = 0; i < N_SECTIONS; i++ ) {
-			sb::Line line( oldLeftKnots[i], oldLeftKnots[i + 1] );
-			oldAngles[i] = line.getAngleWithOx();
-		}
-		///// </Old-values> /////
-	
-		std::vector<std::vector<int>> lineVotes( N_LINES );
-		std::vector<std::vector<int>> sideVotes( N_LINES );
-	
-		///// <Ratings> //////
-		//* Tính toán độ quan trọng bằng cách thêm n vote cho factor có độ quan trọng n
-	
-		// independent ratings in whole frame *importance
-		for ( int i = 0; i < N_LINES; i++ ) {
-			const sb::LineInfo& realLine = frameInfo.getRealLineInfos()[i];
-	
-			// color *importance
-			{
-				int
-						b = realLine.getAverageColor()[0],
-						g = realLine.getAverageColor()[1],
-						r = realLine.getAverageColor()[2];
-				double colorAvg = (b + g + r) / 3;
-				double colorDiff = (abs( b - g ) + abs( b - r ) + abs( g - r )) / 3;
-	
-				// color criterias
-				if ( colorAvg > 170 && colorDiff < 50 ) {
-					colorAvg = std::exp( MIN( colorAvg, 255 ) * 0.018 );
-					colorDiff = (-std::log( MIN( colorDiff+0.1, 255 ) * 86.378 ) + 11) * 10;
-	
-					//* coef
-					double color_scale = 0.6 * colorAvg + (1 - 0.6) * colorDiff;
-					lineVotes[i].push_back( static_cast<int>(color_scale) );
-				}
-			}
-		}
-	
-		// independent ratings with old values
-		for ( int i = 0; i < N_SECTIONS; i++ ) {
-			const sb::SectionInfo& section = frameInfo.getSectionInfos()[i];
-			const int n_lines = static_cast<int>(section.lines.size());
-	
-			for ( int j = 0; j < n_lines; j++ ) {
-				const std::pair<int, cv::Vec2d>& lineInfo = section.lines[j];
-				const sb::LineInfo realLine = frameInfo.getRealLineInfos()[lineInfo.first];
-	
-				const int lineIndex = lineInfo.first;
-				const double lowerX = lineInfo.second[0];
-				const double upperX = lineInfo.second[1];
-				const double angle = realLine.getAngle();
-	
-				// old state
-				double positionDiff = abs( lowerX - oldLeftKnots[i].x );
-				double angleDiff = abs( angle - oldAngles[i] );
-	
-				// old state criterias
-				if ( 1 ) {
-					
-				}
-	
-			}
-		}
-	
-		// dependent ratings
-		for ( int i = 0; i < N_SECTIONS; i++ ) { // section
-			const sb::SectionInfo& section = frameInfo.getSectionInfos()[i];
-			const int n_lines = static_cast<int>(section.lines.size());
-	
-			for ( int j = 0; j < n_lines; j++ ) { // 1st line
-				const std::pair<int, cv::Vec2d>& lineInfo1 = section.lines[j];
-				const sb::LineInfo& realLine1 = frameInfo.getRealLineInfos()[lineInfo1.first];
-	
-				int index1 = lineInfo1.first;
-				double lowerX1 = lineInfo1.second[0];
-				double upperX1 = lineInfo1.second[1];
-				double angle1 = realLine1.getAngle();
-				double length1 = realLine1.getLength();
-	
-				for ( int k = 0; k < n_lines; k++ ) { // 2nd line
-					if ( j == k ) continue;
-	
-					const std::pair<int, cv::Vec2d>& lineInfo2 = section.lines[k];
-					const sb::LineInfo& realLine2 = frameInfo.getRealLineInfos()[lineInfo2.first];
-	
-					int index2 = lineInfo2.first;
-					double lowerX2 = lineInfo2.second[0];
-					double upperX2 = lineInfo2.second[1];
-					double angle2 = realLine2.getAngle();
-					double length2 = realLine2.getLength();
-	
-					// same lane 
-					{
-						double laneDiff = abs( abs( lowerX1 - lowerX2 ) - _laneWidth );
-						double angleDiff = abs( angle1 - angle2 );
-	
-						if ( angleDiff < 7 && laneDiff < (0.5 * _laneWidth) ) {
-							laneDiff = -std::exp( laneDiff * 4.6 / (0.5 * _laneWidth) ) + 101;
-							angleDiff = -std::exp( angleDiff * 4.6 / 7 ) + 101;
-	
-							double samelane_scale = 0.5 * angleDiff + (1 - 0.5) * laneDiff;
-	
-							int importance = 5; // half-of-important
-							for ( ; importance > 0; importance-- ) {
-								lineVotes[index1].push_back( static_cast<int>(samelane_scale) );
-								lineVotes[index2].push_back( static_cast<int>(samelane_scale) );
-							}
-						}
-					}
-	
-					// opposite lane 
-					{
-						double roadDiff = abs( abs( lowerX1 - lowerX2 ) - _roadWidth );
-						double angleDiff = abs( angle1 - angle2 );
-	
-						if ( angleDiff < 15 && roadDiff < 2 * _laneWidth ) {
-							roadDiff = -std::exp( roadDiff * 4.6 / (2 * _laneWidth) ) + 101;
-							angleDiff = -std::exp( angleDiff * 4.6 / 15 ) + 101;
-	
-							double oppositelane_scale = 0.6 * angleDiff + (1 - 0.6) * roadDiff;
-	
-							int importance = 5; // half-of-important
-							for ( ; importance > 0; importance-- ) {
-								lineVotes[index1].push_back( static_cast<int>(oppositelane_scale) );
-								lineVotes[index2].push_back( static_cast<int>(oppositelane_scale) );
-							}
-						}
-					}
-	
-				}
-			}
-		}
-	
-		///// <Ratings> //////
-		std::vector<int> lineRatings( N_LINES, 0 );
-	
-		// shared fields
-		int numberOfVotedLines = 0;
-		int totalNumberOfVotes = 0;
-		int avgNumberOfVotes = 0;
-		int totalRating = 0;
-		int avgRating = 0;
-	
-		for ( const auto& lineVote: lineVotes ) {
-			if ( lineVote.empty() ) continue;
-	
-			numberOfVotedLines++;
-			for ( const auto& rating: lineVote ) {
-				totalNumberOfVotes++;
-				totalRating += rating;
-			}
-		}
-		avgNumberOfVotes = totalNumberOfVotes / numberOfVotedLines;
-		avgRating = totalRating / totalNumberOfVotes;
-	
-		// individual line ranking
-	
-		for ( int i = 0; i < N_LINES; i++ ) {
-			if ( lineVotes[i].empty() ) continue;;
-	
-			int thisNumberOfVotes = 0;
-			int thisRating = 0;
-	
-			for ( const auto& rating: lineVotes[i] ) {
-				thisNumberOfVotes++;
-				thisRating += rating;
-			}
-	
-			thisRating /= thisNumberOfVotes;
-	
-			lineRatings[i] = ((avgNumberOfVotes * avgRating) + (thisNumberOfVotes * thisRating)) / (avgNumberOfVotes + thisNumberOfVotes);
-		}
-	
-		///// </Rankings> //////
-	
-		///// <Debug> /////
-		{
-	
-			// create real image
-			const int W = 900;
-			const int H = 700;
-			cv::Mat realImage( frameInfo.getColorImage().rows + H,
-			                   frameInfo.getColorImage().cols + W, CV_8UC3,
-			                   cv::Scalar( 0, 0, 0 ) );
-	
-			for ( int i = 0; i < N_LINES; i++ ) {
-				const auto& line = frameInfo.getRealLineInfos()[i];
-	
-				cv::line( realImage,
-				          _debugFormatter.convertFromCoord( line.getStartingPoint() ) + cv::Point2d( W / 2, H ),
-				          _debugFormatter.convertFromCoord( line.getEndingPoint() ) + cv::Point2d( W / 2, H ),
-				          lineRatings[i] >= 80 ? cv::Scalar( 0, 255, 0 ) : cv::Scalar( 0, 0, 255 ), 1 );
-			}
-	
-			for ( int i = 0; i < N_SECTIONS; i++ ) {
-				cv::line( realImage,
-				          _debugFormatter.convertFromCoord( oldLeftKnots[i] ) + cv::Point2d( W / 2, H ),
-				          _debugFormatter.convertFromCoord( oldLeftKnots[i + 1] ) + cv::Point2d( W / 2, H ),
-				          cv::Scalar( 170, 170, 170 ), 3 );
-				cv::line( realImage,
-				          _debugFormatter.convertFromCoord( oldRightKnots[i] ) + cv::Point2d( W / 2, H ),
-				          _debugFormatter.convertFromCoord( oldRightKnots[i + 1] ) + cv::Point2d( W / 2, H ),
-				          cv::Scalar( 170, 170, 170 ), 3 );
-			}
-	
-			cv::imshow( "Test Analyzer", realImage );
-			cv::waitKey();
-	
-			// debug each lines
-			for ( int i = 0; i < N_LINES; i++ ) {
-				if ( lineVotes[i].empty() ) continue;
-	
-				const sb::LineInfo& realLine = frameInfo.getRealLineInfos()[i];
-	
-				cv::Mat tempImage = realImage.clone();
-				cv::line( tempImage,
-				          _debugFormatter.convertFromCoord( realLine.getStartingPoint() ) + cv::Point2d( W / 2, H ),
-				          _debugFormatter.convertFromCoord( realLine.getEndingPoint() ) + cv::Point2d( W / 2, H ),
-				          cv::Scalar( 0, 255, 255 ), 2 );
-	
-				std::stringstream stringBuilder;
-	
-				stringBuilder << "Votes: " << cv::format( cv::Mat( lineVotes[i] ), "C" );
-				cv::putText( tempImage,
-				             stringBuilder.str(),
-				             cv::Point( 20, 15 ),
-				             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
-	
-				stringBuilder.str( "" );
-	
-				stringBuilder << "Rating: " << lineRatings[i];
-				cv::putText( tempImage,
-				             stringBuilder.str(),
-				             cv::Point( 20, 45 ),
-				             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
-	
-				stringBuilder.str( "" );
-	
-				cv::imshow( "Test2", tempImage );
-				cv::waitKey();
-			}
-		}
-		///// </Debug> /////
-	
-		///// </Ratings> //////
-	
-		*/
-	return 0;
-}
-
-int sb::Analyzer::move_window( const cv::Point2d& window_move,
-                               const cv::Point2d& top_right_corner,
-                               cv::Rect2d& window ) const
-{
-	window.x += window_move.x;
-	if ( window.x + window.width > top_right_corner.x ) {
-		window.x = -top_right_corner.x;
-		window.y += window_move.y;
-		if ( window.y > top_right_corner.y ) return -1;
+	window.x += _windowMove.x;
+	if ( window.x + window.width > _topRightCorner.x ) {
+		window.x = -_topRightCorner.x;
+		window.y += _windowMove.y;
+		if ( window.y > _topRightCorner.y ) return -1;
 	}
 
 	return 0;
 }
 
-int sb::Analyzer::find_lines_inside_window( const std::vector<sb::LineInfo>& inputLines,
-                                            const cv::Rect2d& window,
-                                            std::vector<sb::LineInfo>& outputLines ) const
-{
-	outputLines.clear();
-
-	// find lines inside current window
-	for ( size_t line_index = 0; line_index < inputLines.size(); line_index++ ) {
-		const sb::LineInfo& line = inputLines[line_index];
-		if ( !segmentIntersectRectangle( line.getStartingPoint(), line.getEndingPoint(), window ) ) continue;
-
-		outputLines.push_back( line );
-	}
-
-	return 0;
-}
-
-int sb::Analyzer::find_first_lane_parts( const std::vector<sb::LineInfo>& lines,
-                                         std::vector<sb::LanePart>& first_lane_parts ) const
-{
-	const size_t n_lines = lines.size();
-
-	for ( size_t first_index = 0; first_index < n_lines; first_index++ ) {
-		const auto& first_line = lines[first_index];
-
-		for ( size_t second_index = 0; second_index < n_lines; second_index++ ) {
-			if ( first_index == second_index ) continue;
-
-			const auto& second_line = lines[second_index];
-
-			/// 1) check and calculate lane info
-
-			// lane info
-			cv::Point2d pos;
-			double width, angle;
-
-			// check angle
-			double angle_diff = abs( first_line.getAngle() - second_line.getAngle() );
-			if ( angle_diff > MAX_ACCEPTABLE_ANGLE_DIFF ) continue;
-
-			angle = (first_line.getAngle() + second_line.getAngle()) / 2;
-
-			// calculate two intersect points
-			cv::Point2d first_point, second_point;
-			first_point = first_line.getStartingPoint();
-
-			sb::Line horizon( angle + 90, first_point );
-			sb::Line::findIntersection( horizon, second_line.getLine(), second_point );
-
-			// check width
-			cv::Point2d posDiff = first_point - second_point;
-			width = std::sqrt( posDiff.x * posDiff.x + posDiff.y * posDiff.y );
-
-			if ( width < _minLandWidth || width > _maxLandWidth ) continue;
-
-			// select lane origin
-			if ( first_point.x < second_point.x )
-				pos = first_point;
-			else if ( second_point.x < first_point.x )
-				pos = second_point;
-			else pos = first_point.y < second_point.y ? first_point : second_point;
-
-			/// 2) add to good couples
-			sb::LanePart lane_part( pos, angle, width );
-
-			if ( std::find( first_lane_parts.cbegin(), first_lane_parts.cend(), lane_part )
-				!= first_lane_parts.cend() )
-				continue;
-
-			first_lane_parts.push_back( lane_part );
-		}
-	}
-
-	return 0;
-}
-
-int sb::Analyzer::calculate_lane_part_vertices( const sb::LanePart& lane_part,
-                                                double lane_part_length,
-                                                cv::Point2d* vertices ) const
-{
-	vertices[0] = lane_part.position;
-
-	cv::Point2d horizontal_vec, vertical_vec;
-
-	// calculate vectors 
-	{
-		if ( lane_part.angle == 90 )
-			vertical_vec = cv::Point2d( 0, 1 );
-		else if ( lane_part.angle > 90 )
-			vertical_vec = cv::Point2d( 1, tan( -lane_part.angle * CV_2PI / 360 ) );
-		else
-			vertical_vec = -cv::Point2d( 1, tan( -lane_part.angle * CV_2PI / 360 ) );
-
-		double vertical_vec_length = std::sqrt( vertical_vec.x * vertical_vec.x +
-		                                       vertical_vec.y * vertical_vec.y );
-		vertical_vec = cv::Point2d( vertical_vec.x / vertical_vec_length,
-		                            vertical_vec.y / vertical_vec_length );
-		horizontal_vec = cv::Point2d( vertical_vec.y, -vertical_vec.x );
-	}
-
-	vertices[1] = vertices[0] + vertical_vec * lane_part_length;
-	vertices[2] = vertices[1] + horizontal_vec * lane_part.width;
-	vertices[3] = vertices[0] + horizontal_vec * lane_part.width;
-
-	return 0;
-}
-
-int sb::Analyzer::analyze3( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInfo ) const
-{
-	/*
-	// Bước 1: Sử dụng một cửa sổ vừa nhỏ đủ chứa một làn đường, quét ngang phần dưới khung hình
-	// Bước 2: Vote cho những đường có khả năng tạo thành 1 làn đường (song song, cách nhau một khoảng gần bằng độ rộng làn đường)
-	// Bước 3: Tính điểm đánh giá cho những đường vừa vote
-	// Bước 4: Nếu đánh giá đủ cao để xem là làn đường đến bước 5, ngược lại quay lại bước 1 nhưng với phần khung hình cao hơn
-	// Bước 5: Trượt cửa sổ chiều của làn đường đó
-	// Bước 6: Vừa trượt vừa tìm những đường nối tiếp làn đường đó
-	// Bước 7: Tìm càng được càng nhiều đường nối, đánh giá càng cao
-	// Bước 8: Nếu điểm đủ cao, xác định đó là 1 trường hợp làn đường có thể
-	// Bước 9: Tiếp tục tìm tương tự
-	// Bước 10: Nếu tồn tại làn có đánh giá đủ cao thứ 2
-	// Bước 11: Xét quan hệ giữa 2 làn tìm đường
-	// Bước 12: Nếu các quan hệ hợp lý tạo thành làn đường thì đó là làn thứ hai. Kết thúc
-	// Bước 13: Tiếp tục tìm tương tự.
-	// Bước 14: Nếu tồn tại làn có đánh giá đủ cao thứ n
-	// Bước 15: Xét quan hệ với các làn còn lại
-	// Bước 16: Nếu quan hệ hợp lý tạo thành làn đường. Kết thúc.
-	// Bước 17: Không tìm được thêm làn nào. Xác định làn tìm được là trái hay phải dựa trên quan hệ với trạng thái cũ
-	// Bước 19: Nếu khoogn tìm được làn nào hợp lý cả, sử dụng kết quả tìm được gợi ý làn đường
-	*/
-
-	const size_t num_lines = frameInfo.getRealLineInfos().size();
-
-	///// debug //////
-	const cv::Size expand_size( 900, 700 );
-	cv::Mat real_image;
-
-	// create real image
-	{
-		real_image = cv::Mat( frameInfo.getColorImage().rows + expand_size.height,
-		                      frameInfo.getColorImage().cols + expand_size.width, CV_8UC3, cv::Scalar( 0, 0, 0 ) );
-
-		cv::line( real_image,
-		          _debugFormatter.convertFromCoord( cv::Point2d( 0, 0 ) )
-		          + cv::Point2d( expand_size.width / 2, expand_size.height ),
-		          _debugFormatter.convertFromCoord( cv::Point2d( 0, 500 ) )
-		          + cv::Point2d( expand_size.width / 2, expand_size.height ),
-		          cv::Scalar( 255, 255, 255 ), 1 );
-
-		for ( size_t i = 0; i < num_lines; i++ ) {
-			const auto& line = frameInfo.getRealLineInfos()[i];
-
-			cv::line( real_image,
-			          _debugFormatter.convertFromCoord( line.getStartingPoint() )
-			          + cv::Point2d( expand_size.width / 2, expand_size.height ),
-			          _debugFormatter.convertFromCoord( line.getEndingPoint() )
-			          + cv::Point2d( expand_size.width / 2, expand_size.height ), cv::Scalar( 0, 0, 255 ), 1 );
-		}
-
-		cv::imshow( "Analyzer", real_image );
-		cv::waitKey();
-	}
-
-	///// debug //////
-
-	// window //
-	const cv::Size window_size( static_cast<int>(_maxLandWidth * 2), static_cast<int>(_maxLandWidth * 2) );
-	cv::Point window_move( window_size.width / 2, window_size.height / 2 );
-	const cv::Point2d top_right_corner( 150, 150 );
-
-	cv::Rect2d window( -top_right_corner.x, 5, window_size.width, window_size.height );
-	// window //
-
-	do {
-
-		if ( move_window( window_move, top_right_corner, window ) < 0 ) break;
-
-		std::vector<sb::LineInfo> lines;
-
-		find_lines_inside_window( frameInfo.getRealLineInfos(), window, lines );
-
-		///// debug /////
-		cv::Mat temp_image;
-		// debug-code
-		{
-			temp_image = real_image.clone();
-
-			// window
-			cv::rectangle( temp_image,
-			               _debugFormatter.convertFromCoord( window.tl() )
-			               + cv::Point2d( expand_size.width / 2, expand_size.height ),
-			               _debugFormatter.convertFromCoord( window.br() )
-			               + cv::Point2d( expand_size.width / 2, expand_size.height ), cv::Scalar::all( 255 ) );
-			for ( const auto& line : lines ) {
-				cv::line( temp_image,
-				          _debugFormatter.convertFromCoord( line.getStartingPoint() )
-				          + cv::Point2d( expand_size.width / 2, expand_size.height ),
-				          _debugFormatter.convertFromCoord( line.getEndingPoint() )
-				          + cv::Point2d( expand_size.width / 2, expand_size.height ), cv::Scalar( 0, 255, 0 ), 1 );
-			}
-			cv::imshow( "Analyzer", temp_image );
-			cv::waitKey( 100 );
-		}
-		///// debug /////
-
-		std::vector<sb::LanePart> first_lane_parts;
-
-		find_first_lane_parts( lines, first_lane_parts );
-
-		// check lane part
-		for ( const auto& lane_part: first_lane_parts ) {
-
-			// debug //
-			{
-				cv::Mat temp_image_1 = temp_image.clone();
-
-				cv::Point2d vertices[4];
-				calculate_lane_part_vertices( lane_part, window_move.y, vertices );
-
-				for ( int v = 0; v < 4; v++ ) {
-					cv::line( temp_image,
-					          _debugFormatter.convertFromCoord( vertices[v] )
-					          + cv::Point2d( expand_size.width / 2, expand_size.height ),
-					          _debugFormatter.convertFromCoord( vertices[(v + 1) % 4] )
-					          + cv::Point2d( expand_size.width / 2, expand_size.height ), cv::Scalar( 255, 255, 255 ), 3 );
-				}
-
-				cv::imshow( "Analyzer", temp_image_1 );
-				cv::waitKey( 200 );
-			}
-
-		}
-
-	} while ( true );
-
-	return 0;
-
-	// candidates //
-	std::vector<cv::Vec6d> candidates; // pos_x, pos_y, width, angle, n_votes, total_rating
-	// candidates //
-
-	// sweep window
-
-	for ( ;; ) {
-
-		std::vector<sb::LineInfo> lines;
-
-		// find lines inside current window
-		for ( size_t line_index = 0; line_index < num_lines; line_index++ ) {
-			const sb::LineInfo& line = frameInfo.getRealLineInfos()[line_index];
-			if ( !segmentIntersectRectangle( line.getStartingPoint(), line.getEndingPoint(), window ) ) continue;;
-
-			lines.push_back( line );
-		}
-
-		// debug //
-		cv::Mat temp_image; {
-			temp_image = real_image.clone();
-
-			cv::rectangle( temp_image,
-			               _debugFormatter.convertFromCoord( window.tl() )
-			               + cv::Point2d( expand_size.width / 2, expand_size.height ),
-			               _debugFormatter.convertFromCoord( window.br() )
-			               + cv::Point2d( expand_size.width / 2, expand_size.height ), cv::Scalar::all( 255 ) );
-
-			for ( const auto& line : lines ) {
-				cv::line( temp_image,
-				          _debugFormatter.convertFromCoord( line.getStartingPoint() )
-				          + cv::Point2d( expand_size.width / 2, expand_size.height ),
-				          _debugFormatter.convertFromCoord( line.getEndingPoint() )
-				          + cv::Point2d( expand_size.width / 2, expand_size.height ), cv::Scalar( 0, 255, 0 ), 1 );
-			}
-
-			for ( const auto& candidate_info : candidates ) {
-				cv::Point2d candidate_pos( candidate_info[0], candidate_info[1] );
-				double candidate_width = candidate_info[2];
-				double candidate_angle = candidate_info[3];
-
-				cv::Point2d vertices[4];
-				vertices[0] = candidate_pos;
-
-				cv::Point2d horizontal_vec, vertical_vec;
-
-				// calculate vectors 
-				{
-					if ( candidate_angle == 90 )
-						vertical_vec = cv::Point2d( 0, 1 );
-					else if ( candidate_angle > 90 )
-						vertical_vec = cv::Point2d( 1, tan( -candidate_angle * CV_2PI / 360 ) );
-					else
-						vertical_vec = -cv::Point2d( 1, tan( -candidate_angle * CV_2PI / 360 ) );
-
-					double vertical_vec_length = std::sqrt( vertical_vec.x * vertical_vec.x +
-					                                       vertical_vec.y * vertical_vec.y );
-					vertical_vec = cv::Point2d( vertical_vec.x / vertical_vec_length,
-					                            vertical_vec.y / vertical_vec_length );
-					horizontal_vec = cv::Point2d( vertical_vec.y, -vertical_vec.x );
-				}
-
-				vertices[1] = vertices[0] + vertical_vec * window.height;
-				vertices[2] = vertices[1] + horizontal_vec * candidate_width;
-				vertices[3] = vertices[0] + horizontal_vec * candidate_width;
-
-				for ( int i = 0; i < 4; i++ ) {
-					cv::line( temp_image,
-					          _debugFormatter.convertFromCoord( vertices[i] )
-					          + cv::Point2d( expand_size.width / 2, expand_size.height ),
-					          _debugFormatter.convertFromCoord( vertices[(i + 1) % 4] )
-					          + cv::Point2d( expand_size.width / 2, expand_size.height ), cv::Scalar( 255, 255, 255 ), 3 );
-				}
-
-			}
-
-			cv::imshow( "Analyzer", temp_image );
-			cv::waitKey();
-		}
-		// debug //
-
-		// vote candidates //
-		size_t n_lines = lines.size();
-
-		if ( n_lines < 2 ) continue;
-
-		for ( size_t first_index = 0; first_index < n_lines; first_index++ ) {
-			const auto& first_line = lines[first_index];
-
-			for ( size_t second_index = 0; second_index < n_lines; second_index++ ) {
-				if ( first_index == second_index ) continue;
-
-				const auto& second_line = lines[second_index];
-
-				/// 1) check and calculate lane info
-
-				// lane info
-				cv::Point2d pos;
-				double width, angle;
-
-				// check angle
-				double angle_diff = abs( first_line.getAngle() - second_line.getAngle() );
-				if ( angle_diff > MAX_ACCEPTABLE_ANGLE_DIFF ) continue;
-
-				angle = (first_line.getAngle() + second_line.getAngle()) / 2;
-
-				// calculate two intersect points
-				cv::Point2d first_point, second_point;
-				first_point = first_line.getStartingPoint();
-
-				sb::Line horizon( angle + 90, first_point );
-				sb::Line::findIntersection( horizon, second_line.getLine(), second_point );
-
-				// check width
-				cv::Point2d posDiff = first_point - second_point;
-				width = std::sqrt( posDiff.x * posDiff.x + posDiff.y * posDiff.y );
-
-				if ( width < _minLandWidth || width > _maxLandWidth ) continue;
-
-				// select lane origin
-				if ( first_point.x < second_point.x )
-					pos = first_point;
-				else if ( second_point.x < first_point.x )
-					pos = second_point;
-				else pos = first_point.y < second_point.y ? first_point : second_point;
-
-				/// 2) Find candidates to vote
-				bool has_voted_at_least_one_candidate = false;
-
-				for ( auto& candidate_info: candidates ) {
-					cv::Point2d candidate_pos( candidate_info[0], candidate_info[1] );
-					double candidate_width = candidate_info[2];
-					double candidate_angle = candidate_info[3];
-
-					// check angle diff
-					double angle_diff_with_candidate = abs( angle - candidate_angle );
-					if ( angle_diff_with_candidate > MAX_ACCEPTABLE_ANGLE_DIFF ) continue;
-
-					// check width diff		*consider use MAX_ACCEPTABLE_LANE_WIDTH_DIFF
-					double width_diff_with_candidate = abs( width - candidate_width );
-					if ( width_diff_with_candidate > candidate_width * 0.5 ) continue;
-
-					// check position diff
-					sb::Line candidate_horizon( candidate_angle + 90, candidate_pos );
-
-					cv::Point2d first_point_at_candidate_horizon;
-					sb::Line::findIntersection( candidate_horizon, first_line.getLine(), first_point_at_candidate_horizon );
-
-					cv::Point2d diff_with_candidate = first_point_at_candidate_horizon - candidate_pos;
-					double pos_diff_with_candidate = std::sqrt( diff_with_candidate.x * diff_with_candidate.x +
-					                                           diff_with_candidate.y * diff_with_candidate.y );
-					if ( pos_diff_with_candidate > candidate_width * 0.5 ) continue;
-
-					// all are ok -> vote for this candidate
-					candidate_info[4]++;
-					has_voted_at_least_one_candidate = true;
-				}
-
-				/// 3) Generate a new candidate from this
-				if ( !has_voted_at_least_one_candidate ) {
-					candidates.push_back( cv::Vec6d( pos.x, pos.y, width, angle, 0, 0 ) );
-				}
-
-			}
-		}
-
-	}
-
-	return 0;
-}
-
-int sb::Analyzer::analyze4( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInfo ) const
-{
-	///// <Debug> //////
-	const cv::Size expand_size = cv::Size( 900, 700 );
-	cv::Mat real_image;
-
-	// create real image
-	{
-		real_image = cv::Mat( frameInfo.getColorImage().rows + expand_size.height,
-		                      frameInfo.getColorImage().cols + expand_size.width, CV_8UC3, cv::Scalar( 0, 0, 0 ) );
-
-		cv::line( real_image,
-		          _debugFormatter.convertFromCoord( cv::Point2d( 0, 0 ) )
-		          + cv::Point2d( expand_size.width / 2, expand_size.height ),
-		          _debugFormatter.convertFromCoord( cv::Point2d( 0, 500 ) )
-		          + cv::Point2d( expand_size.width / 2, expand_size.height ),
-		          cv::Scalar( 255, 255, 255 ), 1 );
-
-		for ( size_t i = 0; i < frameInfo.getRealLineInfos().size(); i++ ) {
-			const auto& line = frameInfo.getRealLineInfos()[i];
-
-			cv::line( real_image,
-			          _debugFormatter.convertFromCoord( line.getStartingPoint() )
-			          + cv::Point2d( expand_size.width / 2, expand_size.height ),
-			          _debugFormatter.convertFromCoord( line.getEndingPoint() )
-			          + cv::Point2d( expand_size.width / 2, expand_size.height ), cv::Scalar( 0, 0, 255 ), 1 );
-		}
-
-		cv::imshow( "Analyzer", real_image );
-		cv::waitKey();
-	}
-
-	///// </Debug> //////
-
-	const size_t N_LINES = frameInfo.getRealLineInfos().size();
-	const double FARTHEST_SIDE_DISTANCE = 150;
-	const double LEFT_LANE_POS_X = -30;
-	const double RIGHT_LANE_POS_X = 30;
-
-	cv::Point2d circle_origin;
-	double circle_radius = _maxLandWidth;
-	double circle_move = _maxLandWidth;
-	circle_origin = cv::Point2d( -FARTHEST_SIDE_DISTANCE + circle_radius, circle_radius + 5 );
-
-	for ( ; circle_origin.x + circle_radius <= FARTHEST_SIDE_DISTANCE;
-	        circle_origin.x += circle_move ) {
-		cv::Mat temp_image;
-
-		std::vector<sb::LineInfo> lines;
-
-		// find lines inside current window
-		for ( size_t line_index = 0; line_index < N_LINES; line_index++ ) {
-			const sb::LineInfo& line = frameInfo.getRealLineInfos()[line_index];
-			if ( !segmentIntersectCircle( line.getStartingPoint(), line.getEndingPoint(), circle_origin, circle_radius ) ) continue;;
-
-			lines.push_back( line );
-		}
-
-		// debug //
-		{
-			temp_image = real_image.clone();
-
-			cv::circle( temp_image,
-			            _debugFormatter.convertFromCoord( circle_origin )
-			            + cv::Point2d( expand_size.width / 2, expand_size.height ),
-			            (int)_debugFormatter.convertLengthFromCoord( circle_radius ), cv::Scalar::all( 255 ), 1 );
-
-			for ( const auto& line : lines ) {
-				cv::line( temp_image,
-				          _debugFormatter.convertFromCoord( line.getStartingPoint() )
-				          + cv::Point2d( expand_size.width / 2, expand_size.height ),
-				          _debugFormatter.convertFromCoord( line.getEndingPoint() )
-				          + cv::Point2d( expand_size.width / 2, expand_size.height ), cv::Scalar( 0, 255, 0 ), 1 );
-			}
-
-			cv::imshow( "Analyzer", temp_image );
-			cv::waitKey( 500 );
-		}
-		// debug //
-	}
-
-	return 0;
-}
-
-bool sb::Analyzer::segmentIntersectRectangle( const cv::Point2d& p1,
-                                              const cv::Point2d& p2,
-                                              const cv::Rect2d& rect ) const
+bool sb::Analyzer::segment_intersect_rectangle( const cv::Point2d& p1,
+                                                const cv::Point2d& p2,
+                                                const cv::Rect2d& rect ) const
 {
 	// Find min and max X for the segment
 
@@ -1162,21 +161,500 @@ bool sb::Analyzer::segmentIntersectRectangle( const cv::Point2d& p1,
 	return true;
 }
 
-bool sb::Analyzer::segmentIntersectCircle( const cv::Point2d& p1,
-                                           const cv::Point2d& p2,
-                                           const cv::Point2d& circle_origin,
-                                           double circle_radius ) const
+int sb::Analyzer::find_lines_inside_window( const std::vector<sb::LineInfo>& inputLines,
+                                            const cv::Rect2d& window,
+                                            std::vector<sb::LineInfo>& outputLines ) const
 {
-	cv::Point2d P1 = p1 - circle_origin;
-	cv::Point2d P2 = p2 - circle_origin;
+	outputLines.clear();
 
-	double D = P1.x * P2.y - P2.x * P1.y;
+	// find lines inside current window
+	for ( size_t line_index = 0; line_index < inputLines.size(); line_index++ ) {
+		const sb::LineInfo& line = inputLines[line_index];
+		if ( !segment_intersect_rectangle( line.getStartingPoint(), line.getEndingPoint(), window ) ) continue;
 
-	double dr = std::sqrt( (p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y) );
+		outputLines.push_back( line );
+	}
 
-	double r = circle_radius;
-
-	return (r * r * dr * dr - D * D >= 0);
+	return 0;
 }
 
-void sb::Analyzer::drawCandidate( const cv::Vec6d& candidate ) const {}
+int sb::Analyzer::find_first_lane_parts( const std::vector<sb::LineInfo>& lines,
+                                         std::vector<sb::LanePart>& lane_parts ) const
+{
+	const size_t n_lines = lines.size();
+
+	for ( size_t first_index = 0; first_index < n_lines; first_index++ ) {
+		const auto& first_line = lines[first_index];
+
+		for ( size_t second_index = 0; second_index < n_lines; second_index++ ) {
+			if ( first_index == second_index ) continue;
+
+			const auto& second_line = lines[second_index];
+
+			/// 1) check and calculate lane info
+
+			// lane info
+			cv::Point2d pos;
+			double width, angle;
+
+			// check angle
+			double angle_diff = abs( first_line.getAngle() - second_line.getAngle() );
+			if ( angle_diff > MAX_ACCEPTABLE_ANGLE_DIFF ) continue;
+
+			angle = (first_line.getAngle() + second_line.getAngle()) / 2;
+
+			// calculate two intersect points
+			cv::Point2d first_point, second_point;
+			first_point = first_line.getStartingPoint();
+
+			sb::Line horizon( angle + 90, first_point );
+			sb::Line::findIntersection( horizon, second_line.getLine(), second_point );
+
+			// check width
+			cv::Point2d posDiff = first_point - second_point;
+			width = std::sqrt( posDiff.x * posDiff.x + posDiff.y * posDiff.y );
+
+			if ( width < _minLandWidth || width > _maxLandWidth ) continue;
+
+			// select lane origin
+			if ( first_point.x < second_point.x )
+				pos = first_point;
+			else if ( second_point.x < first_point.x )
+				pos = second_point;
+			else pos = first_point.y < second_point.y ? first_point : second_point;
+
+			/// 2) add to good couples
+			sb::LanePart lane_part( pos, angle, width, _windowSize.height );
+
+			if ( std::find( lane_parts.cbegin(), lane_parts.cend(), lane_part )
+				!= lane_parts.cend() )
+				continue;
+
+			lane_parts.push_back( lane_part );
+		}
+	}
+
+	return 0;
+}
+
+int sb::Analyzer::find_next_lane_parts( const std::vector<sb::LineInfo>& lines,
+                                        const sb::LanePart& lastest_lane_part,
+                                        std::vector<sb::LanePart>& lane_parts,
+                                        std::vector<double>& lane_part_ratings ) const
+{
+	//** arguments to be set
+	const double max_width_diff = 2;
+	const double max_pos_distance = 2;
+	const double max_angle_diff = 20;
+
+	const size_t n_lines = lines.size();
+
+	for ( size_t first_index = 0; first_index < n_lines; first_index++ ) {
+		const auto& first_line = lines[first_index];
+
+		for ( size_t second_index = 0; second_index < n_lines; second_index++ ) {
+			if ( first_index == second_index ) continue;
+
+			const auto& second_line = lines[second_index];
+
+			/// 1) check and calculate lane info
+
+			// lane info
+			cv::Point2d pos;
+			double width, angle;
+
+			// check angle
+			double angle_diff = abs( first_line.getAngle() - second_line.getAngle() );
+			if ( angle_diff > MAX_ACCEPTABLE_ANGLE_DIFF ) continue;
+
+			angle = (first_line.getAngle() + second_line.getAngle()) / 2;
+
+			double angle_diff_with_lastest = abs( angle - lastest_lane_part.angle );
+			if ( angle_diff_with_lastest > max_angle_diff ) continue;
+
+			// calculate two intersect points
+			cv::Point2d first_point;
+
+			sb::Line lastest_horizon( lastest_lane_part.vertices[1], lastest_lane_part.vertices[2] );
+			sb::Line::findIntersection( lastest_horizon, first_line.getLine(), first_point );
+
+			cv::Point2d second_point;
+
+			sb::Line horizon( angle + 90, first_point );
+			sb::Line::findIntersection( horizon, second_line.getLine(), second_point );
+
+			// check width
+			cv::Point2d pos_diff = first_point - second_point;
+			width = std::sqrt( pos_diff.x * pos_diff.x + pos_diff.y * pos_diff.y );
+
+			if ( width < _minLandWidth || width > _maxLandWidth ) continue;
+
+			double width_diff_with_lastest = abs( width - lastest_lane_part.width );
+			if ( width_diff_with_lastest > max_width_diff ) continue;
+
+			// select lane origin
+			if ( first_point.x < second_point.x )
+				pos = first_point;
+			else if ( second_point.x < first_point.x )
+				pos = second_point;
+			else pos = first_point.y < second_point.y ? first_point : second_point;
+
+			// check position diff
+			cv::Point2d pos_on_lastest_horizon;
+			sb::Line::findIntersection( lastest_horizon, sb::Line( angle, pos ), pos_on_lastest_horizon );
+
+			cv::Point2d pos_diff_with_lastest;
+			pos_diff_with_lastest = pos_on_lastest_horizon - lastest_lane_part.vertices[1];
+
+			double pos_distance_with_lastest = std::sqrt( pos_diff_with_lastest.x * pos_diff_with_lastest.x +
+			                                             pos_diff_with_lastest.y * pos_diff_with_lastest.y );
+
+			//** argument need to be set
+			if ( pos_distance_with_lastest > 2 ) continue;
+
+			/// 2) final check and calculate rating
+			sb::LanePart lane_part( pos, angle, width, _windowSize.height );
+
+			if ( std::find( lane_parts.cbegin(), lane_parts.cend(), lane_part )
+				!= lane_parts.cend() )
+				continue;
+
+			//** consider new function
+			double width_rating = 10 - (10.0 / max_width_diff) * width_diff_with_lastest;
+			double pos_rating = 10 - (10.0 / max_pos_distance) * pos_distance_with_lastest;
+
+			double rating = 0.65 * width_rating + 0.35 * pos_rating;
+
+			lane_parts.push_back( lane_part );
+			lane_part_ratings.push_back( rating );
+		}
+	}
+
+	return 0;
+}
+
+int sb::Analyzer::draw_lane_part( const sb::LanePart& lane_part, cv::Mat& image,
+                                  const cv::Size& expand_size,
+                                  const cv::Scalar& color,
+                                  int line_width ) const
+{
+	for ( int v = 0; v < 4; v++ ) {
+		cv::line( image,
+		          _debugFormatter.convertFromCoord( lane_part.vertices[v] )
+		          + cv::Point2d( expand_size.width / 2, expand_size.height ),
+		          _debugFormatter.convertFromCoord( lane_part.vertices[(v + 1) % 4] )
+		          + cv::Point2d( expand_size.width / 2, expand_size.height ), color, line_width );
+	}
+	cv::circle( image,
+	            _debugFormatter.convertFromCoord( lane_part.position )
+	            + cv::Point2d( expand_size.width / 2, expand_size.height ), 5, cv::Scalar( 255, 255, 255 ), 2 );
+
+	return 0;
+}
+
+int sb::Analyzer::calculate_full_lane_parts( std::vector<sb::LanePart>& in_out_lane_parts,
+                                             const std::vector<sb::LineInfo>& full_lines_list,
+                                             const cv::Mat& image,
+                                             const cv::Size& expand_size ) const
+{
+	int hops_to_live = 6; //** need to be set
+
+	std::vector<std::vector<sb::LanePart>> lane_parts_list;
+	std::vector<double> lane_ratings_list;
+
+	std::stack<std::vector<sb::LanePart>> stack_lanes;
+	std::stack<double> stack_lane_ratings;
+	stack_lanes.push( in_out_lane_parts );
+	stack_lane_ratings.push( 10 ); //** set first rating relative to previous position
+
+	while ( !stack_lanes.empty() ) {
+
+		// pop a bufferred scenario, find and push it new lane part
+		std::vector<sb::LanePart> lane = stack_lanes.top();
+		double lane_rating = stack_lane_ratings.top();
+
+		stack_lanes.pop();
+		stack_lane_ratings.pop();
+
+		if ( lane.size() == hops_to_live ) {
+			lane_parts_list.push_back( lane );
+			lane_ratings_list.push_back( lane_rating / hops_to_live );
+			continue;
+		}
+
+		// lastest lane part
+		sb::LanePart lastest_lane_part = lane.back();
+
+		// move window to cover center point
+		cv::Point2d center_point = (lastest_lane_part.vertices[1] + lastest_lane_part.vertices[2]) * 0.5;
+
+		//** consider use smaller window to find next lane part
+		cv::Rect2d window( center_point.x - _windowSize.width / 2,
+		                   center_point.y - _windowSize.height / 2, _windowSize.width, _windowSize.height );
+
+		// debug 
+		/*
+		 cv::Mat temp_image = image.clone();
+		// window and old lane parts
+		{
+			for ( const auto& lane_part : lane ) {
+				draw_lane_part( lane_part, temp_image, expand_size, cv::Scalar::all( 255 ), 2 );
+			}
+
+			cv::rectangle( temp_image,
+			               _debugFormatter.convertFromCoord( window.tl() )
+			               + cv::Point2d( expand_size.width / 2, expand_size.height ),
+			               _debugFormatter.convertFromCoord( window.br() )
+			               + cv::Point2d( expand_size.width / 2, expand_size.height ),
+			               cv::Scalar( 0, 255, 255 ), 1 );
+
+			cv::imshow( "Analyzer", temp_image );
+			cv::waitKey( 100 );
+		}
+		*/
+		// debug 
+
+		// find lines in window
+		std::vector<sb::LineInfo> lines_intersect_window;
+		find_lines_inside_window( full_lines_list, window, lines_intersect_window );
+
+		// filter unsuitable lines 
+		for ( size_t i = 0; i < lines_intersect_window.size(); i++ ) {
+			const auto& line = lines_intersect_window[i];
+
+			double angle = line.getAngle();
+
+			double angle_diff = abs( angle - lastest_lane_part.angle );
+
+			if ( angle_diff > 20 ) { //** allow argument to be set
+				lines_intersect_window.erase( lines_intersect_window.begin() + i );
+			}
+		}
+
+		// debug //
+		// lines in window
+		/*
+		{
+			cv::Mat temp_image_1 = temp_image.clone();
+			for ( const auto& line : lines_intersect_window ) {
+				cv::line( temp_image_1,
+				          _debugFormatter.convertFromCoord( line.getStartingPoint() )
+				          + cv::Point2d( expand_size.width / 2, expand_size.height ),
+				          _debugFormatter.convertFromCoord( line.getEndingPoint() )
+				          + cv::Point2d( expand_size.width / 2, expand_size.height ), cv::Scalar( 0, 255, 0 ), 1 );
+			}
+			cv::imshow( "Analyzer", temp_image_1 );
+			cv::waitKey( 100 );
+		}
+		*/
+		// debug //
+
+		sb::Line lastest_horizon( lastest_lane_part.vertices[1], lastest_lane_part.vertices[2] );
+
+		// find next lane parts
+		std::vector<sb::LanePart> next_lane_parts;
+		std::vector<double> next_lane_part_ratings;
+		find_next_lane_parts( lines_intersect_window, lastest_lane_part, next_lane_parts, next_lane_part_ratings );
+
+		// not next part found
+		if ( next_lane_parts.empty() ) {
+			// copy old lane
+			next_lane_parts.push_back( sb::LanePart( lastest_lane_part.vertices[1],
+			                                         lastest_lane_part.angle,
+			                                         lastest_lane_part.width,
+			                                         _windowSize.height ) );
+			next_lane_part_ratings.push_back( 0 );
+		}
+
+		// push new sequences in to stack
+		for ( size_t i = 0; i < next_lane_parts.size(); i++ ) {
+			std::vector<sb::LanePart> temp_lane( lane.cbegin(), lane.cend() );
+			temp_lane.push_back( next_lane_parts[i] );
+
+			double temp_rating = lane_rating;
+			temp_rating += next_lane_part_ratings[i];
+
+			stack_lanes.push( temp_lane );
+			stack_lane_ratings.push( temp_rating );
+		}
+
+		// debug //
+		/*
+		cv::imshow( "Analyzer", temp_image );
+		cv::waitKey( 200 );
+		*/
+		// debug //
+	}
+
+	// chọn ra lane có đánh giá cao nhất
+	size_t max_element_index = std::distance( lane_ratings_list.begin(),
+	                                          std::max_element( lane_ratings_list.begin(), lane_ratings_list.end() ) );
+
+	// return -1 nếu đánh giá của các line đều quá thấp
+	if ( lane_ratings_list[max_element_index] < 6 ) return -1;
+
+	in_out_lane_parts = lane_parts_list[max_element_index];
+
+	return 0;
+}
+
+int sb::Analyzer::analyze3( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInfo ) const
+{
+	/*
+	// Bước 1: Sử dụng một cửa sổ vừa nhỏ đủ chứa một làn đường, quét ngang phần dưới khung hình
+	// Bước 2: Vote cho những đường có khả năng tạo thành 1 làn đường (song song, cách nhau một khoảng gần bằng độ rộng làn đường)
+	// Bước 3: Tính điểm đánh giá cho những đường vừa vote
+	// Bước 4: Nếu đánh giá đủ cao để xem là làn đường đến bước 5, ngược lại quay lại bước 1 nhưng với phần khung hình cao hơn
+	// Bước 5: Trượt cửa sổ chiều của làn đường đó
+	// Bước 6: Vừa trượt vừa tìm những đường nối tiếp làn đường đó
+	// Bước 7: Tìm càng được càng nhiều đường nối, đánh giá càng cao
+	// Bước 8: Nếu điểm đủ cao, xác định đó là 1 trường hợp làn đường có thể
+	// Bước 9: Tiếp tục tìm tương tự
+	// Bước 10: Nếu tồn tại làn có đánh giá đủ cao thứ 2
+	// Bước 11: Xét quan hệ giữa 2 làn tìm đường
+	// Bước 12: Nếu các quan hệ hợp lý tạo thành làn đường thì đó là làn thứ hai. Kết thúc
+	// Bước 13: Tiếp tục tìm tương tự.
+	// Bước 14: Nếu tồn tại làn có đánh giá đủ cao thứ n
+	// Bước 15: Xét quan hệ với các làn còn lại
+	// Bước 16: Nếu quan hệ hợp lý tạo thành làn đường. Kết thúc.
+	// Bước 17: Không tìm được thêm làn nào. Xác định làn tìm được là trái hay phải dựa trên quan hệ với trạng thái cũ
+	// Bước 19: Nếu khoogn tìm được làn nào hợp lý cả, sử dụng kết quả tìm được gợi ý làn đường
+	*/
+
+	const size_t num_lines = frameInfo.getRealLineInfos().size();
+
+	///// debug //////
+	const cv::Size expand_size( 900, 700 );
+	cv::Mat real_image;
+
+	// create real image
+	{
+		real_image = cv::Mat( frameInfo.getColorImage().rows + expand_size.height,
+		                      frameInfo.getColorImage().cols + expand_size.width, CV_8UC3, cv::Scalar( 0, 0, 0 ) );
+
+		cv::line( real_image,
+		          _debugFormatter.convertFromCoord( cv::Point2d( 0, 0 ) )
+		          + cv::Point2d( expand_size.width / 2, expand_size.height ),
+		          _debugFormatter.convertFromCoord( cv::Point2d( 0, 500 ) )
+		          + cv::Point2d( expand_size.width / 2, expand_size.height ),
+		          cv::Scalar( 255, 255, 255 ), 1 );
+
+		for ( size_t i = 0; i < num_lines; i++ ) {
+			const auto& line = frameInfo.getRealLineInfos()[i];
+
+			cv::line( real_image,
+			          _debugFormatter.convertFromCoord( line.getStartingPoint() )
+			          + cv::Point2d( expand_size.width / 2, expand_size.height ),
+			          _debugFormatter.convertFromCoord( line.getEndingPoint() )
+			          + cv::Point2d( expand_size.width / 2, expand_size.height ), cv::Scalar( 0, 0, 255 ), 1 );
+		}
+
+		cv::imshow( "Analyzer", real_image );
+		cv::waitKey();
+	}
+	///// debug //////
+
+	// sample lane candidates: container of possible lanes
+	void* lane_candidates;
+
+	// window //** consider use bigger window to find first lane part
+	cv::Rect2d window( -_topRightCorner.x, 5, _windowSize.width, _windowSize.height );
+
+	// move window around frame to find lane candidates
+	// if lane candidate is good enough use it
+	// else push it to candidates list
+	// choose the most reliable candidate in list to generate road info
+
+	do {
+		void* current_lane_candidates; // current lane candidates in progress of finding
+
+		// move window around frame to find lane candidate until it meets some requirements
+		if ( move_window( window ) < 0 ) break;
+
+		std::vector<sb::LineInfo> lines_intersect_window;
+
+		find_lines_inside_window( frameInfo.getRealLineInfos(), window, lines_intersect_window );
+
+		///// debug /////
+		cv::Mat temp_image;
+		// window and lines in window
+		{
+			temp_image = real_image.clone();
+
+			cv::rectangle( temp_image,
+			               _debugFormatter.convertFromCoord( window.tl() )
+			               + cv::Point2d( expand_size.width / 2, expand_size.height ),
+			               _debugFormatter.convertFromCoord( window.br() )
+			               + cv::Point2d( expand_size.width / 2, expand_size.height ), cv::Scalar::all( 255 ) );
+
+			for ( const auto& line : lines_intersect_window ) {
+				cv::line( temp_image,
+				          _debugFormatter.convertFromCoord( line.getStartingPoint() )
+				          + cv::Point2d( expand_size.width / 2, expand_size.height ),
+				          _debugFormatter.convertFromCoord( line.getEndingPoint() )
+				          + cv::Point2d( expand_size.width / 2, expand_size.height ), cv::Scalar( 0, 255, 0 ), 1 );
+			}
+			cv::imshow( "Analyzer", temp_image );
+			cv::waitKey( 1 );
+		}
+		///// debug /////
+
+		std::vector<sb::LanePart> first_lane_parts;
+
+		find_first_lane_parts( lines_intersect_window, first_lane_parts );
+
+		//  generate lane candidates from first_lane_parts
+		for ( const auto& first_lane_part: first_lane_parts ) {
+
+			//  generate lane candidate from first_lane_part
+			std::vector<sb::LanePart> full_lane_parts;
+
+			if ( calculate_full_lane_parts( first_lane_part,
+			                                frameInfo.getRealLineInfos(),
+			                                full_lane_parts,
+			                                temp_image, expand_size ) < 0 )
+				continue;;
+
+			// debug //
+			{
+				cv::Mat temp_image_1 = temp_image.clone();
+				for( auto const& lane_part : full_lane_parts ) {
+					draw_lane_part( lane_part, temp_image_1, expand_size, cv::Scalar( 0, 255, 255 ), 2 );
+				}
+				cv::imshow( "Analyzer", temp_image_1 );
+				cv::waitKey( 200 );
+			}
+			
+			// find opposite lane for in_out_lane_parts
+
+			// generate lane candidate from that coule of sequence of lane parts
+
+			// if lane candidate is good enough, use this and go to generaing road info part
+
+			// else push lane candidate to candidate lists
+
+			// debug //
+			/*{
+				cv::Mat temp_image_1 = temp_image.clone();
+
+				for ( int v = 0; v < 4; v++ ) {
+					cv::line( temp_image_1,
+					          _debugFormatter.convertFromCoord( first_lane_part.vertices[v] )
+					          + cv::Point2d( expand_size.width / 2, expand_size.height ),
+					          _debugFormatter.convertFromCoord( first_lane_part.vertices[(v + 1) % 4] )
+					          + cv::Point2d( expand_size.width / 2, expand_size.height ), cv::Scalar( 255, 255, 255 ), 3 );
+				}
+
+				cv::imshow( "Analyzer", temp_image_1 );
+				cv::waitKey( 200 );
+			}*/
+		}
+
+	} while ( true );
+
+	// choose the most reliable lane candidate and go to generate road info part
+
+	// if all lane candidate are too low, estimate a way to go
+
+	return 0;
+}
