@@ -12,7 +12,7 @@ int sb::Analyzer::init( const sb::Params& params )
 	_minLandWidth *= 0.9;
 	_maxLandWidth *= 1.1;
 
-	_windowSize = cv::Size( static_cast<int>(_maxLandWidth) * 2, static_cast<int>(_maxLandWidth) );
+	_windowSize = cv::Size( static_cast<int>(_maxLandWidth) * 2, static_cast<int>(_maxLandWidth) * 2 );
 	_windowMove = cv::Point2d( _maxLandWidth, _maxLandWidth );
 	_topRightCorner = cv::Point2d( 100, 100 ); //** need to be set
 	_lanePartLength = _maxLandWidth;
@@ -399,6 +399,7 @@ int sb::Analyzer::calculate_full_lane( const sb::LanePart& first_lane_part,
 
 			if ( angle_diff > MAX_ACCEPTABLE_ANGLE_DIFF_BETWEEN_LANE_PARTS ) { //** allow argument to be set
 				lines_intersect_window.erase( lines_intersect_window.begin() + i );
+				i--;
 			}
 		}
 
@@ -439,9 +440,10 @@ int sb::Analyzer::calculate_full_lane( const sb::LanePart& first_lane_part,
 
 		// push new sequences in to stack
 		for ( size_t i = 0; i < next_lane_parts.size(); i++ ) {
-			sb::Lane temp_lane = lane;
+			sb::Lane temp_lane;
+			temp_lane.parts = std::vector<sb::LanePart>( lane.parts.cbegin(), lane.parts.cend() );
 			temp_lane.parts.push_back( next_lane_parts[i] );
-			
+
 			double temp_rating = lane_rating;
 			temp_rating += next_lane_part_ratings[i];
 
