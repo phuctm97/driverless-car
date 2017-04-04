@@ -304,8 +304,6 @@ int sb::Analyzer::calculate_full_lane( const sb::LanePart& first_lane_part,
                                        const cv::Mat& image,
                                        const cv::Size& expand_size ) const
 {
-	int n = 0;
-
 	int hops_to_live = 7; //** need to be set
 
 	std::vector<sb::Lane> lanes_list;
@@ -333,6 +331,14 @@ int sb::Analyzer::calculate_full_lane( const sb::LanePart& first_lane_part,
 		stack_lane_ratings.pop();
 
 		if ( lane.parts.size() == hops_to_live ) {
+			cv::Mat temp_image = image.clone();
+			for ( const auto& lane_part: lane.parts ) {
+				draw_lane_part( lane_part, temp_image, expand_size, cv::Scalar( 255, 255, 255 ), 2 );
+			}
+
+			sb::Road road;
+			calculate_full_road( lane, lane_rating / hops_to_live, full_lines_list, road, temp_image, expand_size );
+
 			lanes_list.push_back( lane );
 			lane_ratings_list.push_back( lane_rating / hops_to_live );
 
@@ -390,7 +396,7 @@ int sb::Analyzer::calculate_full_lane( const sb::LanePart& first_lane_part,
 		find_lines_intersect_rectangle( full_lines_list, window, lines_intersect_window );
 
 		// filter unsuitable lines 
-		for ( size_t i = 0; i < lines_intersect_window.size(); i++ ) {
+		for ( size_t i = 0; i < lines_intersect_window.size(); ) {
 			const auto& line = lines_intersect_window[i];
 
 			double angle = line.getAngle();
@@ -399,8 +405,9 @@ int sb::Analyzer::calculate_full_lane( const sb::LanePart& first_lane_part,
 
 			if ( angle_diff > MAX_ACCEPTABLE_ANGLE_DIFF_BETWEEN_LANE_PARTS ) { //** allow argument to be set
 				lines_intersect_window.erase( lines_intersect_window.begin() + i );
-				i--;
+				continue;
 			}
+			i++;
 		}
 
 		// debug //
@@ -426,7 +433,6 @@ int sb::Analyzer::calculate_full_lane( const sb::LanePart& first_lane_part,
 		std::vector<double> next_lane_part_ratings;
 
 		find_next_lane_parts( lines_intersect_window, lastest_lane_part, next_lane_parts, next_lane_part_ratings );
-		n++;
 
 		// none of next part found
 		if ( next_lane_parts.empty() ) {
@@ -438,7 +444,7 @@ int sb::Analyzer::calculate_full_lane( const sb::LanePart& first_lane_part,
 			next_lane_part_ratings.push_back( 0 );
 		}
 
-		// push new sequences in to stack
+		// push new lanes in to stack
 		for ( size_t i = 0; i < next_lane_parts.size(); i++ ) {
 			sb::Lane temp_lane;
 			temp_lane.parts = std::vector<sb::LanePart>( lane.parts.cbegin(), lane.parts.cend() );
@@ -452,8 +458,6 @@ int sb::Analyzer::calculate_full_lane( const sb::LanePart& first_lane_part,
 		}
 	}
 
-	std::cout << "n = " << n << std::endl;
-
 	// chọn ra lane có đánh giá cao nhất
 	size_t max_element_index = std::distance( lane_ratings_list.begin(),
 	                                          std::max_element( lane_ratings_list.begin(), lane_ratings_list.end() ) );
@@ -462,6 +466,65 @@ int sb::Analyzer::calculate_full_lane( const sb::LanePart& first_lane_part,
 	if ( lane_ratings_list[max_element_index] < 6 ) return -1;
 
 	output_lane = lanes_list[max_element_index];
+
+	return 0;
+}
+
+int sb::Analyzer::calculate_full_road( const sb::Lane& lane,
+                                       double lane_rating,
+                                       const std::vector<sb::LineInfo>& full_lines_list,
+                                       sb::Road& road,
+                                       const cv::Mat& image,
+                                       const cv::Size& expand_size ) const
+{
+	// duyệt lane part từ dưới lên
+	// tìm làn đối diện bằng cách tìm các đường song song
+	// đánh giá cao nếu nó tạo thành làn ở phía đối diện (có 2 đường song song)
+	// xác định road width
+	// tiếp tục duyệt lên kiểm tra, nhưng sử dụng road width vừa tìm đc
+
+	for ( size_t part_index = 0; part_index < lane.parts.size(); part_index++ ) {
+		sb::LanePart part = lane.parts[part_index];
+
+		// find line to consider
+		std::vector<sb::LineInfo> lines_to_consider;
+		for ( size_t line_index = 0; line_index < full_lines_list.size(); line_index++ ) {
+			const sb::LineInfo& line = full_lines_list[line_index];
+
+			double angle = line.getAngle();
+			double angle_diff = abs( angle - part.angle );
+
+			if ( angle_diff > MAX_ACCEPTABLE_ANGLE_DIFF_BETWEEN_TWO_LANES ) continue;
+
+			sb::Line horizon( part.vertices[1], part.vertices[2] );
+
+			cv::Point2d knot;
+			sb::Line::findIntersection( horizon, line.getLine(), knot );
+
+			cv::Point2d pos_diff = part.vertices[1] - knot;
+			double pos_distance = std::sqrt( pos_diff.x * pos_diff.x + pos_diff.y * pos_diff.y );
+
+			if ( pos_distance < _minRoadWidth || pos_distance > _maxRoadWidth + part.width * 2 ) continue;
+
+			lines_to_consider.push_back( line );
+		}
+
+		// debug //
+		{
+			cv::Mat temp_image = image.clone();
+			draw_lane_part( part, temp_image, expand_size, cv::Scalar( 0, 255, 255 ), 2 );
+			for(const auto& line: lines_to_consider ) {
+				cv::line( temp_image,
+									_debugFormatter.convertFromCoord( line.getStartingPoint() )
+									+ cv::Point2d( expand_size.width / 2, expand_size.height ),
+									_debugFormatter.convertFromCoord( line.getEndingPoint() )
+									+ cv::Point2d( expand_size.width / 2, expand_size.height ), cv::Scalar( 0, 255, 0 ), 1 );
+			}
+			cv::imshow( "Analyzer", temp_image );
+			cv::waitKey();
+		}
+		// debug //
+	}
 
 	return 0;
 }

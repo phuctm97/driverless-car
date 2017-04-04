@@ -6,6 +6,7 @@
 #include "../calculator/FrameInfo.h"
 #include "../calculator/Formatter.h"
 #include "Lane.h"
+#include "Road.h"
 #include "RoadInfo.h"
 
 #include <stack>
@@ -15,6 +16,7 @@
 #define MAX_ACCEPTABLE_WIDTH_DIFF_BETWEEN_LANE_PARTS 2
 #define MAX_ACCEPTABLE_DISTANCE_BETWEEN_LANE_PARTS 2
 #define MAX_ACCEPTABLE_ANGLE_DIFF_BETWEEN_LANE_PARTS 20
+#define MAX_ACCEPTABLE_ANGLE_DIFF_BETWEEN_TWO_LANES 10
 
 namespace sb
 {
@@ -62,6 +64,13 @@ private:
 	int calculate_full_lane( const sb::LanePart& first_lane_part,
 	                         const std::vector<sb::LineInfo>& full_lines_list,
 	                         sb::Lane& output_lane,
+	                         const cv::Mat& image,
+	                         const cv::Size& expand_size ) const;
+
+	int calculate_full_road( const sb::Lane& lane,
+	                         double lane_rating,
+	                         const std::vector<sb::LineInfo>& full_lines_list,
+	                         sb::Road& road,
 	                         const cv::Mat& image,
 	                         const cv::Size& expand_size ) const;
 
