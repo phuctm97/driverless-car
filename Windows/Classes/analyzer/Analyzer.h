@@ -43,7 +43,7 @@ public:
 
 private:
 	int analyze3( const sb::FrameInfo& frameInfo,
-								sb::RoadInfo& roadInfo ) const;
+	              sb::RoadInfo& roadInfo ) const;
 
 	int move_window( cv::Rect2d& window ) const;
 
@@ -59,21 +59,20 @@ private:
 	                          std::vector<sb::LanePart>& lane_parts,
 	                          std::vector<double>& lane_part_ratings ) const;
 
-	int calculate_full_lane_parts( const sb::LanePart& first_lane_part,
-	                               const std::vector<sb::LineInfo>& full_lines_list,
-	                               std::vector<sb::LanePart>& output_full_lane_parts,
-	                               const cv::Mat& image,
-	                               const cv::Size& expand_size ) const;
+	int calculate_full_lane( const sb::LanePart& first_lane_part,
+	                         const std::vector<sb::LineInfo>& full_lines_list,
+	                         sb::Lane& output_lane,
+	                         const cv::Mat& image,
+	                         const cv::Size& expand_size ) const;
 
 	int draw_lane_part( const sb::LanePart& lane_part, cv::Mat& image,
-											const cv::Size& expand_size,
-											const cv::Scalar& color,
-											int line_width ) const;
+	                    const cv::Size& expand_size,
+	                    const cv::Scalar& color,
+	                    int line_width ) const;
 
 	bool segment_intersect_rectangle( const cv::Point2d& p1,
-																		const cv::Point2d& p2,
-																		const cv::Rect2d& rect ) const;
-
+	                                  const cv::Point2d& p2,
+	                                  const cv::Rect2d& rect ) const;
 };
 }
 
