@@ -14,6 +14,8 @@ struct Lane
 	double width;
 
 	int side;
+
+	double rating;
 	
 	// tập hợp các lane part 
 	// hoặc
