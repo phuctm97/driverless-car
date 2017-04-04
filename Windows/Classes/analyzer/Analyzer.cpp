@@ -298,40 +298,48 @@ int sb::Analyzer::draw_lane_part( const sb::LanePart& lane_part, cv::Mat& image,
 	return 0;
 }
 
-int sb::Analyzer::calculate_full_lane_parts( const sb::LanePart& first_lane_part,
-                                             const std::vector<sb::LineInfo>& full_lines_list,
-                                             std::vector<sb::LanePart>& output_full_lane_parts,
-                                             const cv::Mat& image,
-                                             const cv::Size& expand_size ) const
+int sb::Analyzer::calculate_full_lane( const sb::LanePart& first_lane_part,
+                                       const std::vector<sb::LineInfo>& full_lines_list,
+                                       sb::Lane& output_lane,
+                                       const cv::Mat& image,
+                                       const cv::Size& expand_size ) const
 {
+	int n = 0;
+
 	int hops_to_live = 7; //** need to be set
 
-	std::vector<std::vector<sb::LanePart>> lane_parts_list;
+	std::vector<sb::Lane> lanes_list;
 	std::vector<double> lane_ratings_list;
 
-	std::stack<std::vector<sb::LanePart>> stack_lanes;
+	std::stack<sb::Lane> stack_lanes;
 	std::stack<double> stack_lane_ratings;
 
-	stack_lanes.push( { first_lane_part } );
-	stack_lane_ratings.push( 10 ); //** set first rating relative to previous position
+	// init lane
+	{
+		sb::Lane temp_lane;
+		temp_lane.parts.push_back( first_lane_part );
+
+		stack_lanes.push( temp_lane );
+		stack_lane_ratings.push( 10 ); //** set first rating relative to previous position
+	}
 
 	while ( !stack_lanes.empty() ) {
 
 		// pop a bufferred scenario, find and push it new lane part
-		std::vector<sb::LanePart> lane = stack_lanes.top();
+		sb::Lane lane = stack_lanes.top();
 		double lane_rating = stack_lane_ratings.top();
 
 		stack_lanes.pop();
 		stack_lane_ratings.pop();
 
-		if ( lane.size() == hops_to_live ) {
-			lane_parts_list.push_back( lane );
+		if ( lane.parts.size() == hops_to_live ) {
+			lanes_list.push_back( lane );
 			lane_ratings_list.push_back( lane_rating / hops_to_live );
 
 			// debug //
 			/*
 			cv::Mat temp_image_1 = image.clone();
-			for(const auto& lane_part: lane ) {
+			for(const auto& lane_part: lane.parts ) {
 				draw_lane_part( lane_part, temp_image_1, expand_size, cv::Scalar( 255, 255, 255 ), 2 );
 			}
 			std::stringstream stringBuilder;
@@ -346,7 +354,7 @@ int sb::Analyzer::calculate_full_lane_parts( const sb::LanePart& first_lane_part
 		}
 
 		// lastest lane part
-		sb::LanePart lastest_lane_part = lane.back();
+		sb::LanePart lastest_lane_part = lane.parts.back();
 
 		// move window to cover center point
 		cv::Point2d center_point = (lastest_lane_part.vertices[1] + lastest_lane_part.vertices[2]) * 0.5;
@@ -355,12 +363,12 @@ int sb::Analyzer::calculate_full_lane_parts( const sb::LanePart& first_lane_part
 		cv::Rect2d window( center_point.x - _windowSize.width / 2,
 		                   center_point.y - _windowSize.height / 2, _windowSize.width, _windowSize.height );
 
-		// debug 
+		// debug
 
 		cv::Mat temp_image = image.clone();
 		// window and old lane parts
 		{
-			for ( const auto& lane_part : lane ) {
+			for ( const auto& lane_part : lane.parts ) {
 				draw_lane_part( lane_part, temp_image, expand_size, cv::Scalar::all( 255 ), 2 );
 			}
 
@@ -389,7 +397,7 @@ int sb::Analyzer::calculate_full_lane_parts( const sb::LanePart& first_lane_part
 
 			double angle_diff = abs( angle - lastest_lane_part.angle );
 
-			if ( angle_diff > 20 ) { //** allow argument to be set
+			if ( angle_diff > MAX_ACCEPTABLE_ANGLE_DIFF_BETWEEN_LANE_PARTS ) { //** allow argument to be set
 				lines_intersect_window.erase( lines_intersect_window.begin() + i );
 			}
 		}
@@ -417,7 +425,8 @@ int sb::Analyzer::calculate_full_lane_parts( const sb::LanePart& first_lane_part
 		std::vector<double> next_lane_part_ratings;
 
 		find_next_lane_parts( lines_intersect_window, lastest_lane_part, next_lane_parts, next_lane_part_ratings );
-	
+		n++;
+
 		// none of next part found
 		if ( next_lane_parts.empty() ) {
 			// copy old lane
@@ -430,9 +439,9 @@ int sb::Analyzer::calculate_full_lane_parts( const sb::LanePart& first_lane_part
 
 		// push new sequences in to stack
 		for ( size_t i = 0; i < next_lane_parts.size(); i++ ) {
-			std::vector<sb::LanePart> temp_lane( lane.cbegin(), lane.cend() );
-			temp_lane.push_back( next_lane_parts[i] );
-
+			sb::Lane temp_lane = lane;
+			temp_lane.parts.push_back( next_lane_parts[i] );
+			
 			double temp_rating = lane_rating;
 			temp_rating += next_lane_part_ratings[i];
 
@@ -441,6 +450,8 @@ int sb::Analyzer::calculate_full_lane_parts( const sb::LanePart& first_lane_part
 		}
 	}
 
+	std::cout << "n = " << n << std::endl;
+
 	// chọn ra lane có đánh giá cao nhất
 	size_t max_element_index = std::distance( lane_ratings_list.begin(),
 	                                          std::max_element( lane_ratings_list.begin(), lane_ratings_list.end() ) );
@@ -448,7 +459,7 @@ int sb::Analyzer::calculate_full_lane_parts( const sb::LanePart& first_lane_part
 	//** return -1 nếu đánh giá của các line đều quá thấp (nhỏ hơn thresh)
 	if ( lane_ratings_list[max_element_index] < 6 ) return -1;
 
-	output_full_lane_parts = lane_parts_list[max_element_index];
+	output_lane = lanes_list[max_element_index];
 
 	return 0;
 }
@@ -544,21 +555,21 @@ int sb::Analyzer::analyze3( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadIn
 		for ( const auto& first_lane_part: first_lane_parts ) {
 
 			//  generate lane candidate from first_lane_part
-			std::vector<sb::LanePart> full_lane_parts;
+			sb::Lane full_lane;
 
 			sb::Timer timer;
 			timer.reset( "calculate_full_lane_parts" );
-			if ( calculate_full_lane_parts( first_lane_part,
-			                                frameInfo.getRealLineInfos(),
-			                                full_lane_parts,
-			                                temp_image, expand_size ) < 0 )
+			if ( calculate_full_lane( first_lane_part,
+			                          frameInfo.getRealLineInfos(),
+			                          full_lane,
+			                          temp_image, expand_size ) < 0 )
 				continue;
 			std::cout << "calculate_full_lane_parts: " << timer.milliseconds( "calculate_full_lane_parts" ) << std::endl;
 
 			// debug //
 			{
 				cv::Mat temp_image_1 = temp_image.clone();
-				for ( auto const& lane_part : full_lane_parts ) {
+				for ( auto const& lane_part : full_lane.parts ) {
 					draw_lane_part( lane_part, temp_image_1, expand_size, cv::Scalar( 0, 255, 255 ), 2 );
 				}
 				cv::imshow( "Analyzer", temp_image_1 );
