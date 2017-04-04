@@ -12,6 +12,8 @@ struct Road
 	double lane_width;
 
 	double road_width;
+
+	double rating;
 };
 
 }
