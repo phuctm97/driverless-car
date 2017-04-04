@@ -47,6 +47,9 @@
     <ClCompile Include="..\Classes\driver\Car.cpp">
       <Filter>driver</Filter>
     </ClCompile>
+    <ClCompile Include="..\Classes\analyzer\LanePart.cpp">
+      <Filter>analyzer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="shared">
@@ -113,6 +116,9 @@
     </ClInclude>
     <ClInclude Include="..\Classes\driver\Car.h">
       <Filter>driver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\analyzer\LanePart.h">
+      <Filter>analyzer</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
