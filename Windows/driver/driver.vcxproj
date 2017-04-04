@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Classes\analyzer\Analyzer.cpp" />
+    <ClCompile Include="..\Classes\analyzer\LanePart.cpp" />
     <ClCompile Include="..\Classes\analyzer\RoadInfo.cpp" />
     <ClCompile Include="..\Classes\calculator\Calculator.cpp" />
     <ClCompile Include="..\Classes\calculator\EdgeDetector.cpp" />
@@ -38,6 +39,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Classes\analyzer\Analyzer.h" />
+    <ClInclude Include="..\Classes\analyzer\LanePart.h" />
     <ClInclude Include="..\Classes\analyzer\RoadInfo.h" />
     <ClInclude Include="..\Classes\calculator\Calculator.h" />
     <ClInclude Include="..\Classes\calculator\EdgeDetector.h" />

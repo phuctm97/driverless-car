@@ -41,6 +41,9 @@
     <ClCompile Include="..\Classes\Timer.cpp">
       <Filter>shared</Filter>
     </ClCompile>
+    <ClCompile Include="..\Classes\analyzer\LanePart.cpp">
+      <Filter>analyzer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="shared">
@@ -98,6 +101,15 @@
     </ClInclude>
     <ClInclude Include="..\Classes\Timer.h">
       <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\analyzer\LanePart.h">
+      <Filter>analyzer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\analyzer\Lane.h">
+      <Filter>analyzer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\analyzer\Road.h">
+      <Filter>analyzer</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
