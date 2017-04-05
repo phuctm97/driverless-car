@@ -1,7 +1,7 @@
 ﻿#ifndef __SB_ANALYZER_H__
 #define __SB_ANALYZER_H__
 
-// #define SB_DEBUG
+ #define SB_DEBUG
 
 #include "../Params.h"
 #include "../Timer.h"
