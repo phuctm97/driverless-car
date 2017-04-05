@@ -22,6 +22,10 @@ void sb::RoadInfo::setReliability( float reliability ) { _reliability = reliabil
 
 float sb::RoadInfo::getReliability() const { return _reliability; }
 
+const cv::Point2d& sb::RoadInfo::getTarget() const { return _target; }
+
+void sb::RoadInfo::setTarget( const cv::Point2d& point ) { _target = point; }
+
 void sb::RoadInfo::read( const cv::FileNode& node )
 {
 	node["LeftKnots"] >> _leftKnots;

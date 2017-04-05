@@ -14,6 +14,10 @@ struct Road
 	double road_width;
 
 	double rating;
+
+	double main_lane_rating;
+
+	int main_side;
 };
 
 }
