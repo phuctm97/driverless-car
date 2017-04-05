@@ -78,8 +78,8 @@ int sb::Analyzer::analyze3( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadIn
 			          + cv::Point2d( expand_size.width / 2, expand_size.height ), cv::Scalar( 0, 0, 255 ), 1 );
 		}
 
-		cv::imshow( "Analyzer", real_image );
-		cv::waitKey();
+		// cv::imshow( "Analyzer", real_image );
+		// cv::waitKey();
 	}
 #endif //SB_DEBUG
 
@@ -157,7 +157,7 @@ int sb::Analyzer::analyze3( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadIn
 				std::cout << "findRoads: " << timer.milliseconds( "findRoads" ) << "ms." << std::endl;
 
 				// show road and information
-				for ( const auto& road : roads ) {
+				/*for ( const auto& road : roads ) {
 					cv::Mat tmp_img = img.clone();
 					for ( size_t knot_index = 0; knot_index < road.knots.size() - 1; knot_index++ ) {
 						cv::line( tmp_img,
@@ -185,7 +185,7 @@ int sb::Analyzer::analyze3( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadIn
 
 					cv::imshow( "Analyzer", tmp_img );
 					cv::waitKey();
-				}
+				}*/
 #else
 				findRoads( frameInfo.getRealLineInfos(), lane, roads );
 #endif //SB_DEBUG
@@ -198,16 +198,16 @@ int sb::Analyzer::analyze3( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadIn
 					has_found_good_road = true;
 				}
 
-				if ( has_found_good_road || timer.milliseconds( "analyer" ) > ANALYZER_TIMEOUT ) break;
+				if ( has_found_good_road || timer.milliseconds( "analyzer" ) > ANALYZER_TIMEOUT ) break;
 			}
 
-			if ( has_found_good_road || timer.milliseconds( "analyer" ) > ANALYZER_TIMEOUT ) break;
+			if ( has_found_good_road || timer.milliseconds( "analyzer" ) > ANALYZER_TIMEOUT ) break;
 		}
 
 		// move window around frame to find lane candidate until it meets some requirements
 		if ( moveMainWindow( window ) < 0 ) break;
 
-		if ( has_found_good_road || timer.milliseconds( "analyer" ) > ANALYZER_TIMEOUT ) break;
+		if ( has_found_good_road || timer.milliseconds( "analyzer" ) > ANALYZER_TIMEOUT ) break;
 
 	} while ( true );
 
@@ -217,7 +217,8 @@ int sb::Analyzer::analyze3( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadIn
 	// show final road
 	{
 		cv::Mat img = real_image.clone();
-		for ( size_t knot_index = 0; knot_index < final_road.knots.size() - 1; knot_index++ ) {
+
+		for ( int knot_index = 0; knot_index < static_cast<int>(final_road.knots.size()) - 1; knot_index++ ) {
 			cv::line( img,
 			          _debugFormatter.convertFromCoord( final_road.knots[knot_index].first )
 			          + cv::Point2d( expand_size.width / 2, expand_size.height ),
@@ -238,7 +239,7 @@ int sb::Analyzer::analyze3( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadIn
 		stringBuilder.str( "" );
 
 		cv::imshow( "Analyzer", img );
-		cv::waitKey();
+		cv::waitKey(1);
 	}
 #endif //SB_DEBUG
 
@@ -795,6 +796,7 @@ void sb::Analyzer::calculateRoadTarget( const sb::Road& final_road, sb::RoadInfo
 {
 	if ( final_road.knots.empty() ) {
 		roadInfo.setTarget( cv::Point2d( 0, 10 ) );
+		return;
 	}
 
 	double rate = MAX( final_road.rating / GOOD_ROAD_RATING, final_road.main_lane_rating / GOOD_LANE_RATING );

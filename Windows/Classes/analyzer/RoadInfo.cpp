@@ -28,6 +28,7 @@ void sb::RoadInfo::setTarget( const cv::Point2d& point ) { _target = point; }
 
 void sb::RoadInfo::read( const cv::FileNode& node )
 {
+	node["Target"] >> _target;
 	node["LeftKnots"] >> _leftKnots;
 	node["RightKnots"] >> _rightKnots;
 }
@@ -36,6 +37,7 @@ void sb::RoadInfo::write( cv::FileStorage& fs ) const
 {
 	fs
 			<< "{"
+			<< "Target" << _target
 			<< "LeftKnots" << _leftKnots
 			<< "RightKnots" << _rightKnots
 			<< "}";
@@ -48,6 +50,6 @@ void sb::write( cv::FileStorage& fs, const std::string&, const sb::RoadInfo& dat
 
 void sb::read( const cv::FileNode& node, sb::RoadInfo& data, const sb::RoadInfo& defaultData )
 {
-	if( node.empty() ) data = defaultData;
+	if ( node.empty() ) data = defaultData;
 	else data.read( node );
 }
