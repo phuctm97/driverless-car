@@ -10,6 +10,8 @@ namespace sb
 class RoadInfo
 {
 private:
+	cv::Point2d _target;
+
 	std::vector<cv::Point2d> _leftKnots;
 
 	std::vector<cv::Point2d> _rightKnots;
@@ -39,6 +41,10 @@ public:
 	void setReliability( float reliability );
 
 	float getReliability() const;
+
+	const cv::Point2d& getTarget() const;
+
+	void setTarget( const cv::Point2d& point );
 
 	void read( const cv::FileNode& node );
 

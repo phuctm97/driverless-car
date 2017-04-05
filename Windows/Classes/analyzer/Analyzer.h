@@ -1,7 +1,7 @@
-#ifndef __SB_ANALYZER_H__
+﻿#ifndef __SB_ANALYZER_H__
 #define __SB_ANALYZER_H__
 
-//#define SB_DEBUG
+// #define SB_DEBUG
 
 #include "../Params.h"
 #include "../Timer.h"
@@ -22,6 +22,15 @@
 #define MAX_ACCEPTABLE_WIDTH_DIFF_BETWEEN_TWO_LANES 5
 #define NUM_LANE_PARTS 7
 
+#define GOOD_LANE_RATING 7.5
+#define GOOD_ROAD_RATING 7
+#define ANALYZER_TIMEOUT 500
+
+// TODO
+// - Tính toán lại rating chuẩn cho road từ đó xác định độ tin cậy cũng nên điểm nên đến
+// - Xuất road info + target dựa trên độ tin cậy cho driver
+
+
 namespace sb
 {
 class Analyzer
@@ -37,19 +46,22 @@ private:
 	cv::Point2d _topRightCorner;
 	double _lanePartLength;
 
+	double _learntLaneWidth;
+	double _learntRoadWidth;
+
 	sb::Formatter _debugFormatter;
 
 public:
 	int init( const sb::Params& params );
 
 	int analyze( const sb::FrameInfo& frameInfo,
-	             sb::RoadInfo& roadInfo ) const;
+	             sb::RoadInfo& roadInfo );
 
 	void release();
 
 private:
 	int analyze3( const sb::FrameInfo& frameInfo,
-	              sb::RoadInfo& roadInfo ) const;
+	              sb::RoadInfo& roadInfo );
 
 	bool segmentIntersectRectangle( const cv::Point2d& p1,
 	                                const cv::Point2d& p2,
@@ -116,6 +128,8 @@ private:
 																			const sb::Lane& lane,
 																			std::vector<std::pair<int, double>>& scenarios) const;
 #endif //SB_DEBUG
+
+	void calculateRoadTarget( const sb::Road& final_road, sb::RoadInfo& roadInfo ) const;
 
 	int moveMainWindow( cv::Rect2d& window ) const;
 

@@ -62,6 +62,11 @@ int main( const int argc, const char** argv )
 	int timerTickCount = 0;
 	timer.reset( "entire-job" );
 
+	///// Debug //////
+	cv::namedWindow( "Ego-view" );
+	cv::namedWindow( "Birdeye-view" );
+	cv::waitKey();
+
 	///// <Result-writer> /////
 	cv::VideoWriter colorAvi;
 	if ( argc > 2 ) {
@@ -74,7 +79,6 @@ int main( const int argc, const char** argv )
 	}
 	int frameCount = 0;
 	///// </Result-writer> /////
-
 
 	while ( true ) {
 		timer.reset( "total" );
@@ -122,11 +126,11 @@ int main( const int argc, const char** argv )
 		///// <Test> /////
 
 		///// <Result-writer> /////
-		if( colorAvi.isOpened() && !rawContent.getColorImage().empty() ) {
+		if ( colorAvi.isOpened() && !rawContent.getColorImage().empty() ) {
 			colorAvi << rawContent.getColorImage();
 		}
-		
-		if( roadInfoStream.isOpened() ) {
+
+		if ( roadInfoStream.isOpened() ) {
 			std::stringstream stringBuilder;
 			stringBuilder << "road_" << frameCount++;
 			roadInfoStream << stringBuilder.str() << roadInfo;
@@ -186,8 +190,6 @@ void test( const sb::Calculator& calculator,
            const sb::RoadInfo& roadInfo )
 {
 	///// Init image /////
-	/*const int N_SECTIONS = static_cast<int>(frameInfo.getSectionInfos().size());
-
 	const cv::Size FRAME_SIZE = frameInfo.getColorImage().size();
 
 	const cv::Size CAR_SIZE( 90, 120 );
@@ -203,25 +205,24 @@ void test( const sb::Calculator& calculator,
 
 	///// Calculate lane positions /////
 
-	std::vector<cv::Point2d> leftKnots( N_SECTIONS + 1, cv::Point2d( 0, 0 ) );
-	std::vector<cv::Point2d> rightKnots( N_SECTIONS + 1, cv::Point2d( 0, 0 ) );
+	cv::Point2d target = roadInfo.getTarget();
 
-	for ( int i = 0; i < N_SECTIONS + 1; i++ ) {
-		leftKnots[i] = calculator.convertFromCoord( roadInfo.getLeftKnots()[i] );
-		rightKnots[i] = calculator.convertFromCoord( roadInfo.getRightKnots()[i] );
-	}
+	cv::line( radarImage,
+	          calculator.convertFromCoord( target ) + cv::Point2d( EXPAND_SIZE.width / 2, EXPAND_SIZE.height ),
+	          CAR_POSITION + cv::Point( EXPAND_SIZE.width / 2, EXPAND_SIZE.height ),
+	          cv::Scalar( 0, 255, 0 ), 3 );
+	cv::circle( radarImage,
+	            calculator.convertFromCoord( target ) + cv::Point2d( EXPAND_SIZE.width / 2, EXPAND_SIZE.height ),
+	            5, cv::Scalar( 0, 0, 255 ), -1 );
+	cv::circle( radarImage,
+	            calculator.convertFromCoord( target ) + cv::Point2d( EXPAND_SIZE.width / 2, EXPAND_SIZE.height ),
+	            5, cv::Scalar( 0, 255, 0 ), 3 );
 
-	// draw lane
-	for ( int i = 0; i < N_SECTIONS; i++ ) {
-		cv::line( radarImage,
-		          leftKnots[i] + cv::Point2d( EXPAND_SIZE.width / 2, EXPAND_SIZE.height ),
-		          leftKnots[i + 1] + cv::Point2d( EXPAND_SIZE.width / 2, EXPAND_SIZE.height ),
-		          cv::Scalar( 255, 255, 255 ), 7 );
-		cv::line( radarImage,
-		          rightKnots[i] + cv::Point2d( EXPAND_SIZE.width / 2, EXPAND_SIZE.height ),
-		          rightKnots[i + 1] + cv::Point2d( EXPAND_SIZE.width / 2, EXPAND_SIZE.height ),
-		          cv::Scalar( 255, 255, 255 ), 7 );
-	}
+	std::stringstream stringBuilder;
+	stringBuilder << "(" << target.x << ", " << target.y << ")";
+	cv::putText( radarImage, stringBuilder.str(),
+	             calculator.convertFromCoord( target ) + cv::Point2d( EXPAND_SIZE.width / 2, EXPAND_SIZE.height ) - cv::Point2d( 20, 20 ),
+	             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 255, 255, 255 ) );
 
 	// draw vehicle
 	cv::rectangle( radarImage,
@@ -237,7 +238,7 @@ void test( const sb::Calculator& calculator,
 
 	cv::imshow( "Birdeye-view", radarImage );
 
-	cv::waitKey( 33 );*/
+	cv::waitKey( 500 );
 }
 
 void release( sb::Collector& collector,

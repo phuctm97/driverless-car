@@ -14,8 +14,11 @@ int sb::Analyzer::init( const sb::Params& params )
 
 	_windowSize = cv::Size( static_cast<int>(_maxLandWidth) * 2, static_cast<int>(_maxLandWidth) * 2 );
 	_windowMove = cv::Point2d( _maxLandWidth, _maxLandWidth );
-	_topRightCorner = cv::Point2d( 100, 100 ); //** need to be set
+	_topRightCorner = cv::Point2d( 70, 70 ); //** need to be set
 	_lanePartLength = _maxLandWidth;
+
+	_learntLaneWidth = -1;
+	_learntRoadWidth = -1;
 
 #ifdef SB_DEBUG
 	// coord converter
@@ -35,20 +38,22 @@ int sb::Analyzer::init( const sb::Params& params )
 	return 0;
 }
 
-int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInfo ) const
+int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInfo )
 {
 	return analyze3( frameInfo, roadInfo );
 }
 
 void sb::Analyzer::release() { }
 
-int sb::Analyzer::analyze3( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInfo ) const
+int sb::Analyzer::analyze3( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInfo )
 {
 	const size_t num_lines = frameInfo.getRealLineInfos().size();
 
+	sb::Timer timer;
+	timer.reset( "analyzer" );
+
 #ifdef SB_DEBUG
 	// main debug components
-	sb::Timer timer;
 	const cv::Size expand_size( 900, 700 );
 	cv::Mat real_image;
 	// create real image
@@ -81,6 +86,10 @@ int sb::Analyzer::analyze3( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadIn
 	// window //** consider use bigger window to find first lane part
 	cv::Rect2d window( -_topRightCorner.x, 5, _windowSize.width, _windowSize.height );
 
+	bool has_found_good_road = false;
+	sb::Road final_road;
+	final_road.rating = 0;
+
 	do {
 
 #ifdef SB_DEBUG
@@ -101,7 +110,7 @@ int sb::Analyzer::analyze3( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadIn
 #ifdef SB_DEBUG
 		timer.reset( "findFirstLaneParts" );
 		findFirstLaneParts( frameInfo.getRealLineInfos(), window, first_lane_parts, temp_image, expand_size );
-		std::cout << "findLanes: " << timer.milliseconds( "findLanes" ) << std::endl;
+		std::cout << "findFirstLaneParts: " << timer.milliseconds( "findFirstLaneParts" ) << "ms." << std::endl;
 #else
 		findFirstLaneParts( frameInfo.getRealLineInfos(), window, first_lane_parts );
 #endif //SB_DEBUG
@@ -124,13 +133,15 @@ int sb::Analyzer::analyze3( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadIn
 #ifdef SB_DEBUG
 			timer.reset( "findLanes" );
 			findLanes( frameInfo.getRealLineInfos(), first_lane_part, lanes, temp_image, expand_size );
-			std::cout << "findLanes: " << timer.milliseconds( "findLanes" ) << std::endl;
+			std::cout << "findLanes: " << timer.milliseconds( "findLanes" ) << "ms." << std::endl;
 #else
 			findLanes( frameInfo.getRealLineInfos(), first_lane_part, lanes );
 #endif
 
 			for ( size_t lane_index = 0; lane_index < lanes.size(); lane_index++ ) {
 				const sb::Lane& lane = lanes[lane_index];
+
+				std::vector<sb::Road> roads;
 
 #ifdef SB_DEBUG
 				// show lane parts
@@ -139,25 +150,106 @@ int sb::Analyzer::analyze3( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadIn
 						drawLanePart( lane_part, img, expand_size, cv::Scalar( 0, 255, 255 ), 2 );
 					}
 				}
-#endif //SB_DEBUG
 
-				std::vector<sb::Road> roads;
-
-#ifdef SB_DEBUG
-				timer.reset( "findLanes" );
+				// find road
+				timer.reset( "findRoads" );
 				findRoads( frameInfo.getRealLineInfos(), lane, roads, img, expand_size );
-				std::cout << timer.milliseconds( "findLanes" ) << std::endl;
+				std::cout << "findRoads: " << timer.milliseconds( "findRoads" ) << "ms." << std::endl;
+
+				// show road and information
+				for ( const auto& road : roads ) {
+					cv::Mat tmp_img = img.clone();
+					for ( size_t knot_index = 0; knot_index < road.knots.size() - 1; knot_index++ ) {
+						cv::line( tmp_img,
+						          _debugFormatter.convertFromCoord( road.knots[knot_index].first )
+						          + cv::Point2d( expand_size.width / 2, expand_size.height ),
+						          _debugFormatter.convertFromCoord( road.knots[knot_index + 1].first )
+						          + cv::Point2d( expand_size.width / 2, expand_size.height ),
+						          cv::Scalar( 255, 255, 255 ), 4 );
+						cv::line( tmp_img,
+						          _debugFormatter.convertFromCoord( road.knots[knot_index].second )
+						          + cv::Point2d( expand_size.width / 2, expand_size.height ),
+						          _debugFormatter.convertFromCoord( road.knots[knot_index + 1].second )
+						          + cv::Point2d( expand_size.width / 2, expand_size.height ),
+						          cv::Scalar( 255, 255, 255 ), 4 );
+					}
+					std::stringstream stringBuilder;
+
+					stringBuilder << "Lane Rating: " << lane.rating;
+					cv::putText( tmp_img, stringBuilder.str(), cv::Point2d( 50, 15 ), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ) );
+					stringBuilder.str( "" );
+
+					stringBuilder << "Road Rating: " << road.rating;
+					cv::putText( tmp_img, stringBuilder.str(), cv::Point2d( 50, 35 ), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ) );
+					stringBuilder.str( "" );
+
+					cv::imshow( "Analyzer", tmp_img );
+					cv::waitKey();
+				}
 #else
 				findRoads( frameInfo.getRealLineInfos(), lane, roads );
 #endif //SB_DEBUG
 
+				if ( roads.front().rating > final_road.rating ) {
+					final_road = roads.front();
+				}
+
+				if ( final_road.rating >= GOOD_ROAD_RATING || lane.rating >= GOOD_LANE_RATING ) {
+					has_found_good_road = true;
+				}
+
+				if ( has_found_good_road || timer.milliseconds( "analyer" ) > ANALYZER_TIMEOUT ) break;
 			}
+
+			if ( has_found_good_road || timer.milliseconds( "analyer" ) > ANALYZER_TIMEOUT ) break;
 		}
 
 		// move window around frame to find lane candidate until it meets some requirements
 		if ( moveMainWindow( window ) < 0 ) break;
 
+		if ( has_found_good_road || timer.milliseconds( "analyer" ) > ANALYZER_TIMEOUT ) break;
+
 	} while ( true );
+
+#ifdef SB_DEBUG
+	std::cout << "analyzer" << timer.milliseconds( "analyzer" ) << "ms." << std::endl;
+
+	// show final road
+	{
+		cv::Mat img = real_image.clone();
+		for ( size_t knot_index = 0; knot_index < final_road.knots.size() - 1; knot_index++ ) {
+			cv::line( img,
+			          _debugFormatter.convertFromCoord( final_road.knots[knot_index].first )
+			          + cv::Point2d( expand_size.width / 2, expand_size.height ),
+			          _debugFormatter.convertFromCoord( final_road.knots[knot_index + 1].first )
+			          + cv::Point2d( expand_size.width / 2, expand_size.height ),
+			          cv::Scalar( 255, 255, 255 ), 4 );
+			cv::line( img,
+			          _debugFormatter.convertFromCoord( final_road.knots[knot_index].second )
+			          + cv::Point2d( expand_size.width / 2, expand_size.height ),
+			          _debugFormatter.convertFromCoord( final_road.knots[knot_index + 1].second )
+			          + cv::Point2d( expand_size.width / 2, expand_size.height ),
+			          cv::Scalar( 255, 255, 255 ), 4 );
+		}
+		std::stringstream stringBuilder;
+
+		stringBuilder << "Road Rating: " << final_road.rating;
+		cv::putText( img, stringBuilder.str(), cv::Point2d( 50, 35 ), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ) );
+		stringBuilder.str( "" );
+
+		cv::imshow( "Analyzer", img );
+		cv::waitKey();
+	}
+#endif //SB_DEBUG
+
+	if ( _learntRoadWidth < 0 ) {
+		_learntRoadWidth = final_road.road_width;
+	}
+	else {
+		_learntRoadWidth = 0.4 * _learntRoadWidth + 0.6 * final_road.road_width;
+	}
+
+	calculateRoadTarget( final_road, roadInfo );
 
 	return 0;
 }
@@ -241,6 +333,8 @@ void sb::Analyzer::findLanes( const std::vector<sb::LineInfo>& lines_list,
                               std::vector<sb::Lane>& lanes ) const
 #endif //SB_DEBUG
 {
+	lanes.clear();
+
 	int hops_to_live = NUM_LANE_PARTS;
 
 	std::stack<sb::Lane> stack_lanes;
@@ -272,7 +366,7 @@ void sb::Analyzer::findLanes( const std::vector<sb::LineInfo>& lines_list,
 
 #ifdef SB_DEBUG
 		// show window and sequence of lane parts
-		{
+		/*{
 			cv::Mat temp_image = image.clone();
 
 			cv::rectangle( temp_image,
@@ -288,14 +382,29 @@ void sb::Analyzer::findLanes( const std::vector<sb::LineInfo>& lines_list,
 
 			cv::imshow( "Analyzer", temp_image );
 			cv::waitKey( 200 );
-		}
+		}*/
 #endif //SB_DEBUG
 
 		// finish a lane
 		if ( lane.parts.size() == hops_to_live ) {
 			lane.rating /= hops_to_live;
-
 			lanes.push_back( lane );
+
+#ifdef SB_DEBUG
+			/*{
+				cv::Mat img = image.clone();
+				for ( const auto& lane_part : lane.parts ) {
+					drawLanePart( lane_part, img, expand_size, cv::Scalar( 0, 255, 255 ), 2 );
+				}
+				std::stringstream stringBuilder;
+				stringBuilder << "Rating: " << lane.rating;
+				cv::putText( img, stringBuilder.str(), cv::Point2d( 30, 30 ), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ) );
+				cv::imshow( "Analyzer", img );
+				cv::waitKey();
+			}*/
+#endif
+
+			if ( lane.rating >= GOOD_LANE_RATING ) break;
 			continue;
 		}
 
@@ -365,6 +474,9 @@ void sb::Analyzer::findNextLaneParts( const std::vector<sb::LineInfo>& lines_lis
                                       std::vector<double>& next_lane_part_ratings ) const
 #endif //SB_DEBUG
 {
+	next_lane_parts.clear();
+	next_lane_part_ratings.clear();
+
 	const size_t n_lines = lines_list.size();
 
 	for ( size_t first_index = 0; first_index < n_lines; first_index++ ) {
@@ -460,6 +572,8 @@ void sb::Analyzer::findRoads( const std::vector<sb::LineInfo>& lines_list,
 #endif //SBDEBUG
 
 {
+	roads.clear();
+
 	// find list of possible side and road width
 	std::vector<std::pair<int, double>> scenarios;
 
@@ -469,9 +583,29 @@ void sb::Analyzer::findRoads( const std::vector<sb::LineInfo>& lines_list,
 	findPossibleSideAndRoadWidths( lines_list, lane, scenarios );
 #endif //SB_DEBUG
 
+	if ( scenarios.empty() ) {
+		std::pair<int, double> scenario;
+
+		cv::Point2d pos = lane.parts[0].vertices[0];
+		if ( pos.x < 0 )scenario.first = -1;
+		else scenario.first = 1;
+
+		if ( _learntRoadWidth > 0 )
+			scenario.second = _learntRoadWidth;
+		else
+			scenario.second = _maxLandWidth / 2;
+
+		scenarios.push_back( scenario );
+	}
+
 	for ( const auto& scenario : scenarios ) {
 		sb::Road road;
 		road.rating = 0;
+
+		road.lane_width = 0;
+
+		// road width
+		road.road_width = scenario.second;
 
 		// assign knots
 		road.knots.assign( lane.parts.size(), std::pair<cv::Point2d, cv::Point2d>() );
@@ -486,17 +620,22 @@ void sb::Analyzer::findRoads( const std::vector<sb::LineInfo>& lines_list,
 			// calculate horizon vec
 			cv::Point2d horizon_vec = lane_part.vertices[2] - lane_part.vertices[1];
 			double horizon_vec_length = std::sqrt( horizon_vec.x * horizon_vec.x + horizon_vec.y * horizon_vec.y );
-			horizon_vec = cv::Point2d( horizon_vec.x / horizon_vec_length * scenario.second,
-			                           horizon_vec.y / horizon_vec_length * scenario.second );
+			horizon_vec = cv::Point2d( horizon_vec.x / horizon_vec_length * road.road_width,
+			                           horizon_vec.y / horizon_vec_length * road.road_width );
+
+			// lane width
+			road.lane_width += lane_part.width;
 
 			// knots
 			if ( scenario.first > 0 ) {
 				road.knots[part_index].first = lane_part.vertices[2];
 				road.knots[part_index].second = lane_part.vertices[2] + horizon_vec;
+				road.main_side = -1;
 			}
 			else {
 				road.knots[part_index].second = lane_part.vertices[1];
 				road.knots[part_index].first = lane_part.vertices[1] - horizon_vec;
+				road.main_side = 1;
 			}
 
 			// rating
@@ -543,35 +682,50 @@ void sb::Analyzer::findRoads( const std::vector<sb::LineInfo>& lines_list,
 
 		road.rating /= lane.parts.size();
 
+		road.lane_width /= lane.parts.size();
+
 		road.rating = 0.4 * lane.rating + 0.6 * road.rating;
 
+		road.main_lane_rating = lane.rating;
+
 #ifdef SB_DEBUG
-		cv::Mat img = image.clone();
-		for ( size_t knot_index = 0; knot_index < road.knots.size() - 1; knot_index++ ) {
-			cv::line( img,
-			          _debugFormatter.convertFromCoord( road.knots[knot_index].first )
-			          + cv::Point2d( expand_size.width / 2, expand_size.height ),
-			          _debugFormatter.convertFromCoord( road.knots[knot_index + 1].first )
-			          + cv::Point2d( expand_size.width / 2, expand_size.height ),
-			          cv::Scalar( 255, 255, 255 ), 4 );
-			cv::line( img,
-			          _debugFormatter.convertFromCoord( road.knots[knot_index].second )
-			          + cv::Point2d( expand_size.width / 2, expand_size.height ),
-			          _debugFormatter.convertFromCoord( road.knots[knot_index + 1].second )
-			          + cv::Point2d( expand_size.width / 2, expand_size.height ),
-			          cv::Scalar( 255, 255, 255 ), 4 );
-		}
-		std::stringstream stringBuilder;
-		stringBuilder << "Rating: " << road.rating;
+		// show road and information
+		/*{
+			cv::Mat img = image.clone();
+			for ( size_t knot_index = 0; knot_index < road.knots.size() - 1; knot_index++ ) {
+				cv::line( img,
+				          _debugFormatter.convertFromCoord( road.knots[knot_index].first )
+				          + cv::Point2d( expand_size.width / 2, expand_size.height ),
+				          _debugFormatter.convertFromCoord( road.knots[knot_index + 1].first )
+				          + cv::Point2d( expand_size.width / 2, expand_size.height ),
+				          cv::Scalar( 255, 255, 255 ), 4 );
+				cv::line( img,
+				          _debugFormatter.convertFromCoord( road.knots[knot_index].second )
+				          + cv::Point2d( expand_size.width / 2, expand_size.height ),
+				          _debugFormatter.convertFromCoord( road.knots[knot_index + 1].second )
+				          + cv::Point2d( expand_size.width / 2, expand_size.height ),
+				          cv::Scalar( 255, 255, 255 ), 4 );
+			}
+			std::stringstream stringBuilder;
 
-		cv::putText( img, stringBuilder.str(), cv::Point2d( 30, 15 ), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ) );
+			stringBuilder << "Lane Rating: " << lane.rating;
+			cv::putText( img, stringBuilder.str(), cv::Point2d( 50, 15 ), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ) );
+			stringBuilder.str( "" );
 
-		cv::imshow( "Analyzer", img );
-		cv::waitKey();
+			stringBuilder << "Road Rating: " << road.rating;
+			cv::putText( img, stringBuilder.str(), cv::Point2d( 50, 35 ), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ) );
+			stringBuilder.str( "" );
+
+			cv::imshow( "Analyzer", img );
+			cv::waitKey();
+		}*/
 #endif //SB_DEBUG
 
 		roads.push_back( road );
 	}
+
+	std::sort( roads.begin(), roads.end(),
+	           []( const sb::Road& r1, const sb::Road& r2 )-> bool { return r1.rating > r2.rating; } );
 }
 
 #ifdef SB_DEBUG
@@ -586,6 +740,8 @@ void sb::Analyzer::findPossibleSideAndRoadWidths( const std::vector<sb::LineInfo
                                                   std::vector<std::pair<int, double>>& scenarios ) const
 #endif //SB_DEBUG
 {
+	scenarios.clear();
+
 	for ( const auto& lane_part: lane.parts ) {
 
 		sb::Line horizon( lane_part.vertices[1], lane_part.vertices[2] );
@@ -609,14 +765,14 @@ void sb::Analyzer::findPossibleSideAndRoadWidths( const std::vector<sb::LineInfo
 			cv::Point2d knot;
 			sb::Line::findIntersection( horizon, line.getLine(), knot );
 
+			// calculate side
+			int side = vertical.f( knot ) * right_value > 0 ? 1 : -1;
+
 			// check road width
-			cv::Point2d pos_diff = knot - lane_part.vertices[1];
+			cv::Point2d pos_diff = knot - (side < 0 ? lane_part.vertices[1] : lane_part.vertices[2]);
 			double road_width = std::sqrt( pos_diff.x * pos_diff.x + pos_diff.y * pos_diff.y );
 
 			if ( road_width < _minRoadWidth || road_width > _maxRoadWidth ) continue;
-
-			// calculate side
-			int side = vertical.f( knot ) * right_value > 0 ? 1 : -1;
 
 			// check if there've already been line similar to this
 			bool already_exist = false;
@@ -633,6 +789,34 @@ void sb::Analyzer::findPossibleSideAndRoadWidths( const std::vector<sb::LineInfo
 		}
 
 	}
+}
+
+void sb::Analyzer::calculateRoadTarget( const sb::Road& final_road, sb::RoadInfo& roadInfo ) const
+{
+	if ( final_road.knots.empty() ) {
+		roadInfo.setTarget( cv::Point2d( 0, 10 ) );
+	}
+
+	double rate = MAX( final_road.rating / GOOD_ROAD_RATING, final_road.main_lane_rating / GOOD_LANE_RATING );
+	rate = MIN( 1, rate );
+
+	int index = static_cast<int>((NUM_LANE_PARTS - 1) * rate);
+
+	cv::Point2d horizon_vec = final_road.knots[index].second - final_road.knots[index].first;
+	double horizon_vec_length = std::sqrt( horizon_vec.x*horizon_vec.x + horizon_vec.y*horizon_vec.y );
+
+	horizon_vec = cv::Point2d( horizon_vec.x / horizon_vec_length*final_road.road_width*0.4,
+														 horizon_vec.y / horizon_vec_length*final_road.road_width*0.4 );
+	
+	cv::Point2d target;
+	if( final_road.main_side < 0 ) {
+		target = final_road.knots[index].first + horizon_vec;
+	}
+	else {
+		target = final_road.knots[index].second - horizon_vec;
+	}
+
+	roadInfo.setTarget( target );
 }
 
 int sb::Analyzer::moveMainWindow( cv::Rect2d& window ) const
