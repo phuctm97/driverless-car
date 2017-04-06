@@ -1,10 +1,8 @@
 #ifndef __SB_FRAME_INFO_H__
 #define __SB_FRAME_INFO_H__
 
-#include "Formatter.h"
-#include "EdgeDetector.h"
-#include "LineDetector.h"
 #include "../Params.h"
+#include "LineInfo.h"
 
 namespace sb
 {

@@ -1,7 +1,7 @@
 ﻿#ifndef __SB_ANALYZER_H__
 #define __SB_ANALYZER_H__
 
- #define SB_DEBUG
+#define SB_DEBUG
 
 #include "../Params.h"
 #include "../Timer.h"
@@ -51,7 +51,7 @@ private:
 	double _learntLaneAngle;
 	std::pair < cv::Point2d, cv::Point2d> _learntLanePosition;
 
-	int _learnLaneWidthLive;
+	int _learntLaneWidthLive;
 	int _learntRoadWidthLive;
 
 	sb::Formatter _debugFormatter;
