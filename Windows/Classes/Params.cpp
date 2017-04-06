@@ -26,6 +26,7 @@ void sb::Params::write( cv::FileStorage& fs ) const
 			<< "Group_1" << "<Image manipulating fields>"
 			<< "COLOR_FRAME_SIZE" << COLOR_FRAME_SIZE
 			<< "CROPPED_FRAME_SIZE" << CROPPED_FRAME_SIZE
+			<< "CROP_BOX" << CROP_BOX
 			<< "WARP_SRC_QUAD" << std::vector<cv::Point2f>( WARP_SRC_QUAD, WARP_SRC_QUAD + 4 )
 			<< "WARP_DST_QUAD" << std::vector<cv::Point2f>( WARP_DST_QUAD, WARP_DST_QUAD + 4 )
 
@@ -47,9 +48,6 @@ void sb::Params::write( cv::FileStorage& fs ) const
 			<< "MAX_LANE_WIDTH" << MAX_LANE_WIDTH
 			<< "MIN_ROAD_WIDTH" << MIN_ROAD_WIDTH
 			<< "MAX_ROAD_WIDTH" << MAX_ROAD_WIDTH
-			<< "INITIAL_POSITION_OF_LEFT_LANE" << INITIAL_POSITION_OF_LEFT_LANE
-			<< "INITIAL_POSITION_OF_RIGHT_LANE" << INITIAL_POSITION_OF_RIGHT_LANE
-			<< "INITIAL_ROTATION_OF_LANE" << INITIAL_ROTATION_OF_LANE
 
 			<< "Group_4" << "<Parameters for vehicle>"
 			<< "MIN_STEERING_ANGLE" << MIN_STEERING_ANGLE
@@ -64,6 +62,7 @@ void sb::Params::read( const cv::FileNode& node )
 {
 	node["COLOR_FRAME_SIZE"] >> COLOR_FRAME_SIZE;
 	node["CROPPED_FRAME_SIZE"] >> CROPPED_FRAME_SIZE;
+	node["CROP_BOX"] >> CROP_BOX;
 
 	std::vector<cv::Point2f> srcQuadVec;
 	node["WARP_SRC_QUAD"] >> srcQuadVec;
@@ -89,9 +88,6 @@ void sb::Params::read( const cv::FileNode& node )
 	node["MAX_LANE_WIDTH"] >> MAX_LANE_WIDTH;
 	node["MIN_ROAD_WIDTH"] >> MIN_ROAD_WIDTH;
 	node["MAX_ROAD_WIDTH"] >> MAX_ROAD_WIDTH;
-	node["INITIAL_POSITION_OF_LEFT_LANE"] >> INITIAL_POSITION_OF_LEFT_LANE;
-	node["INITIAL_POSITION_OF_RIGHT_LANE"] >> INITIAL_POSITION_OF_RIGHT_LANE;
-	node["INITIAL_ROTATION_OF_LANE"] >> INITIAL_ROTATION_OF_LANE;
 
 	node["MIN_STEERING_ANGLE"] >> MIN_STEERING_ANGLE;
 	node["MAX_STEERING_ANGLE"] >> MAX_STEERING_ANGLE;

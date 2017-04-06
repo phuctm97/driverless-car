@@ -12,16 +12,13 @@ struct Params
 {
 	cv::Size COLOR_FRAME_SIZE = cv::Size( 640, 480 );
 	cv::Size CROPPED_FRAME_SIZE = cv::Size( 640, 240 );
+	cv::Rect CROP_BOX = cv::Rect( 0, 0, 0, 0 );
 	double CONVERT_COORD_COEF = 1.0 / 40;
 
 	double MIN_LANE_WIDTH = 2;
 	double MAX_LANE_WIDTH = 15;
 	double MIN_ROAD_WIDTH = 60;
 	double MAX_ROAD_WIDTH = 100;
-
-	double INITIAL_ROTATION_OF_LANE;
-	double INITIAL_POSITION_OF_LEFT_LANE = -30;
-	double INITIAL_POSITION_OF_RIGHT_LANE = 30;
 
 	int EDGE_DETECTOR_KERNEL_SIZE = 3;
 	double EDGE_DETECTOR_LOW_THRESH = 100;

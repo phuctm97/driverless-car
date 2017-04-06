@@ -2,12 +2,7 @@
 
 int sb::Calculator::init( const sb::Params& params )
 {
-	cv::Point cropPosition;
-	cropPosition.x = (params.COLOR_FRAME_SIZE.width - params.CROPPED_FRAME_SIZE.width) / 2;
-	cropPosition.y = params.COLOR_FRAME_SIZE.height - params.CROPPED_FRAME_SIZE.height;
-
-	_formatter = sb::Formatter( cv::Rect( cropPosition.x, cropPosition.y,
-	                                      params.CROPPED_FRAME_SIZE.width, params.CROPPED_FRAME_SIZE.height ),
+	_formatter = sb::Formatter( params.CROP_BOX,
 	                            params.WARP_SRC_QUAD,
 	                            params.WARP_DST_QUAD,
 	                            params.CONVERT_COORD_COEF );
@@ -54,6 +49,18 @@ int sb::Calculator::calculate( const sb::RawContent& rawContent,
 	// 2) generate lines in whole frame
 	std::vector<sb::Line> lines;
 	_lineDetector.apply( edgesFrame, lines );
+
+	/*
+	cv::Mat linesImage( edgesFrame.size(), CV_8UC3, cv::Scalar::all( 0 ) );
+	for ( const auto& line: lines ) {
+		cv::line( linesImage, line.getStartingPoint(), line.getEndingPoint(),
+							cv::Scalar::all( 255 ), 1 );
+	}
+	cv::imshow( "Edges image", edgesFrame );
+	cv::imshow( "Lines image", linesImage );
+	cv::waitKey();
+	*/
+
 	calculateLineInfos( lines, colorImage, imageLineInfos );
 
 	// 3) generate warped lines

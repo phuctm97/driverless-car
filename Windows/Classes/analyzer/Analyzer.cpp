@@ -1,5 +1,10 @@
 ﻿#include "Analyzer.h"
-#include "../collector/RawContent.h"
+
+// TODO : sửa warp với chế độ mới -> OK
+// TODO : cơ chế chuyển tọa độ 2 chiều -> OK
+// TODO : sử dụng màu sắc để đánh giá đường
+// TODO : đánh giá điểm chi tiết hơn
+// TODO : cho Analyzer học về các thuộc tính của đường
 
 int sb::Analyzer::init( const sb::Params& params )
 {
@@ -9,26 +14,24 @@ int sb::Analyzer::init( const sb::Params& params )
 	_maxRoadWidth = params.MAX_ROAD_WIDTH;
 
 	// loosen criteras
-	_minLandWidth *= 0.9;
-	_maxLandWidth *= 1.1;
+	// _minLandWidth *= 0.9;
+	// _maxLandWidth *= 1.1;
 
 	_windowSize = cv::Size( static_cast<int>(_maxLandWidth) * 2, static_cast<int>(_maxLandWidth) * 2 );
 	_windowMove = cv::Point2d( _maxLandWidth, _maxLandWidth );
-	_topRightCorner = cv::Point2d( 70, 70 ); //** need to be set
-	_lanePartLength = _maxLandWidth;
+	_topRightCorner = cv::Point2d( 50, 50 ); //** need to be set
+	_lanePartLength = 12;
 
 	_learntLaneWidth = -1;
 	_learntRoadWidth = -1;
 
+	_learnLaneWidthLive = LEARNT_LANE_WIDTH_OFF_TO_LIVE;
+	_learntRoadWidthLive = LEARNT_ROAD_WIDTH_OFF_TO_LIVE;
+
 #ifdef SB_DEBUG
 	// coord converter
 	{
-		cv::Point cropPosition;
-		cropPosition.x = (params.COLOR_FRAME_SIZE.width - params.CROPPED_FRAME_SIZE.width) / 2;
-		cropPosition.y = params.COLOR_FRAME_SIZE.height - params.CROPPED_FRAME_SIZE.height;
-
-		_debugFormatter = sb::Formatter( cv::Rect( cropPosition.x, cropPosition.y,
-		                                           params.CROPPED_FRAME_SIZE.width, params.CROPPED_FRAME_SIZE.height ),
+		_debugFormatter = sb::Formatter( params.CROP_BOX,
 		                                 params.WARP_SRC_QUAD,
 		                                 params.WARP_DST_QUAD,
 		                                 params.CONVERT_COORD_COEF );
@@ -84,7 +87,7 @@ int sb::Analyzer::analyze3( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadIn
 #endif //SB_DEBUG
 
 	// window //** consider use bigger window to find first lane part
-	cv::Rect2d window( -_topRightCorner.x, 5, _windowSize.width, _windowSize.height );
+	cv::Rect2d window( -_topRightCorner.x, 0, _windowSize.width, _windowSize.height );
 
 	bool has_found_good_road = false;
 	sb::Road final_road;
@@ -194,6 +197,7 @@ int sb::Analyzer::analyze3( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadIn
 					final_road = roads.front();
 				}
 
+				//**consider another function to determine good information
 				if ( final_road.rating >= GOOD_ROAD_RATING || lane.rating >= GOOD_LANE_RATING ) {
 					has_found_good_road = true;
 				}
@@ -239,16 +243,11 @@ int sb::Analyzer::analyze3( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadIn
 		stringBuilder.str( "" );
 
 		cv::imshow( "Analyzer", img );
-		cv::waitKey(1);
+		cv::waitKey();
 	}
 #endif //SB_DEBUG
 
-	if ( _learntRoadWidth < 0 ) {
-		_learntRoadWidth = final_road.road_width;
-	}
-	else {
-		_learntRoadWidth = 0.4 * _learntRoadWidth + 0.6 * final_road.road_width;
-	}
+	learnNewProperties( final_road );
 
 	calculateRoadTarget( final_road, roadInfo );
 
@@ -296,6 +295,17 @@ void sb::Analyzer::findFirstLaneParts( const std::vector<sb::LineInfo>& line_lis
 
 			sb::Line horizon( angle + 90, first_point );
 			sb::Line::findIntersection( horizon, second_line.getLine(), second_point );
+
+			// check position
+			if ( horizon.f( second_line.getStartingPoint() ) * horizon.f( second_line.getEndingPoint() ) > 0 ) {
+				double verticalDistance;
+				cv::Point2d verticalDiff;
+				verticalDiff = second_line.getStartingPoint() - second_point;
+				verticalDistance = std::sqrt( verticalDiff.x * verticalDiff.x + verticalDiff.y * verticalDiff.y );
+				verticalDiff = second_line.getEndingPoint() - second_point;
+				verticalDistance = MIN( verticalDistance, std::sqrt( verticalDiff.x*verticalDiff.x + verticalDiff.y*verticalDiff.y ) );
+				if ( verticalDistance > MAX_ACCEPTABLE_VERTICAL_DIFF_BETWEEN_LINES ) continue;
+			}
 
 			// check width
 			cv::Point2d posDiff = first_point - second_point;
@@ -389,23 +399,26 @@ void sb::Analyzer::findLanes( const std::vector<sb::LineInfo>& lines_list,
 		// finish a lane
 		if ( lane.parts.size() == hops_to_live ) {
 			lane.rating /= hops_to_live;
-			lanes.push_back( lane );
+
+			if ( lane.rating > BAD_LINE_RATING ) {
+				lanes.push_back( lane );
 
 #ifdef SB_DEBUG
-			/*{
-				cv::Mat img = image.clone();
-				for ( const auto& lane_part : lane.parts ) {
-					drawLanePart( lane_part, img, expand_size, cv::Scalar( 0, 255, 255 ), 2 );
-				}
-				std::stringstream stringBuilder;
-				stringBuilder << "Rating: " << lane.rating;
-				cv::putText( img, stringBuilder.str(), cv::Point2d( 30, 30 ), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ) );
-				cv::imshow( "Analyzer", img );
-				cv::waitKey();
-			}*/
+				/*{
+					cv::Mat img = image.clone();
+					for ( const auto& lane_part : lane.parts ) {
+						drawLanePart( lane_part, img, expand_size, cv::Scalar( 0, 255, 255 ), 2 );
+					}
+					std::stringstream stringBuilder;
+					stringBuilder << "Rating: " << lane.rating;
+					cv::putText( img, stringBuilder.str(), cv::Point2d( 30, 30 ), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ) );
+					cv::imshow( "Analyzer", img );
+					cv::waitKey();
+				}*/
 #endif
 
-			if ( lane.rating >= GOOD_LANE_RATING ) break;
+				if ( lane.rating >= GOOD_LANE_RATING ) break;
+			}
 			continue;
 		}
 
@@ -512,6 +525,17 @@ void sb::Analyzer::findNextLaneParts( const std::vector<sb::LineInfo>& lines_lis
 			sb::Line horizon( angle + 90, first_point );
 			sb::Line::findIntersection( horizon, second_line.getLine(), second_point );
 
+			// check position
+			if ( horizon.f( second_line.getStartingPoint() ) * horizon.f( second_line.getEndingPoint() ) > 0 ) {
+				double verticalDistance;
+				cv::Point2d verticalDiff;
+				verticalDiff = second_line.getStartingPoint() - second_point;
+				verticalDistance = std::sqrt( verticalDiff.x * verticalDiff.x + verticalDiff.y * verticalDiff.y );
+				verticalDiff = second_line.getEndingPoint() - second_point;
+				verticalDistance = MIN( verticalDistance, std::sqrt( verticalDiff.x*verticalDiff.x + verticalDiff.y*verticalDiff.y ) );
+				if ( verticalDistance > MAX_ACCEPTABLE_VERTICAL_DIFF_BETWEEN_LINES ) continue;
+			}
+
 			// check width
 			cv::Point2d pos_diff = first_point - second_point;
 			width = std::sqrt( pos_diff.x * pos_diff.x + pos_diff.y * pos_diff.y );
@@ -553,6 +577,16 @@ void sb::Analyzer::findNextLaneParts( const std::vector<sb::LineInfo>& lines_lis
 			double pos_rating = 10 - (10.0 / MAX_ACCEPTABLE_DISTANCE_BETWEEN_LANE_PARTS) * pos_distance_with_lastest;
 
 			double rating = 0.65 * width_rating + 0.35 * pos_rating;
+
+			/*if ( _learntLaneWidth > 0 ) {
+				double width_diff_with_learnt = abs( width - _learntLaneWidth );
+				double learnt_width_rating = 0;
+				if ( width_diff_with_learnt <= MAX_ACCEPTABLE_WIDTH_DIFF_BETWEEN_LANE_PARTS ) {
+					learnt_width_rating = 10.0 * (MAX_ACCEPTABLE_WIDTH_DIFF_BETWEEN_LANE_PARTS - width_diff_with_learnt)
+							/ MAX_ACCEPTABLE_WIDTH_DIFF_BETWEEN_LANE_PARTS;
+				}
+				rating = 0.7 * rating + 0.3 * learnt_width_rating;
+			}*/
 
 			next_lane_parts.push_back( lane_part );
 			next_lane_part_ratings.push_back( rating );
@@ -689,6 +723,16 @@ void sb::Analyzer::findRoads( const std::vector<sb::LineInfo>& lines_list,
 
 		road.main_lane_rating = lane.rating;
 
+		/*if ( _learntRoadWidth > 0 ) {
+			double width_diff_with_learnt = abs( road.road_width - _learntRoadWidth );
+			double learnt_rating = 0;
+			if ( width_diff_with_learnt <= MAX_ACCEPTABLE_WIDTH_DIFF_BETWEEN_TWO_LANES ) {
+				learnt_rating = 10.0 * (MAX_ACCEPTABLE_WIDTH_DIFF_BETWEEN_TWO_LANES - width_diff_with_learnt)
+						/ MAX_ACCEPTABLE_WIDTH_DIFF_BETWEEN_TWO_LANES;
+			}
+			road.rating = 0.7 * road.rating + 0.3 * learnt_rating;
+		}*/
+
 #ifdef SB_DEBUG
 		// show road and information
 		/*{
@@ -805,13 +849,13 @@ void sb::Analyzer::calculateRoadTarget( const sb::Road& final_road, sb::RoadInfo
 	int index = static_cast<int>((NUM_LANE_PARTS - 1) * rate);
 
 	cv::Point2d horizon_vec = final_road.knots[index].second - final_road.knots[index].first;
-	double horizon_vec_length = std::sqrt( horizon_vec.x*horizon_vec.x + horizon_vec.y*horizon_vec.y );
+	double horizon_vec_length = std::sqrt( horizon_vec.x * horizon_vec.x + horizon_vec.y * horizon_vec.y );
 
-	horizon_vec = cv::Point2d( horizon_vec.x / horizon_vec_length*final_road.road_width*0.4,
-														 horizon_vec.y / horizon_vec_length*final_road.road_width*0.4 );
-	
+	horizon_vec = cv::Point2d( horizon_vec.x / horizon_vec_length * final_road.road_width * 0.4,
+	                           horizon_vec.y / horizon_vec_length * final_road.road_width * 0.4 );
+
 	cv::Point2d target;
-	if( final_road.main_side < 0 ) {
+	if ( final_road.main_side < 0 ) {
 		target = final_road.knots[index].first + horizon_vec;
 	}
 	else {
@@ -819,6 +863,33 @@ void sb::Analyzer::calculateRoadTarget( const sb::Road& final_road, sb::RoadInfo
 	}
 
 	roadInfo.setTarget( target );
+}
+
+void sb::Analyzer::learnNewProperties( const sb::Road& final_road )
+{
+	if ( final_road.main_lane_rating > GOOD_LANE_RATING ) {
+		_learntLaneWidth = 0.5 * _learntLaneWidth + 0.5 * final_road.lane_width;
+		_learnLaneWidthLive = LEARNT_LANE_WIDTH_OFF_TO_LIVE;
+	}
+	else {
+		_learnLaneWidthLive--;
+	}
+
+	if ( final_road.rating > GOOD_ROAD_RATING ) {
+		_learntRoadWidth = 0.5 * _learntRoadWidth + 0.5 * final_road.road_width;
+		_learntRoadWidthLive = LEARNT_ROAD_WIDTH_OFF_TO_LIVE;
+	}
+	else {
+		_learntRoadWidthLive--;
+	}
+
+	// lives out
+	if ( _learnLaneWidthLive <= 0 ) {
+		_learntLaneWidth = -1;
+	}
+	if ( _learntRoadWidthLive <= 0 ) {
+		_learntRoadWidth = -1;
+	}
 }
 
 int sb::Analyzer::moveMainWindow( cv::Rect2d& window ) const
