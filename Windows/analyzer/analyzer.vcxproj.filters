@@ -44,6 +44,12 @@
     <ClCompile Include="..\Classes\analyzer\LanePart.cpp">
       <Filter>analyzer</Filter>
     </ClCompile>
+    <ClCompile Include="..\Classes\analyzer\MindedDriver.cpp">
+      <Filter>analyzer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Classes\analyzer\LaneComponent.cpp">
+      <Filter>analyzer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="shared">
@@ -109,6 +115,12 @@
       <Filter>analyzer</Filter>
     </ClInclude>
     <ClInclude Include="..\Classes\analyzer\Road.h">
+      <Filter>analyzer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\analyzer\MindedDriver.h">
+      <Filter>analyzer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\analyzer\LaneComponent.h">
       <Filter>analyzer</Filter>
     </ClInclude>
   </ItemGroup>

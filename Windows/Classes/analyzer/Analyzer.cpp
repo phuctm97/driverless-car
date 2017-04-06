@@ -25,7 +25,7 @@ int sb::Analyzer::init( const sb::Params& params )
 	_learntLaneWidth = -1;
 	_learntRoadWidth = -1;
 
-	_learnLaneWidthLive = LEARNT_LANE_WIDTH_OFF_TO_LIVE;
+	_learntLaneWidthLive = LEARNT_LANE_WIDTH_OFF_TO_LIVE;
 	_learntRoadWidthLive = LEARNT_ROAD_WIDTH_OFF_TO_LIVE;
 
 #ifdef SB_DEBUG
@@ -869,10 +869,10 @@ void sb::Analyzer::learnNewProperties( const sb::Road& final_road )
 {
 	if ( final_road.main_lane_rating > GOOD_LANE_RATING ) {
 		_learntLaneWidth = 0.5 * _learntLaneWidth + 0.5 * final_road.lane_width;
-		_learnLaneWidthLive = LEARNT_LANE_WIDTH_OFF_TO_LIVE;
+		_learntLaneWidthLive = LEARNT_LANE_WIDTH_OFF_TO_LIVE;
 	}
 	else {
-		_learnLaneWidthLive--;
+		_learntLaneWidthLive--;
 	}
 
 	if ( final_road.rating > GOOD_ROAD_RATING ) {
@@ -884,7 +884,7 @@ void sb::Analyzer::learnNewProperties( const sb::Road& final_road )
 	}
 
 	// lives out
-	if ( _learnLaneWidthLive <= 0 ) {
+	if ( _learntLaneWidthLive <= 0 ) {
 		_learntLaneWidth = -1;
 	}
 	if ( _learntRoadWidthLive <= 0 ) {
