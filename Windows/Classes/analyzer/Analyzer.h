@@ -16,6 +16,7 @@
 
 #define MAX_ACCEPTABLE_DISTANCE_BETWEEN_LANE_PARTS 2
 #define MAX_ACCEPTABLE_ANGLE_DIFF_BETWEEN_LINES 5
+#define MAX_ACCEPTABLE_VERTICAL_DIFF_BETWEEN_LINES 10
 #define MAX_ACCEPTABLE_ANGLE_DIFF_BETWEEN_LANE_PARTS 20
 #define MAX_ACCEPTABLE_WIDTH_DIFF_BETWEEN_LANE_PARTS 2
 #define MAX_ACCEPTABLE_ANGLE_DIFF_BETWEEN_TWO_LANES 10
@@ -24,12 +25,11 @@
 
 #define GOOD_LANE_RATING 7.5
 #define GOOD_ROAD_RATING 7
-#define ANALYZER_TIMEOUT 500
+#define BAD_LINE_RATING 4.0
+#define ANALYZER_TIMEOUT 1000000
 
-// TODO
-// - Tính toán lại rating chuẩn cho road từ đó xác định độ tin cậy cũng nên điểm nên đến
-// - Xuất road info + target dựa trên độ tin cậy cho driver
-
+#define LEARNT_LANE_WIDTH_OFF_TO_LIVE 3
+#define LEARNT_ROAD_WIDTH_OFF_TO_LIVE 3
 
 namespace sb
 {
@@ -48,6 +48,11 @@ private:
 
 	double _learntLaneWidth;
 	double _learntRoadWidth;
+	double _learntLaneAngle;
+	std::pair < cv::Point2d, cv::Point2d> _learntLanePosition;
+
+	int _learnLaneWidthLive;
+	int _learntRoadWidthLive;
 
 	sb::Formatter _debugFormatter;
 
@@ -130,6 +135,8 @@ private:
 #endif //SB_DEBUG
 
 	void calculateRoadTarget( const sb::Road& final_road, sb::RoadInfo& roadInfo ) const;
+
+	void learnNewProperties( const sb::Road& final_road );
 
 	int moveMainWindow( cv::Rect2d& window ) const;
 
