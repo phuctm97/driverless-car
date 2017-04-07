@@ -4,6 +4,9 @@
 #include "../Params.h"
 #include "../collector/RawContent.h"
 #include "FrameInfo.h"
+#include "Formatter.h"
+#include "EdgeDetector.h"
+#include "LineDetector.h"
 
 namespace sb
 {

@@ -11,7 +11,6 @@ namespace sb
 struct Params
 {
 	cv::Size COLOR_FRAME_SIZE = cv::Size( 640, 480 );
-	cv::Size CROPPED_FRAME_SIZE = cv::Size( 640, 240 );
 	cv::Rect CROP_BOX = cv::Rect( 0, 0, 0, 0 );
 	double CONVERT_COORD_COEF = 1.0 / 40;
 
