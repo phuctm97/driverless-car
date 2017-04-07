@@ -25,7 +25,6 @@ void sb::Params::write( cv::FileStorage& fs ) const
 
 			<< "Group_1" << "<Image manipulating fields>"
 			<< "COLOR_FRAME_SIZE" << COLOR_FRAME_SIZE
-			<< "CROPPED_FRAME_SIZE" << CROPPED_FRAME_SIZE
 			<< "CROP_BOX" << CROP_BOX
 			<< "WARP_SRC_QUAD" << std::vector<cv::Point2f>( WARP_SRC_QUAD, WARP_SRC_QUAD + 4 )
 			<< "WARP_DST_QUAD" << std::vector<cv::Point2f>( WARP_DST_QUAD, WARP_DST_QUAD + 4 )
@@ -61,7 +60,6 @@ void sb::Params::write( cv::FileStorage& fs ) const
 void sb::Params::read( const cv::FileNode& node )
 {
 	node["COLOR_FRAME_SIZE"] >> COLOR_FRAME_SIZE;
-	node["CROPPED_FRAME_SIZE"] >> CROPPED_FRAME_SIZE;
 	node["CROP_BOX"] >> CROP_BOX;
 
 	std::vector<cv::Point2f> srcQuadVec;

@@ -44,10 +44,10 @@
     <ClCompile Include="..\Classes\analyzer\LanePart.cpp">
       <Filter>analyzer</Filter>
     </ClCompile>
-    <ClCompile Include="..\Classes\analyzer\MindedDriver.cpp">
+    <ClCompile Include="..\Classes\analyzer\LaneComponent.cpp">
       <Filter>analyzer</Filter>
     </ClCompile>
-    <ClCompile Include="..\Classes\analyzer\LaneComponent.cpp">
+    <ClCompile Include="..\Classes\analyzer\Analyzer2.cpp">
       <Filter>analyzer</Filter>
     </ClCompile>
   </ItemGroup>
@@ -117,10 +117,10 @@
     <ClInclude Include="..\Classes\analyzer\Road.h">
       <Filter>analyzer</Filter>
     </ClInclude>
-    <ClInclude Include="..\Classes\analyzer\MindedDriver.h">
+    <ClInclude Include="..\Classes\analyzer\LaneComponent.h">
       <Filter>analyzer</Filter>
     </ClInclude>
-    <ClInclude Include="..\Classes\analyzer\LaneComponent.h">
+    <ClInclude Include="..\Classes\analyzer\Analyzer2.h">
       <Filter>analyzer</Filter>
     </ClInclude>
   </ItemGroup>

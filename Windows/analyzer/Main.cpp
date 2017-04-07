@@ -1,12 +1,12 @@
 #include "../Classes/calculator/Calculator.h"
 #include "../Classes/collector/Collector.h"
-#include "../Classes/analyzer/Analyzer.h"
+#include "../Classes/analyzer/Analyzer2.h"
 #include "../Classes/Timer.h"
 #include <conio.h>
 
 int init( sb::Collector& collector,
           sb::Calculator& calculator,
-          sb::Analyzer& analyzer,
+          sb::Analyzer2& analyzer,
           const sb::Params& params );
 
 void test( const sb::Calculator& calculator,
@@ -16,7 +16,7 @@ void test( const sb::Calculator& calculator,
 
 void release( sb::Collector& collector,
               sb::Calculator& calculator,
-              sb::Analyzer& analyzer );
+              sb::Analyzer2& analyzer );
 
 int main( const int argc, const char** argv )
 {
@@ -45,7 +45,7 @@ int main( const int argc, const char** argv )
 	// Main components
 	sb::Collector collector;
 	sb::Calculator calculator;
-	sb::Analyzer analyzer;
+	sb::Analyzer2 analyzer;
 
 	// Init components
 	if ( init( collector, calculator, analyzer, params ) < 0 ) {
@@ -163,7 +163,7 @@ int main( const int argc, const char** argv )
 
 int init( sb::Collector& collector,
           sb::Calculator& calculator,
-          sb::Analyzer& analyzer,
+          sb::Analyzer2& analyzer,
           const sb::Params& params )
 {
 	if ( collector.init( params ) < 0 ) {
@@ -243,7 +243,7 @@ void test( const sb::Calculator& calculator,
 
 void release( sb::Collector& collector,
               sb::Calculator& calculator,
-              sb::Analyzer& analyzer )
+              sb::Analyzer2& analyzer )
 {
 	calculator.release();
 
