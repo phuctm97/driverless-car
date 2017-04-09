@@ -127,81 +127,99 @@ void test( const sb::Collector& collector,
            const sb::RawContent& rawContent,
            const sb::FrameInfo& frameInfo )
 {
-	const double FRAME_HALF_WIDTH = frameInfo.getColorImage().cols / 2;
-	const int EXPAND_HEIGHT = 720;
-	const int EXPAND_WIDTH = 1200;
+	// debug each line in section
+	cv::Mat images[3];
 
-	// create real image
-	cv::Mat realImage = cv::Mat::zeros( frameInfo.getColorImage().rows + EXPAND_HEIGHT,
-	                                    frameInfo.getColorImage().cols + EXPAND_WIDTH,
-	                                    CV_8UC3 );
+	// edges image
+	images[0] = frameInfo.getEdgesImage().clone();
+	cv::cvtColor( images[0], images[0], cv::COLOR_GRAY2BGR );
 
-	cv::line( realImage,
-	          cv::Point2d( realImage.cols / 2, 0 ),
-	          cv::Point2d( realImage.cols / 2, realImage.rows ),
-	          cv::Scalar( 170, 170, 170 ) );
-	for ( const auto& realLine : frameInfo.getRealLineInfos() ) {
-		cv::line(
-		         realImage,
-		         calculator.convertFromCoord( realLine.getStartingPoint() )
-		         + cv::Point2d( EXPAND_WIDTH / 2, EXPAND_HEIGHT ),
-		         calculator.convertFromCoord( realLine.getEndingPoint() )
-		         + cv::Point2d( EXPAND_WIDTH / 2, EXPAND_HEIGHT ),
-		         cv::Scalar( 0, 0, 255 ), 1
-		        );
+	// lines image
+	images[1] = cv::Mat( frameInfo.getColorImage().size(), CV_8UC3, cv::Scalar( 0, 0, 0 ) );
+	for ( auto it_section = frameInfo.getImageSections().cbegin();
+	      it_section != frameInfo.getImageSections().cend(); ++it_section ) {
+
+		for ( auto it_line = it_section->getImageLines().begin();
+		      it_line != it_section->getImageLines().end(); ++it_line ) {
+			cv::line( images[1],
+			          it_line->getStartingPoint(),
+			          it_line->getEndingPoint(),
+			          cv::Scalar( 255, 255, 255 ) );
+		}
 	}
 
-	cv::destroyWindow( "Window" );
+	// color image
+	images[2] = frameInfo.getColorImage().clone();
 
-	// debug each line in section
-	for ( int j = 0; j < static_cast<int>(frameInfo.getRealLineInfos().size()); j++ ) {
-		const sb::LineInfo& line = frameInfo.getImageLineInfos()[j];
-		const sb::LineInfo& realLine = frameInfo.getRealLineInfos()[j];
+	// debug
+	for ( int i = 0; i < 3; i++ ) {
+		for ( auto it_section = frameInfo.getImageSections().cbegin();
+		      it_section != frameInfo.getImageSections().cend(); ++it_section ) {
+			cv::line( images[i],
+			          cv::Point2d( 0, it_section->getTopLine().getStartingPoint().y ),
+			          cv::Point2d( images[i].cols - 1, it_section->getTopLine().getStartingPoint().y ),
+			          cv::Scalar( 255, 0, 0 ) );
+			cv::line( images[i],
+			          cv::Point2d( 0, it_section->getBottomLine().getStartingPoint().y ),
+			          cv::Point2d( images[i].cols - 1, it_section->getBottomLine().getStartingPoint().y ),
+			          cv::Scalar( 255, 0, 0 ) );
+		}
+	}
 
-		cv::Mat originalImage = frameInfo.getColorImage().clone();
-		cv::Mat tempImage = realImage.clone();
+	for ( auto it_section = frameInfo.getImageSections().cbegin();
+	      it_section != frameInfo.getImageSections().cend(); ++it_section ) {
 
-		cv::line( originalImage,
-		          line.getStartingPoint(),
-		          line.getEndingPoint(),
-		          cv::Scalar( 0, 255, 0 ), 2 );
-		cv::imshow( "Original Image", originalImage );
+		for ( auto it_line = it_section->getImageLines().cbegin();
+		      it_line != it_section->getImageLines().cend(); ++it_line ) {
 
-		cv::line( tempImage,
-		          calculator.convertFromCoord( realLine.getStartingPoint() )
-		          + cv::Point2d( EXPAND_WIDTH / 2, EXPAND_HEIGHT ),
-		          calculator.convertFromCoord( realLine.getEndingPoint() )
-		          + cv::Point2d( EXPAND_WIDTH / 2, EXPAND_HEIGHT ),
-		          cv::Scalar( 0, 255, 0 ), 2 );
+			std::stringstream stringBuilder;
 
-		std::stringstream stringBuilder;
+			for ( int i = 0; i < 3; i++ ) {
+				cv::Mat tmpImage = images[i].clone();
 
-		double angle = realLine.getAngle();
+				cv::line( tmpImage,
+				          it_line->getTopPoint(),
+				          it_line->getBottomPoint(),
+				          cv::Scalar( 0, 255, 0 ), 2 );
 
-		stringBuilder << "Length: " << realLine.getLength();
-		cv::putText( tempImage,
-		             stringBuilder.str(),
-		             cv::Point( 20, 15 ),
-		             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
+				stringBuilder << "Length: " << it_line->getLength();
+				cv::putText( tmpImage,
+				             stringBuilder.str(),
+				             cv::Point( 20, 15 ),
+				             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
 
-		stringBuilder.str( "" );
+				stringBuilder.str( "" );
 
-		stringBuilder << "Angle: " << angle;
-		cv::putText( tempImage,
-		             stringBuilder.str(),
-		             cv::Point( 20, 35 ),
-		             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
-		stringBuilder.str( "" );
+				stringBuilder << "Angle: " << it_line->getAngle();
+				cv::putText( tmpImage,
+				             stringBuilder.str(),
+				             cv::Point( 200, 15 ),
+				             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
+				stringBuilder.str( "" );
 
-		stringBuilder << "Color: " << realLine.getAverageColor();
-		cv::putText( tempImage,
-		             stringBuilder.str(),
-		             cv::Point( 20, 55 ),
-		             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
-		stringBuilder.str( "" );
+				stringBuilder << "Bottom X: " << it_line->getBottomPoint().x;
+				cv::putText( tmpImage,
+				             stringBuilder.str(),
+				             cv::Point( 20, 35 ),
+				             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
+				stringBuilder.str( "" );
 
-		cv::imshow( "Window", tempImage );
-		cv::waitKey();
+				stringBuilder << "Top X: " << it_line->getTopPoint().x;
+				cv::putText( tmpImage,
+				             stringBuilder.str(),
+				             cv::Point( 200, 35 ),
+				             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
+				stringBuilder.str( "" );
+
+				stringBuilder << "Image " << i;
+				cv::imshow( stringBuilder.str(), tmpImage );
+				stringBuilder.str( "" );
+			}
+
+			cv::waitKey();
+
+		}
+
 	}
 }
 

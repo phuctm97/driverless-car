@@ -13,9 +13,11 @@ namespace sb
 class Calculator
 {
 private:
-	sb::Formatter _formatter;
 	sb::EdgeDetector _edgeDetector;
 	sb::LineDetector _lineDetector;
+
+	cv::Rect _cropBox;
+	std::vector<cv::Rect> _splitBoxes;
 
 public:
 	Calculator() {};
@@ -26,23 +28,6 @@ public:
 	               sb::FrameInfo& frameInfo ) const;
 
 	void release();
-
-	double convertXToCoord( double x ) const;
-
-	double convertYToCoord( double y ) const;
-
-	cv::Point2d convertToCoord( const cv::Point2d& point ) const;
-
-	double convertXFromCoord( double x ) const;
-
-	double convertYFromCoord( double y ) const;
-
-	cv::Point2d convertFromCoord( const cv::Point2d& point ) const;
-
-private:
-	static void calculateLineInfos( const std::vector<sb::Line>& lines,
-													 const cv::Mat& colorImage,
-													 std::vector<sb::LineInfo>& outputLineInfos );
 };
 }
 

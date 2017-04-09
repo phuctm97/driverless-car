@@ -2,7 +2,7 @@
 #define __SB_FRAME_INFO_H__
 
 #include "../Params.h"
-#include "LineInfo.h"
+#include "Section.h"
 
 namespace sb
 {
@@ -11,10 +11,9 @@ class FrameInfo
 private:
 	cv::Mat _colorImage;
 
-	std::vector<sb::LineInfo> _imageLineInfos;
+	cv::Mat _edgesImage;
 
-	std::vector<sb::LineInfo> _realLineInfos;
-
+	std::vector<sb::Section> _imageSections;
 public:
 	FrameInfo() {}
 
@@ -24,14 +23,13 @@ public:
 
 	void setColorImage( const cv::Mat& colorImage );
 
-	const std::vector<sb::LineInfo>& getImageLineInfos() const;
+	const std::vector<sb::Section>& getImageSections() const;
 
-	void setImageLineInfos( const std::vector<sb::LineInfo>& lineInfos );
+	void setImageSections( const std::vector<sb::Section>& imageSections );
 
-	const std::vector<sb::LineInfo>& getRealLineInfos() const;
+	const cv::Mat& getEdgesImage() const;
 
-	void setRealLineInfos( const std::vector<sb::LineInfo>& warpedLines );
-
+	void setEdgesImage( const cv::Mat& edgesImage );
 };
 }
 

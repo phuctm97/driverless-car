@@ -1,12 +1,12 @@
 #include "../Classes/calculator/Calculator.h"
 #include "../Classes/collector/Collector.h"
-#include "../Classes/analyzer/Analyzer2.h"
+#include "../Classes/analyzer/Analyzer.h"
 #include "../Classes/Timer.h"
 #include <conio.h>
 
 int init( sb::Collector& collector,
           sb::Calculator& calculator,
-          sb::Analyzer2& analyzer,
+          sb::Analyzer& analyzer,
           const sb::Params& params );
 
 void test( const sb::Calculator& calculator,
@@ -16,7 +16,7 @@ void test( const sb::Calculator& calculator,
 
 void release( sb::Collector& collector,
               sb::Calculator& calculator,
-              sb::Analyzer2& analyzer );
+              sb::Analyzer& analyzer );
 
 int main( const int argc, const char** argv )
 {
@@ -45,7 +45,7 @@ int main( const int argc, const char** argv )
 	// Main components
 	sb::Collector collector;
 	sb::Calculator calculator;
-	sb::Analyzer2 analyzer;
+	sb::Analyzer analyzer;
 
 	// Init components
 	if ( init( collector, calculator, analyzer, params ) < 0 ) {
@@ -63,9 +63,9 @@ int main( const int argc, const char** argv )
 	timer.reset( "entire-job" );
 
 	///// Debug //////
-	cv::namedWindow( "Ego-view" );
+	/*cv::namedWindow( "Ego-view" );
 	cv::namedWindow( "Birdeye-view" );
-	cv::waitKey();
+	cv::waitKey();*/
 
 	///// <Result-writer> /////
 	cv::VideoWriter colorAvi;
@@ -163,7 +163,7 @@ int main( const int argc, const char** argv )
 
 int init( sb::Collector& collector,
           sb::Calculator& calculator,
-          sb::Analyzer2& analyzer,
+          sb::Analyzer& analyzer,
           const sb::Params& params )
 {
 	if ( collector.init( params ) < 0 ) {
@@ -189,7 +189,7 @@ void test( const sb::Calculator& calculator,
            const sb::FrameInfo& frameInfo,
            const sb::RoadInfo& roadInfo )
 {
-	///// Init image /////
+	/*///// Init image /////
 	const cv::Size FRAME_SIZE = frameInfo.getColorImage().size();
 
 	const cv::Size CAR_SIZE( 90, 120 );
@@ -238,12 +238,12 @@ void test( const sb::Calculator& calculator,
 
 	cv::imshow( "Birdeye-view", radarImage );
 
-	cv::waitKey( 500 );
+	cv::waitKey( 500 );*/
 }
 
 void release( sb::Collector& collector,
               sb::Calculator& calculator,
-              sb::Analyzer2& analyzer )
+              sb::Analyzer& analyzer )
 {
 	calculator.release();
 

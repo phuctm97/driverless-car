@@ -1,12 +1,8 @@
 #include "Calculator.h"
+#include "../Timer.h"
 
 int sb::Calculator::init( const sb::Params& params )
 {
-	_formatter = sb::Formatter( params.CROP_BOX,
-	                            params.WARP_SRC_QUAD,
-	                            params.WARP_DST_QUAD,
-	                            params.CONVERT_COORD_COEF );
-
 	_edgeDetector = sb::EdgeDetector( params.EDGE_DETECTOR_KERNEL_SIZE,
 	                                  params.EDGE_DETECTOR_LOW_THRESH,
 	                                  params.EDGE_DETECTOR_HIGH_THRESH,
@@ -19,129 +15,96 @@ int sb::Calculator::init( const sb::Params& params )
 	                                  params.HOUGH_LINES_P_MIN_LINE_LENGTH,
 	                                  params.HOUGH_LINES_P_MAX_LINE_GAP );
 
+	_cropBox = params.CROP_BOX;
+
+	std::vector<double> _splitRatio = { 0.2, 0.25, 0.25, 0.3 };
+
+	_splitBoxes.clear(); {
+		int y = 0;
+		for ( double ratio : _splitRatio ) {
+			int h = static_cast<int>(round( 1.0 * params.CROP_BOX.height * ratio ));
+
+			if ( y + h > params.CROP_BOX.height ) h = params.CROP_BOX.height - y;
+
+			cv::Rect box( 0, y, params.CROP_BOX.width, h );
+			_splitBoxes.push_back( box );
+			y += h;
+		}
+	}
+
 	return 0;
 }
 
 int sb::Calculator::calculate( const sb::RawContent& rawContent,
                                sb::FrameInfo& frameInfo ) const
 {
-	///// Color image /////
+	// 1) color image
 	cv::Mat colorImage;
-	if ( _formatter.crop( rawContent.getColorImage(), colorImage ) < 0 ) {
-		std::cerr << "Crop image failed." << std::endl;
+
+	// crop to correct format
+	if ( _cropBox.x < 0 || _cropBox.y < 0 ||
+		_cropBox.x + _cropBox.width > rawContent.getColorImage().cols ||
+		_cropBox.y + _cropBox.height > rawContent.getColorImage().rows ) {
+		std::cerr << "Input image and crop box aren't suitable." << std::endl;
 		return -1;
 	}
+	colorImage = rawContent.getColorImage()( _cropBox );
 
 	// flip to natural direction ( input image from camera was flipped )
 	cv::flip( colorImage, colorImage, 1 );
 
 	frameInfo.setColorImage( colorImage );
 
-	///// Lines //////
-	std::vector<sb::LineInfo> imageLineInfos;
-	std::vector<sb::LineInfo> realLineInfos;
-
-	// 1) generate edges-frame
+	// 2) generate edges-frame
 	cv::Mat edgesFrame;
 	cv::cvtColor( colorImage, edgesFrame, cv::COLOR_BGR2GRAY );
 	_edgeDetector.apply( edgesFrame );
 
-	// 2) generate lines in whole frame
-	std::vector<sb::Line> lines;
-	_lineDetector.apply( edgesFrame, lines );
+	frameInfo.setEdgesImage( edgesFrame );
 
-	/*
-	cv::Mat linesImage( edgesFrame.size(), CV_8UC3, cv::Scalar::all( 0 ) );
-	for ( const auto& line: lines ) {
-		cv::line( linesImage, line.getStartingPoint(), line.getEndingPoint(),
-							cv::Scalar::all( 255 ), 1 );
-	}
-	cv::imshow( "Edges image", edgesFrame );
-	cv::imshow( "Lines image", linesImage );
-	cv::waitKey();
-	*/
-
-	calculateLineInfos( lines, colorImage, imageLineInfos );
-
-	// 3) generate warped lines
-	if ( _formatter.warp( imageLineInfos, realLineInfos ) < 0 ) {
-		std::cerr << "Warp lines failed." << std::endl;
-		return -1;
+	// 3) generate sections
+	std::vector<sb::Section> sections;
+	sections.reserve( 5 );
+	for ( auto it = _splitBoxes.crbegin(); it != _splitBoxes.crend(); ++it ) {
+		sections.push_back( sb::Section( edgesFrame, *it ) );
 	}
 
-	frameInfo.setImageLineInfos( imageLineInfos );
-	frameInfo.setRealLineInfos( realLineInfos );
+	// 4) generate lines for each section
+
+	for ( auto it_section = sections.begin(); it_section != sections.end(); ++it_section ) {
+		std::vector<sb::Line> lines;
+		_lineDetector.apply( it_section->getBinaryImage(), lines );
+
+		std::vector<sb::LineInfo> lineInfos;
+		lineInfos.reserve( lines.size() );
+
+		for ( auto it_line = lines.cbegin(); it_line != lines.cend(); ++it_line ) {
+			sb::Line translatedLine( it_section->convertToContainerSpace( it_line->getStartingPoint() ),
+			                         it_section->convertToContainerSpace( it_line->getEndingPoint() ) );
+
+			sb::LineInfo lineInfo( translatedLine );
+
+			cv::Point2d topPoint, bottomPoint;
+			if ( !sb::Line::findIntersection( it_section->getTopLine(), translatedLine, topPoint ) ) continue;
+			if ( !sb::Line::findIntersection( it_section->getBottomLine(), translatedLine, bottomPoint ) ) continue;
+
+			lineInfo.setTopPoint( topPoint );
+			lineInfo.setBottomPoint( bottomPoint );
+			lineInfo.setCenterPoint( (topPoint + bottomPoint) * 0.5 );
+
+			lineInfos.push_back( lineInfo );
+		}
+
+		std::sort( lineInfos.begin(), lineInfos.end(),
+		           [](const sb::LineInfo& l1, const sb::LineInfo& l2)-> bool {
+			           return l1.getBottomPoint().x < l2.getBottomPoint().x;
+		           } );
+
+		it_section->setImageLines( lineInfos );
+	}
+	frameInfo.setImageSections( sections );
 
 	return 0;
 }
 
 void sb::Calculator::release() {}
-
-double sb::Calculator::convertXToCoord( double x ) const { return _formatter.convertXToCoord( x ); }
-
-double sb::Calculator::convertYToCoord( double y ) const { return _formatter.convertYToCoord( y ); }
-
-cv::Point2d sb::Calculator::convertToCoord( const cv::Point2d& point ) const { return _formatter.convertToCoord( point ); }
-
-double sb::Calculator::convertXFromCoord( double x ) const { return _formatter.convertXFromCoord( x ); }
-
-double sb::Calculator::convertYFromCoord( double y ) const { return _formatter.convertYFromCoord( y ); }
-
-cv::Point2d sb::Calculator::convertFromCoord( const cv::Point2d& point ) const { return _formatter.convertFromCoord( point ); }
-
-void sb::Calculator::calculateLineInfos( const std::vector<sb::Line>& lines,
-                                         const cv::Mat& colorImage,
-                                         std::vector<sb::LineInfo>& outputLineInfos )
-{
-	outputLineInfos.clear();
-	outputLineInfos.assign( lines.size(), sb::Line() );
-
-	for ( size_t i = 0; i < lines.size(); i++ ) {
-		const sb::Line& line = lines[i];
-		sb::LineInfo& lineInfo = outputLineInfos[i];
-
-		lineInfo.setLine( line );
-
-		// unit vector for sweeping
-		cv::Point2d unitVec = line.getEndingPoint() - line.getStartingPoint();
-		unitVec = cv::Point2d( unitVec.x / lineInfo.getLength(),
-		                       unitVec.y / lineInfo.getLength() );
-
-		// sweep to summarize line color intensities
-		cv::Vec3d sum( 0, 0, 0 );
-		int n = 0;
-		for ( int unit = 0; unit < lineInfo.getLength(); unit++ ) {
-
-			int c = static_cast<int>(line.getStartingPoint().x + unitVec.x * unit);
-			int r = static_cast<int>(line.getStartingPoint().y + unitVec.y * unit);
-
-			sum += colorImage.at<cv::Vec3b>( r, c );
-			n++;
-
-			// sweep with window 3x3
-			/*if( c > 0 ) {
-			sum += colorImage.at<cv::Vec3b>( r, c - 1 ); n++;
-			}
-			if( r > 0 ) {
-			sum += colorImage.at<cv::Vec3b>( r - 1, c ); n++;
-			}
-			if( c > 0 && r > 0 ) {
-			sum += colorImage.at<cv::Vec3b>( r - 1, c - 1 ); n++;
-			}
-			if( c < colorImage.cols - 1 ) {
-			sum += colorImage.at<cv::Vec3b>( r, c + 1 ); n++;
-			}
-			if( r < colorImage.rows - 1 ) {
-			sum += colorImage.at<cv::Vec3b>( r + 1, c ); n++;
-			}
-			if( c < colorImage.cols - 1 && r < colorImage.rows - 1 ) {
-			sum += colorImage.at<cv::Vec3b>( r + 1, c + 1 ); n++;
-			}*/
-		}
-
-		cv::Vec3b averageColor = cv::Vec3b( static_cast<uchar>(sum[0] / n),
-		                                    static_cast<uchar>(sum[1] / n),
-		                                    static_cast<uchar>(sum[2] / n) );
-		lineInfo.setAverageColor( averageColor );
-	}
-}

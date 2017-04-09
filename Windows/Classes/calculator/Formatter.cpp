@@ -60,8 +60,7 @@ int sb::Formatter::warp( const std::vector<sb::LineInfo> imageLines,
 
 	for ( int i = 0; i < N_LINES; i++ ) {
 		outputRealLines.push_back( sb::LineInfo( sb::Line( convertToCoord( endingPoints[i] ),
-		                                                   convertToCoord( startingPoints[i] ) ),
-		                                         imageLines[i].getAverageColor() ) );
+		                                                   convertToCoord( startingPoints[i] ) ) ) );
 	}
 
 	return 0;
@@ -79,7 +78,7 @@ double sb::Formatter::convertYToCoord( double y ) const
 
 double sb::Formatter::convertLengthToCoord( double length ) const
 {
-	return length*_convertCoordCoef;
+	return length * _convertCoordCoef;
 }
 
 double sb::Formatter::convertLengthFromCoord( double length ) const

@@ -1,12 +1,10 @@
 #include "LineInfo.h"
 
-sb::LineInfo::LineInfo( const sb::Line& line,
-                        const cv::Vec3b& averageColor )
+sb::LineInfo::LineInfo( const sb::Line& line )
 	: _line( line ),
 	  _angle( line.getAngleWithOx() ),
 	  _length( line.getLength() ),
-	  _middlePoint( (line.getStartingPoint() + line.getEndingPoint()) * 0.5 ),
-	  _averageColor( averageColor ) {}
+	  _middlePoint( (line.getStartingPoint() + line.getEndingPoint()) * 0.5 ) {}
 
 const sb::Line& sb::LineInfo::getLine() const { return _line; }
 
@@ -18,16 +16,17 @@ double sb::LineInfo::getLength() const { return _length; }
 
 double sb::LineInfo::getAngle() const { return _angle; }
 
-const cv::Vec3b& sb::LineInfo::getAverageColor() const { return _averageColor; }
-
 const cv::Point2d& sb::LineInfo::getMiddlePoint() const { return _middlePoint; }
 
-void sb::LineInfo::setLine( const sb::Line& line )
-{
-	_line = line;
-	_length = line.getLength();
-	_angle = line.getAngleWithOx();
-}
+const cv::Point2d& sb::LineInfo::getTopPoint() const { return _topPoint; }
 
-void sb::LineInfo::setAverageColor( const cv::Vec3b& averageColor ) { _averageColor = averageColor; }
+void sb::LineInfo::setTopPoint( const cv::Point2d& topPoint ) { _topPoint = topPoint; }
+
+const cv::Point2d& sb::LineInfo::getBottomPoint() const { return _bottomPoint; }
+
+void sb::LineInfo::setBottomPoint( const cv::Point2d& bottomPoint ) { _bottomPoint = bottomPoint; }
+
+const cv::Point2d& sb::LineInfo::getCenterPoint() const { return _centerPoint; }
+
+void sb::LineInfo::setCenterPoint( const cv::Point2d& centerPoint ) { _centerPoint = centerPoint; }
 

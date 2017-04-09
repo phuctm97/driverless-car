@@ -35,19 +35,16 @@
     <ClCompile Include="..\Classes\analyzer\RoadInfo.cpp">
       <Filter>analyzer</Filter>
     </ClCompile>
-    <ClCompile Include="..\Classes\analyzer\Analyzer.cpp">
-      <Filter>analyzer</Filter>
-    </ClCompile>
     <ClCompile Include="..\Classes\Timer.cpp">
       <Filter>shared</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Classes\analyzer\LanePart.cpp">
-      <Filter>analyzer</Filter>
     </ClCompile>
     <ClCompile Include="..\Classes\analyzer\LaneComponent.cpp">
       <Filter>analyzer</Filter>
     </ClCompile>
-    <ClCompile Include="..\Classes\analyzer\Analyzer2.cpp">
+    <ClCompile Include="..\Classes\calculator\Section.cpp">
+      <Filter>calculator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Classes\analyzer\Analyzer.cpp">
       <Filter>analyzer</Filter>
     </ClCompile>
   </ItemGroup>
@@ -102,14 +99,8 @@
     <ClInclude Include="..\Classes\analyzer\RoadInfo.h">
       <Filter>analyzer</Filter>
     </ClInclude>
-    <ClInclude Include="..\Classes\analyzer\Analyzer.h">
-      <Filter>analyzer</Filter>
-    </ClInclude>
     <ClInclude Include="..\Classes\Timer.h">
       <Filter>shared</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Classes\analyzer\LanePart.h">
-      <Filter>analyzer</Filter>
     </ClInclude>
     <ClInclude Include="..\Classes\analyzer\Lane.h">
       <Filter>analyzer</Filter>
@@ -120,7 +111,13 @@
     <ClInclude Include="..\Classes\analyzer\LaneComponent.h">
       <Filter>analyzer</Filter>
     </ClInclude>
-    <ClInclude Include="..\Classes\analyzer\Analyzer2.h">
+    <ClInclude Include="..\Classes\analyzer\LanePart.h">
+      <Filter>analyzer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\calculator\Section.h">
+      <Filter>calculator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\analyzer\Analyzer.h">
       <Filter>analyzer</Filter>
     </ClInclude>
   </ItemGroup>

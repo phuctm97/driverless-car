@@ -1,29 +1,26 @@
 #ifndef __SB_LANE_COMPONENT_H__
 #define __SB_LANE_COMPONENT_H__
 
-#include "../Include.h"
-#include "../calculator/FrameInfo.h"
 #include "LanePart.h"
-#include "Lane.h"
+#include "../calculator/FrameInfo.h"
 
 #include <stack>
 
-#define MAX_ACCEPTABLE_ANGLE_DIFF_BETWEEN_LINES 5
-#define MAX_ACCEPTABLE_VERTICAL_DIFF_BETWEEN_LINES 5
-#define MAX_ACCEPTABLE_ANGLE_DIFF_BETWEEN_LANE_PARTS 20
-#define MAX_ACCEPTABLE_WIDTH_DIFF_BETWEEN_LANE_PARTS 2
-#define MAX_ACCEPTABLE_DISTANCE_BETWEEN_LANE_PARTS 2
-
-#define NUM_LANE_PARTS 7
-#define GOOD_LANE_RATING 7.5
-#define GOOD_ROAD_RATING 7
-#define BAD_LINE_RATING 4.0
-
 #define SB_DEBUG
 
-#ifdef SB_DEBUG
-#include "../calculator/Formatter.h"
-#endif
+#define POSITION_THRESH_FOR_SIMILAR_LANE 2
+
+#define MAX_ACCEPTABLE_ANGLE_DIFF_BETWEEN_ADJACENT_LINES 20
+#define MAX_ACCEPTABLE_DISTANCE_TO_WHITE_COLOR 145
+#define MAX_ACCEPTABLE_DISTANCE_COLOR_BETWEEN_LINE 20
+
+#define MAX_ACCEPTABLE_ANGLE_DIFF_BETWEEN_ADJACENT_LANE_PARTS 20
+#define MAX_ACCEPTABLE_WIDTH_DIFF_BETWEEN_ADJACENT_LANE_PARTS 5
+#define MAX_ACCEPTABLE_POSITION_DIFF_BETWEEN_ADJACENT_LANE_PARTS 5
+
+#define MAX_ACCEPTABLE_ANGLE_ERROR_TRACK_LINE 10
+#define MAX_ACCEPTABLE_POSITION_ERROR_TRACK_LINE 10
+#define MAX_ACCEPTABLE_WIDTH_ERROR_TRACK_LINE 0.3
 
 namespace sb
 {
@@ -32,99 +29,84 @@ class LaneComponent
 private:
 	int _side;
 
-	cv::Point2d _position;
+	std::vector<sb::LanePartInfo> _parts;
 
-	double _width;
+	double _minLaneWidth;
 
-	double _angle;
+	double _maxLaneWidth;
 
-	std::vector<sb::LanePart> _parts;
+	double _windowWidth;
 
-	double _minLandWidth;
-
-	double _maxLandWidth;
-
-	cv::Size _windowSize;
-
-	cv::Point2d _windowMove;
-
-	cv::Point2d _windowMaxXY;
-
-	double _lanePartLength;
-
-	bool _initSucceeded;
+	double _windowMove;
 
 public:
+	void init( int side );
 
-#ifdef SB_DEBUG
-	void init( int side, double minLaneWidth, double maxLaneWidth, const sb::Params& params );
-#else
-	void init( int side, double minLaneWidth, double maxLaneWidth );
-#endif // init()
-
-	int findItself( const sb::FrameInfo& frameInfo );
+	int find( const sb::FrameInfo& frameInfo );
 
 	int track( const sb::FrameInfo& frameInfo );
 
+	const std::vector<sb::LanePartInfo>& getParts() const;
+
 private:
 
-#ifdef SB_DEBUG
-	void findFirstLaneParts( const std::vector<sb::LineInfo>& line_lists,
-	                         const cv::Rect2d& window,
-	                         std::vector<sb::LanePart>& first_lane_parts,
-	                         const cv::Mat& image,
-	                         const cv::Size& expand_size ) const;
-#else
-	void findFirstLaneParts( const std::vector<sb::LineInfo>& line_lists,
-													 const cv::Rect2d& window,
-													 std::vector<sb::LanePart>& first_lane_parts ) const;
-#endif // findFirstLaneParts()
+	///// Find lane /////
+	void findFirstLaneParts( const sb::Section& firstSection, const cv::Mat& colorImage, double windowX,
+	                         std::vector<sb::LanePart>& firstLaneParts );
+
+	void findNextLaneParts( const sb::Section& section, const cv::Mat& colorImage,
+	                        const sb::LanePart& lastestLanePart,
+	                        std::vector<std::pair<sb::LanePart, double>>& nextLaneParts );
+
+	void findBestFullLaneParts( const std::vector<sb::Section>& sections, const cv::Mat& colorImage,
+	                            const sb::LanePart& firstLanePart,
+	                            std::vector<sb::LanePart>& fullLaneParts,
+	                            double& fullLaneRating );
+
+	///// Find lane /////
+
+	///// Track lane /////
+
+	int trackIndividualLanePart_PlanA( const sb::LanePart& part,
+	                                   const sb::Section& section,
+	                                   const cv::Mat& colorImage,
+	                                   const cv::Mat& edgesImage,
+	                                   std::vector<sb::LanePartInfo>& trackResults );
+
+	int trackIndividualLanePart_PlanB( const sb::LanePart& part,
+	                                   const sb::Section& section,
+	                                   const cv::Mat& colorImage,
+	                                   const cv::Mat& edgesImage,
+	                                   std::vector<sb::LanePartInfo>& trackResults );
+
+	int trackIndividualLanePart_PlanC( const sb::LanePart& part,
+	                                   const sb::Section& section,
+	                                   const cv::Mat& colorImage,
+	                                   const cv::Mat& edgesImage,
+	                                   std::vector<sb::LanePartInfo>& trackResults );
+
+	int trackIndividualLanePart_PlanD( const sb::LanePart& part,
+	                                   const sb::Section& section,
+	                                   const cv::Mat& colorImage,
+	                                   const cv::Mat& edgesImage,
+	                                   std::vector<sb::LanePartInfo>& trackResults );
+
+	void concludeIndividualLanePart( const std::vector<sb::LanePartInfo>& trackedLaneParts );
+
+	///// Track lane /////
+
+	void getPartColor( const cv::Mat& colorImage, sb::LanePart& part );
+
+	cv::Vec3b getMainColor( const cv::Mat image, const cv::Point rectPoints[4] );
+
+	double getColorDistance( const cv::Vec3b& color1, const cv::Vec3b& color2 );
 
 #ifdef SB_DEBUG
-	void findNextLaneParts( const std::vector<sb::LineInfo>& lines_list,
-	                        const sb::LanePart& lastest_lane_part,
-	                        std::vector<sb::LanePart>& next_lane_parts,
-	                        std::vector<double>& next_lane_part_ratings,
-	                        const cv::Mat& image,
-	                        const cv::Size& expand_size ) const;
-#else
-	void findNextLaneParts( const std::vector<sb::LineInfo>& lines_list,
-													const sb::LanePart& lastest_lane_part,
-													std::vector<sb::LanePart>& next_lane_parts,
-													std::vector<double>& next_lane_part_ratings ) const;
-#endif // findNextLaneParts()
+	cv::Mat debugImages[2];
 
-#ifdef SB_DEBUG
-	void findLanes( const std::vector<sb::LineInfo>& lines_list,
-	                const sb::LanePart& first_lane_part,
-	                std::vector<sb::Lane>& lanes,
-	                const cv::Mat& image,
-	                const cv::Size& expand_size ) const;
-#else
-	void findLanes( const std::vector<sb::LineInfo>& lines_list,
-									const sb::LanePart& first_lane_part,
-									std::vector<sb::Lane>& lanes ) const;
-#endif // findLanes()
-
-	int findLinesIntersectRectangle( const std::vector<sb::LineInfo>& inputLines,
-	                                 const cv::Rect2d& window,
-	                                 std::vector<sb::LineInfo>& outputLines ) const;
-
-	bool segmentIntersectRectangle( const cv::Point2d& p1,
-	                                const cv::Point2d& p2,
-	                                const cv::Rect2d& rect ) const;
-
-	int moveFirstWindow( cv::Rect2d& window ) const;
-
-#ifdef SB_DEBUG
-	sb::Formatter _debugFormatter;
-
-	int drawLanePart( const sb::LanePart& lane_part, cv::Mat& image,
-	                  const cv::Size& expand_size,
-	                  const cv::Scalar& color,
-	                  int line_width ) const;
-#endif //drawLanePart()
+	void drawLanePart( cv::Mat& image, const sb::LanePart& part );
+#endif
 };
 }
 
-#endif //!__SB_LANE_COMPONENT_H__
+#endif

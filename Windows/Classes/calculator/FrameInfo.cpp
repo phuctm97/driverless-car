@@ -8,11 +8,11 @@ const cv::Mat& sb::FrameInfo::getColorImage() const { return _colorImage; }
 
 void sb::FrameInfo::setColorImage( const cv::Mat& colorImage ) { _colorImage = colorImage; }
 
-const std::vector<sb::LineInfo>& sb::FrameInfo::getImageLineInfos() const { return _imageLineInfos; }
+const std::vector<sb::Section>& sb::FrameInfo::getImageSections() const { return _imageSections; }
 
-void sb::FrameInfo::setImageLineInfos( const std::vector<sb::LineInfo>& lineInfos ) { _imageLineInfos = lineInfos; }
+void sb::FrameInfo::setImageSections( const std::vector<sb::Section>& imageSections ) { _imageSections = imageSections; }
 
-const std::vector<sb::LineInfo>& sb::FrameInfo::getRealLineInfos() const { return _realLineInfos; }
+const cv::Mat& sb::FrameInfo::getEdgesImage() const { return _edgesImage; }
 
-void sb::FrameInfo::setRealLineInfos( const std::vector<sb::LineInfo>& warpedLines ) { _realLineInfos = warpedLines; }
+void sb::FrameInfo::setEdgesImage( const cv::Mat& edgesImage ) { _edgesImage = edgesImage; }
 
