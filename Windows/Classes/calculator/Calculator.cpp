@@ -39,7 +39,7 @@ int sb::Calculator::calculate( const sb::RawContent& rawContent,
                                sb::FrameInfo& frameInfo ) const
 {
 	// 1) color image
-	cv::Mat colorImage;
+	cv::Mat colorImage, labImage, hsvImage;
 
 	// crop to correct format
 	if ( _cropBox.x < 0 || _cropBox.y < 0 ||
@@ -52,8 +52,11 @@ int sb::Calculator::calculate( const sb::RawContent& rawContent,
 
 	// flip to natural direction ( input image from camera was flipped )
 	cv::flip( colorImage, colorImage, 1 );
+	cv::cvtColor( colorImage, labImage, cv::COLOR_BGR2Lab );
+	cv::cvtColor( colorImage, hsvImage, cv::COLOR_BGR2HSV );
 
 	frameInfo.setColorImage( colorImage );
+	frameInfo.setHsvImage( hsvImage );
 
 	// 2) generate edges-frame
 	cv::Mat edgesFrame;

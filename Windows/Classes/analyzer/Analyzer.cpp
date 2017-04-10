@@ -79,6 +79,10 @@ int sb::Analyzer::firstAnalyze( const sb::FrameInfo& frameInfo,
 
 int sb::Analyzer::trackAnalyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInfo )
 {
+	_leftLane.track( frameInfo );
+
+	_rightLane.track( frameInfo );
+
 	/*
 	 * _leftLane.track(frameInfo);
 	 * _rightLane.track(frameInfo);

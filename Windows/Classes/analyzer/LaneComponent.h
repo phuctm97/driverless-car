@@ -10,17 +10,17 @@
 
 #define POSITION_THRESH_FOR_SIMILAR_LANE 2
 
-#define MAX_ACCEPTABLE_ANGLE_DIFF_BETWEEN_ADJACENT_LINES 20
-#define MAX_ACCEPTABLE_DISTANCE_TO_WHITE_COLOR 145
-#define MAX_ACCEPTABLE_DISTANCE_COLOR_BETWEEN_LINE 20
+#define MAX_ACCEPTABLE_DISTANCE_TO_WHITE_COLOR 30 // 145
 
-#define MAX_ACCEPTABLE_ANGLE_DIFF_BETWEEN_ADJACENT_LANE_PARTS 20
-#define MAX_ACCEPTABLE_WIDTH_DIFF_BETWEEN_ADJACENT_LANE_PARTS 5
-#define MAX_ACCEPTABLE_POSITION_DIFF_BETWEEN_ADJACENT_LANE_PARTS 5
+#define MAX_ACCEPTABLE_WIDTH_DIFF_BETWEEN_ADJACENT_LANE_PARTS 10
+#define MAX_ACCEPTABLE_POSITION_DIFF_BETWEEN_ADJACENT_LANE_PARTS 10
+#define MAX_ACCEPTABLE_ANGLE_DIFF_BETWEEN_ADJACENT_LANE_PARTS 40
+#define MAX_ACCEPTABLE_COLOR_DIFF_BETWEEN_ADJACENT_LANE_PARTS 25
 
 #define MAX_ACCEPTABLE_ANGLE_ERROR_TRACK_LINE 10
 #define MAX_ACCEPTABLE_POSITION_ERROR_TRACK_LINE 10
-#define MAX_ACCEPTABLE_WIDTH_ERROR_TRACK_LINE 0.3
+#define MAX_ACCEPTABLE_WIDTH_ERROR_TRACK_LANE 0.3
+#define MAX_ACCEPTABLE_COLOR_ERROR_TRACK_LANE 50
 
 namespace sb
 {
@@ -91,18 +91,22 @@ private:
 	                                   const cv::Mat& edgesImage,
 	                                   std::vector<sb::LanePartInfo>& trackResults );
 
-	void concludeIndividualLanePart( const std::vector<sb::LanePartInfo>& trackedLaneParts );
-
 	///// Track lane /////
 
 	void getPartColor( const cv::Mat& colorImage, sb::LanePart& part );
+
+	cv::Vec3b getColorBetweenLines( const cv::Mat& colorImage, const sb::LineInfo& l1, const sb::LineInfo l2 );
 
 	cv::Vec3b getMainColor( const cv::Mat image, const cv::Point rectPoints[4] );
 
 	double getColorDistance( const cv::Vec3b& color1, const cv::Vec3b& color2 );
 
+	double calculateDeltaE( const cv::Vec3f& bgr1, const cv::Vec3f& bgr2, double kL = 1, double kC = 1, double kH = 1 );
+
+	cv::Vec3f cvtColorBGRtoLab( const cv::Vec3b & bgr );
+
 #ifdef SB_DEBUG
-	cv::Mat debugImages[2];
+	cv::Mat debugImages[3];
 
 	void drawLanePart( cv::Mat& image, const sb::LanePart& part );
 #endif

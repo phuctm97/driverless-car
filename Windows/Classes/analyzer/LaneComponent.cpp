@@ -1,6 +1,7 @@
 ﻿#include "LaneComponent.h"
 #include "../collector/Collector.h"
 #include "Lane.h"
+#include <queue>
 
 // TODO: argument minLaneWidth, maxLaneWidth
 // TODO: trường hợp một section bị nhiễu mất line
@@ -11,9 +12,9 @@ void sb::LaneComponent::init( int side )
 {
 	_side = side;
 
-	_minLaneWidth = 10;
+	_minLaneWidth = 20;
 
-	_maxLaneWidth = 40;
+	_maxLaneWidth = 60;
 
 	_windowWidth = _maxLaneWidth * 2;
 
@@ -22,11 +23,8 @@ void sb::LaneComponent::init( int side )
 
 int sb::LaneComponent::find( const sb::FrameInfo& frameInfo )
 {
-	// TODO: kiểm tra màu
-	// TODO: nối các lane part tìm lại được
-
-	double minX = 0;
-	double maxX = 1.0 * frameInfo.getColorImage().cols;
+	double minX = -_windowWidth;
+	double maxX = 1.0 * frameInfo.getColorImage().cols + _windowWidth;
 	double centerX = (minX + maxX) * 0.5;
 
 	// result highest lane parts
@@ -42,11 +40,19 @@ int sb::LaneComponent::find( const sb::FrameInfo& frameInfo )
 #ifdef SB_DEBUG
 		debugImages[0] = frameInfo.getColorImage().clone();
 		debugImages[1] = frameInfo.getEdgesImage().clone();
+		debugImages[2] = cv::Mat::zeros( frameInfo.getColorImage().size(), CV_8UC3 );
+		for ( auto it_section = frameInfo.getImageSections().cbegin();
+		      it_section != frameInfo.getImageSections().cend(); ++it_section ) {
+			for ( auto it_line = it_section->getImageLines().cbegin();
+			      it_line != it_section->getImageLines().cend(); ++it_line )
+				cv::line( debugImages[2], it_line->getStartingPoint(), it_line->getEndingPoint(),
+				          cv::Scalar( 255, 255, 255 ) );
+		}
 		cv::cvtColor( debugImages[1], debugImages[1], cv::COLOR_GRAY2BGR );
 #endif // init images
 
-#ifdef SB_DEBUG
-		for ( int i = 0; i < 2; i++ ) {
+/*#ifdef SB_DEBUG
+		for ( int i = 0; i < 3; i++ ) {
 			cv::rectangle( debugImages[i],
 			               cv::Point2d( windowX, frameInfo.getImageSections().front().getImageRect().tl().y ),
 			               cv::Point2d( windowX + _windowWidth, frameInfo.getImageSections().front().getImageRect().br().y ),
@@ -54,7 +60,7 @@ int sb::LaneComponent::find( const sb::FrameInfo& frameInfo )
 			cv::imshow( "Image " + std::to_string( i ), debugImages[i] );
 		}
 		cv::waitKey( 100 );
-#endif // show and draw window
+#endif*/ // show and draw window
 
 		std::vector<sb::LanePart> firstLaneParts;
 		findFirstLaneParts( frameInfo.getImageSections().front(), frameInfo.getColorImage(), windowX, firstLaneParts );
@@ -65,8 +71,8 @@ int sb::LaneComponent::find( const sb::FrameInfo& frameInfo )
 
 			findBestFullLaneParts( frameInfo.getImageSections(), frameInfo.getColorImage(), firstLanePart, fullLaneParts, fullLaneRating );
 
-#ifdef SB_DEBUG
-			for ( int i = 0; i < 2; i++ ) {
+/*#ifdef SB_DEBUG
+			for ( int i = 0; i < 3; i++ ) {
 				cv::Mat img = debugImages[i].clone();
 				for ( const auto& part : fullLaneParts ) {
 					drawLanePart( img, part );
@@ -74,7 +80,7 @@ int sb::LaneComponent::find( const sb::FrameInfo& frameInfo )
 				cv::imshow( "Image " + std::to_string( i ), img );
 				cv::waitKey( 500 );
 			}
-#endif //show completed lane
+#endif*/ //show completed lane
 
 			if ( fullLaneRating > highestRating ) {
 				auto it_part_info = _parts.begin();
@@ -104,35 +110,116 @@ int sb::LaneComponent::find( const sb::FrameInfo& frameInfo )
 
 int sb::LaneComponent::track( const sb::FrameInfo& frameInfo )
 {
-	// track individual lane part
-	auto it_section = frameInfo.getImageSections().cbegin();
-	auto it_part = _parts.cbegin();
+	std::vector<sb::LanePartInfo> bestLaneParts;
+	double highestRating = 0;
 
 	std::vector<std::vector<sb::LanePartInfo>> lanePartsTrackResults;
 	lanePartsTrackResults.reserve( frameInfo.getImageSections().size() );
 
-	for ( ; it_section != frameInfo.getImageSections().cend(); ++it_section , ++it_part ) {
-		size_t index = std::distance( frameInfo.getImageSections().cbegin(), it_section );
+	// track individual lane part
+	{
+		auto it_section = frameInfo.getImageSections().cbegin();
+		auto it_part = _parts.cbegin();
 
-		std::vector<sb::LanePartInfo> laneParts;
+		for ( ; it_section != frameInfo.getImageSections().cend(); ++it_section , ++it_part ) {
+			size_t index = std::distance( frameInfo.getImageSections().cbegin(), it_section );
 
-		int rc;
+			std::vector<sb::LanePartInfo> laneParts;
 
-		rc = trackIndividualLanePart_PlanA( it_part->part, *it_section, frameInfo.getColorImage(), frameInfo.getEdgesImage(), laneParts );
+			int rc;
 
-		if ( rc < 0 ) rc = trackIndividualLanePart_PlanB( it_part->part, *it_section, frameInfo.getColorImage(), frameInfo.getEdgesImage(), laneParts );
+			// TODO: scenario that old part was error
 
-		if ( rc < 0 ) rc = trackIndividualLanePart_PlanC( it_part->part, *it_section, frameInfo.getColorImage(), frameInfo.getEdgesImage(), laneParts );
+			rc = trackIndividualLanePart_PlanA( it_part->part, *it_section, frameInfo.getColorImage(), frameInfo.getEdgesImage(), laneParts );
 
-		if ( rc < 0 ) rc = trackIndividualLanePart_PlanD( it_part->part, *it_section, frameInfo.getColorImage(), frameInfo.getEdgesImage(), laneParts );
+			// if ( rc < 0 ) rc = trackIndividualLanePart_PlanB( it_part->part, *it_section, frameInfo.getColorImage(), frameInfo.getEdgesImage(), laneParts );
 
-		lanePartsTrackResults.push_back( laneParts );
+			// if ( rc < 0 ) rc = trackIndividualLanePart_PlanC( it_part->part, *it_section, frameInfo.getColorImage(), frameInfo.getEdgesImage(), laneParts );
 
-		concludeIndividualLanePart( laneParts );
+			// if ( rc < 0 ) rc = trackIndividualLanePart_PlanD( it_part->part, *it_section, frameInfo.getColorImage(), frameInfo.getEdgesImage(), laneParts );
 
+			if ( laneParts.empty() ) {
+				sb::LanePartInfo emptyLanePart;
+				emptyLanePart.errorCode = sb::UNKNOWN;
+
+				laneParts.push_back( emptyLanePart );
+			}
+
+			lanePartsTrackResults.push_back( laneParts );
+		}
 	}
 
-	// combine result
+	// combine results
+	{
+		std::queue<std::pair<std::vector<sb::LanePartInfo>, double>> lanes;
+		lanes.push( std::make_pair( std::vector<sb::LanePartInfo>(), 0 ) );
+
+		for ( auto it_section_parts = lanePartsTrackResults.cbegin(); it_section_parts != lanePartsTrackResults.cend(); ++it_section_parts ) {
+			size_t previousSize = lanes.size();
+			while ( previousSize > 0 ) {
+				auto lane = lanes.front();
+				lanes.pop();
+				previousSize--;
+
+				for ( auto it_part = it_section_parts->cbegin(); it_part != it_section_parts->cend(); ++it_part ) {
+					std::vector<sb::LanePartInfo> tempParts( lane.first.cbegin(), lane.first.cend() );
+					tempParts.push_back( *it_part );
+
+					double tempRating = lane.second;
+
+					// TODO: rating for individual lane
+
+					if ( !lane.first.empty() ) {
+						sb::LanePartInfo lastestPart = lane.first.back();
+
+						double posRating = 0;
+						if ( it_part->errorCode != sb::UNKNOWN ) {
+							double posDiff = 0;
+							posDiff = abs( it_part->part.innerLine.getBottomPoint().x - lastestPart.part.innerLine.getBottomPoint().x );
+							if ( posDiff > MAX_ACCEPTABLE_POSITION_DIFF_BETWEEN_ADJACENT_LANE_PARTS ) continue;
+
+							posRating = 10.0 * (MAX_ACCEPTABLE_POSITION_DIFF_BETWEEN_ADJACENT_LANE_PARTS - posDiff)
+									/ MAX_ACCEPTABLE_POSITION_DIFF_BETWEEN_ADJACENT_LANE_PARTS;
+						}
+
+						double widthRating = 0;
+						if ( it_part->errorCode != sb::UNKNOWN ) {
+							double lastestWidth = abs( lastestPart.part.innerLine.getBottomPoint().x - lastestPart.part.outerLine.getBottomPoint().x );
+							double width = abs( it_part->part.innerLine.getBottomPoint().x - it_part->part.outerLine.getBottomPoint().x );
+
+							double widthDiff = abs( width - lastestWidth );
+							if ( widthDiff > MAX_ACCEPTABLE_WIDTH_DIFF_BETWEEN_ADJACENT_LANE_PARTS ) continue;
+
+							widthRating = 10.0 * (MAX_ACCEPTABLE_WIDTH_DIFF_BETWEEN_ADJACENT_LANE_PARTS - widthDiff)
+									/ MAX_ACCEPTABLE_WIDTH_DIFF_BETWEEN_ADJACENT_LANE_PARTS;
+						}
+
+						double colorRating = 0;
+						if ( it_part->errorCode != sb::UNKNOWN ) {
+							double colorDiff = calculateDeltaE( it_part->part.laneColor, lastestPart.part.laneColor );
+							if ( colorDiff > MAX_ACCEPTABLE_COLOR_DIFF_BETWEEN_ADJACENT_LANE_PARTS ) continue;
+
+							colorRating = 10.0 * (MAX_ACCEPTABLE_COLOR_DIFF_BETWEEN_ADJACENT_LANE_PARTS - colorDiff)
+									/ MAX_ACCEPTABLE_COLOR_DIFF_BETWEEN_ADJACENT_LANE_PARTS;
+						}
+
+						tempRating = 0.3 * posRating + 0.4 * widthRating + 0.3 * colorRating;
+					}
+
+					lanes.push( std::make_pair( tempParts, tempRating ) );
+				}
+			}
+		}
+
+		while ( !lanes.empty() ) {
+			if ( lanes.front().second > highestRating ) {
+				bestLaneParts = lanes.front().first;
+			}
+			lanes.pop();
+		}
+	}
+
+	// TODO: situation that has no lane parts detected
 
 	return 0;
 }
@@ -194,8 +281,7 @@ void sb::LaneComponent::findFirstLaneParts( const sb::Section& firstSection, con
 
 			getPartColor( colorImage, lanePart );
 
-			double distanceToWhite = getColorDistance( lanePart.laneColor, cv::Vec3b( 255, 255, 255 ) );
-
+			double distanceToWhite = calculateDeltaE( lanePart.laneColor, cv::Vec3b( 255, 255, 255 ) );
 			if ( distanceToWhite > MAX_ACCEPTABLE_DISTANCE_TO_WHITE_COLOR ) continue;
 
 			firstLaneParts.push_back( lanePart );
@@ -223,11 +309,12 @@ void sb::LaneComponent::findNextLaneParts( const sb::Section& section, const cv:
 
 		double angleDiff1 = abs( lastestLanePart.innerLine.getAngle() - it_line->getAngle() );
 		double angleDiff2 = abs( lastestLanePart.outerLine.getAngle() - it_line->getAngle() );
-		if ( angleDiff1 > MAX_ACCEPTABLE_ANGLE_DIFF_BETWEEN_ADJACENT_LINES
-			&& angleDiff2 > MAX_ACCEPTABLE_ANGLE_DIFF_BETWEEN_ADJACENT_LINES )
+		if ( angleDiff1 > MAX_ACCEPTABLE_ANGLE_DIFF_BETWEEN_ADJACENT_LANE_PARTS
+			&& angleDiff2 > MAX_ACCEPTABLE_ANGLE_DIFF_BETWEEN_ADJACENT_LANE_PARTS )
 			continue;
 
 		lines.push_back( *it_line );
+
 	}
 
 	// TODO: xét trường hợp có một line, nhưng line đó khớp cao -> thêm vào + cộng điểm
@@ -274,8 +361,8 @@ void sb::LaneComponent::findNextLaneParts( const sb::Section& section, const cv:
 
 			getPartColor( colorImage, lanePart );
 
-			double colorDiff = getColorDistance( lanePart.laneColor, lastestLanePart.laneColor );
-			if ( colorDiff > MAX_ACCEPTABLE_DISTANCE_COLOR_BETWEEN_LINE )break;
+			double colorDiff = calculateDeltaE( lanePart.laneColor, lastestLanePart.laneColor );
+			if ( colorDiff > MAX_ACCEPTABLE_COLOR_DIFF_BETWEEN_ADJACENT_LANE_PARTS )break;
 
 			double angleDiffWithLastest = abs( lastestLanePart.innerLine.getAngle() - lanePart.innerLine.getAngle() );
 			if ( angleDiffWithLastest > MAX_ACCEPTABLE_ANGLE_DIFF_BETWEEN_ADJACENT_LANE_PARTS ) continue;
@@ -293,8 +380,8 @@ void sb::LaneComponent::findNextLaneParts( const sb::Section& section, const cv:
 			double posRating = 10.0 * (MAX_ACCEPTABLE_POSITION_DIFF_BETWEEN_ADJACENT_LANE_PARTS - posDiffWithLastest)
 					/ MAX_ACCEPTABLE_POSITION_DIFF_BETWEEN_ADJACENT_LANE_PARTS;
 
-			double colorRating = 10.0 * (MAX_ACCEPTABLE_DISTANCE_COLOR_BETWEEN_LINE - colorDiff)
-					/ MAX_ACCEPTABLE_DISTANCE_COLOR_BETWEEN_LINE;
+			double colorRating = 10.0 * (MAX_ACCEPTABLE_COLOR_DIFF_BETWEEN_ADJACENT_LANE_PARTS - colorDiff)
+					/ MAX_ACCEPTABLE_COLOR_DIFF_BETWEEN_ADJACENT_LANE_PARTS;
 
 			double rating = 0.4 * posRating + 0.4 * widthRating + 0.2 * colorRating;
 			nextLaneParts.push_back( std::pair<sb::LanePart, double>( lanePart, rating ) );
@@ -327,9 +414,9 @@ void sb::LaneComponent::findBestFullLaneParts( const std::vector<sb::Section>& s
 		std::pair<std::vector<sb::LanePart>, double> parts = stackParts.top();
 		stackParts.pop();
 
-#ifdef SB_DEBUG
+/*#ifdef SB_DEBUG
 		{
-			for ( int i = 0; i < 2; i++ ) {
+			for ( int i = 0; i < 3; i++ ) {
 				cv::Mat img = debugImages[i].clone();
 
 				for ( const auto& part : parts.first ) {
@@ -340,7 +427,7 @@ void sb::LaneComponent::findBestFullLaneParts( const std::vector<sb::Section>& s
 				cv::waitKey( 200 );
 			}
 		}
-#endif //show and sequence of lane parts
+#endif*/ //show and sequence of lane parts
 
 		// finish a lane
 		if ( parts.first.size() == sections.size() ) {
@@ -348,17 +435,13 @@ void sb::LaneComponent::findBestFullLaneParts( const std::vector<sb::Section>& s
 
 			if ( parts.second > fullLaneRating ) {
 
-#ifdef SB_DEBUG
-				for ( int i = 0; i < 2; i++ ) {
+/*#ifdef SB_DEBUG
+				for ( int i = 0; i < 3; i++ ) {
 					cv::Mat img = debugImages[i].clone();
 
-					std::cout << "Distance to white: ";
 					for ( const auto& part : parts.first ) {
 						drawLanePart( img, part );
-						double distanceToWhite = getColorDistance( part.laneColor, cv::Vec3b( 255, 255, 255 ) );
-						std::cout << (int) distanceToWhite << " ";
 					}
-					std::cout << std::endl;
 
 					std::stringstream stringBuilder;
 					stringBuilder << "Rating: " << parts.second;
@@ -366,7 +449,7 @@ void sb::LaneComponent::findBestFullLaneParts( const std::vector<sb::Section>& s
 					cv::imshow( "Image " + std::to_string( i ), img );
 					cv::waitKey( 300 );
 				}
-#endif //show completed lane
+#endif*/ //show completed lane
 
 				fullLaneParts = parts.first;
 				fullLaneRating = parts.second;
@@ -389,13 +472,11 @@ void sb::LaneComponent::findBestFullLaneParts( const std::vector<sb::Section>& s
 		// push new lanes in to stack
 		for ( auto it_next_part = nextLaneParts.cbegin();
 		      it_next_part != nextLaneParts.cend(); ++it_next_part ) {
-			std::pair<std::vector<sb::LanePart>, double> tempParts;
+			std::vector<sb::LanePart> tempParts( parts.first.cbegin(), parts.first.cend() );
+			tempParts.push_back( it_next_part->first );
 
-			tempParts.first = std::vector<sb::LanePart>( parts.first.cbegin(), parts.first.cend() );
-			tempParts.first.push_back( it_next_part->first );
-			tempParts.second = parts.second + it_next_part->second;
-
-			stackParts.push( tempParts );
+			double tempRating = parts.second + it_next_part->second;
+			stackParts.push( std::make_pair( tempParts, tempRating ) );
 		}
 	}
 }
@@ -415,34 +496,89 @@ int sb::LaneComponent::trackIndividualLanePart_PlanA( const sb::LanePart& part,
 			double angleError = it_inner->getAngle() - part.innerLine.getAngle();
 			if ( abs( angleError ) > MAX_ACCEPTABLE_ANGLE_ERROR_TRACK_LINE ) continue;
 
-			double posError = it_inner->getBottomPoint().x - it_inner->getBottomPoint().x;
+			double posError = it_inner->getBottomPoint().x - part.innerLine.getBottomPoint().x;
 			if ( abs( posError ) > MAX_ACCEPTABLE_POSITION_ERROR_TRACK_LINE ) continue;
 
 			for ( auto it_outer = it_inner + 1; it_outer != section.getImageLines().crend(); ++it_outer ) {
 
-				double width = it_inner->getBottomPoint().x - it_outer->getBottomPoint().x;
+ 				double width = it_inner->getBottomPoint().x - it_outer->getBottomPoint().x;
 				if ( width < _minLaneWidth || width > _maxLaneWidth ) continue;
 
 				double width2nd = it_inner->getTopPoint().x - it_outer->getTopPoint().x;
 				if ( width2nd < 0 || width2nd - width > 2 ) continue;
 
 				double widthError = abs( width - previousWidth ) / previousWidth;
-				if ( widthError > MAX_ACCEPTABLE_WIDTH_ERROR_TRACK_LINE ) continue;
+				if ( widthError > MAX_ACCEPTABLE_WIDTH_ERROR_TRACK_LANE ) continue;
 
-				// TODO: color error
+				bool hasSimilarPart = false;
+				for ( auto it_old_result = trackResults.cbegin();
+				      it_old_result != trackResults.cend(); ++it_old_result ) {
+					if ( abs( it_inner->getBottomPoint().x - it_old_result->part.innerLine.getBottomPoint().x ) < POSITION_THRESH_FOR_SIMILAR_LANE
+						&& abs( it_outer->getBottomPoint().x - it_old_result->part.outerLine.getBottomPoint().x ) < POSITION_THRESH_FOR_SIMILAR_LANE
+						&& abs( it_inner->getTopPoint().x - it_old_result->part.innerLine.getTopPoint().x ) < POSITION_THRESH_FOR_SIMILAR_LANE
+						&& abs( it_outer->getTopPoint().x - it_old_result->part.outerLine.getTopPoint().x ) < POSITION_THRESH_FOR_SIMILAR_LANE ) {
+						hasSimilarPart = true;
+						break;
+					}
+				}
+				if ( hasSimilarPart ) continue;
 
-				// TODO: calculate rating
+				cv::Vec3b laneColor = getColorBetweenLines( colorImage, *it_inner, *it_outer );
+				double colorError = calculateDeltaE( laneColor, part.laneColor );
+				if ( colorError > MAX_ACCEPTABLE_COLOR_ERROR_TRACK_LANE ) continue;
 
 				sb::LanePartInfo lanePartInfo;
+				lanePartInfo.part.innerLine = *it_inner;
+				lanePartInfo.part.outerLine = *it_outer;
+				lanePartInfo.part.laneColor = laneColor;
+				lanePartInfo.errorPosition = posError;
+				lanePartInfo.errorAngle = angleError;
+				lanePartInfo.errorWidth = widthError;
+				lanePartInfo.errorColor = colorError;
+				lanePartInfo.errorCode = sb::BOTH_LINE_ATTACHED;
 
 				trackResults.push_back( lanePartInfo );
+
+#ifdef SB_DEBUG
+				for ( int i = 0; i < 2; i++ ) {
+					cv::Mat img = debugImages[i].clone();
+					drawLanePart( img, lanePartInfo.part );
+					cv::imshow( "Image " + std::to_string( i ), img );
+				} {
+					cv::Mat img( 640, 480, CV_8UC3, cv::Scalar( 0, 0, 0 ) );
+					std::stringstream stringBuilder;
+
+					stringBuilder << "Error position: " << lanePartInfo.errorPosition;
+					cv::putText( img, stringBuilder.str(), cv::Point( 30, 15 ), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 255, 255, 255 ) );
+					stringBuilder.str( "" );
+
+					stringBuilder << "Error angle: " << lanePartInfo.errorAngle;
+					cv::putText( img, stringBuilder.str(), cv::Point( 30, 40 ), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 255, 255, 255 ) );
+					stringBuilder.str( "" );
+
+					stringBuilder << "Error width: " << static_cast<int>(lanePartInfo.errorWidth * 100);
+					cv::putText( img, stringBuilder.str(), cv::Point( 30, 65 ), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 255, 255, 255 ) );
+					stringBuilder.str( "" );
+
+					stringBuilder << "Error color: " << lanePartInfo.errorColor;
+					cv::putText( img, stringBuilder.str(), cv::Point( 30, 90 ), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 255, 255, 255 ) );
+					stringBuilder.str( "" );
+
+					stringBuilder << "Error code: " << lanePartInfo.errorCode;
+					cv::putText( img, stringBuilder.str(), cv::Point( 30, 115 ), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 255, 255, 255 ) );
+					stringBuilder.str( "" );
+
+					cv::imshow( "Error", img );
+				}
+				cv::waitKey();
+#endif
+
 			}
 
 		}
 	}
 	else {
-
-		double previousWidth = part.outerLine.getBottomPoint().x - part.innerLine.getBottomPoint().x;
+		double previousWidth = part.innerLine.getBottomPoint().x - part.outerLine.getBottomPoint().x;
 
 		for ( auto it_inner = section.getImageLines().cbegin();
 		      it_inner != section.getImageLines().cend(); ++it_inner ) {
@@ -455,32 +591,36 @@ int sb::LaneComponent::trackIndividualLanePart_PlanA( const sb::LanePart& part,
 
 			for ( auto it_outer = it_inner + 1; it_outer != section.getImageLines().cend(); ++it_outer ) {
 
-				double width = it_outer->getBottomPoint().x - it_inner->getBottomPoint().x;
+				double width = it_inner->getBottomPoint().x - it_outer->getBottomPoint().x;
 				if ( width < _minLaneWidth || width > _maxLaneWidth ) continue;
 
-				double width2nd = it_outer->getTopPoint().x - it_inner->getTopPoint().x;
+				double width2nd = it_inner->getTopPoint().x - part.outerLine.getTopPoint().x;
 				if ( width2nd < 0 || width2nd - width > 2 ) continue;
 
 				double widthError = abs( width - previousWidth ) / previousWidth;
-				if ( widthError > MAX_ACCEPTABLE_WIDTH_ERROR_TRACK_LINE ) continue;
+				if ( widthError > MAX_ACCEPTABLE_WIDTH_ERROR_TRACK_LANE ) continue;
 
-				// TODO: color error
+				cv::Vec3b laneColor = getColorBetweenLines( colorImage, *it_inner, *it_outer );
+				double colorError = getColorDistance( laneColor, part.laneColor );
+				if ( colorError > MAX_ACCEPTABLE_COLOR_ERROR_TRACK_LANE ) continue;
 
-				// TODO: calculate rating
 				sb::LanePartInfo lanePartInfo;
-
-				// TODO: set lane part info
-				// TODO: set error state is BOTH_LINE_TRACKED
+				lanePartInfo.part.innerLine = *it_inner;
+				lanePartInfo.part.outerLine = *it_outer;
+				lanePartInfo.part.laneColor = laneColor;
+				lanePartInfo.errorPosition = posError;
+				lanePartInfo.errorAngle = angleError;
+				lanePartInfo.errorWidth = widthError;
+				lanePartInfo.errorColor = colorError;
+				lanePartInfo.errorCode = sb::BOTH_LINE_ATTACHED;
 
 				trackResults.push_back( lanePartInfo );
 			}
-
 		}
 	}
 
-	// TODO: return 0 if there're some good result
-
 	// TODO: return -1 if too few results received
+	if ( trackResults.empty() ) return -1;
 
 	return 0;
 }
@@ -491,6 +631,8 @@ int sb::LaneComponent::trackIndividualLanePart_PlanB( const sb::LanePart& part,
                                                       const cv::Mat& edgesImage,
                                                       std::vector<sb::LanePartInfo>& trackResults )
 {
+	// TODO: estimate outer line base on color
+
 	for ( auto it_inner = section.getImageLines().cbegin();
 	      it_inner != section.getImageLines().cend(); ++it_inner ) {
 
@@ -525,6 +667,8 @@ int sb::LaneComponent::trackIndividualLanePart_PlanC( const sb::LanePart& part,
                                                       const cv::Mat& edgesImage,
                                                       std::vector<sb::LanePartInfo>& trackResults )
 {
+	// TODO: estimate inner line base on color
+
 	for ( auto it_outer = section.getImageLines().cbegin();
 	      it_outer != section.getImageLines().cend(); ++it_outer ) {
 
@@ -559,6 +703,8 @@ int sb::LaneComponent::trackIndividualLanePart_PlanD( const sb::LanePart& part,
                                                       const cv::Mat& edgesImage,
                                                       std::vector<sb::LanePartInfo>& trackResults )
 {
+	// TODO: estimate inner and outer line base on color
+
 	// TODO: color check
 
 	// TODO: calculate rating
@@ -577,21 +723,24 @@ int sb::LaneComponent::trackIndividualLanePart_PlanD( const sb::LanePart& part,
 	return 0;
 }
 
-void sb::LaneComponent::concludeIndividualLanePart( const std::vector<sb::LanePartInfo>& trackedLaneParts ) { }
-
 void sb::LaneComponent::getPartColor( const cv::Mat& colorImage, sb::LanePart& part )
 {
-	cv::Point rectPoints[4] = {
-		cv::Point( static_cast<int>(MIN( colorImage.cols - 1, MAX( 0, part.innerLine.getTopPoint().x ) )),
-		           static_cast<int>(MIN( colorImage.rows - 1, MAX( 0, part.innerLine.getTopPoint().y ) )) ),
-		cv::Point( static_cast<int>(MIN( colorImage.cols - 1, MAX( 0, part.innerLine.getBottomPoint().x ) )),
-		           static_cast<int>(MIN( colorImage.rows - 1, MAX( 0,part.innerLine.getBottomPoint().y ) )) ),
-		cv::Point( static_cast<int>(MIN( colorImage.cols - 1, MAX( 0, part.outerLine.getBottomPoint().x ) )),
-		           static_cast<int>(MIN( colorImage.rows - 1, MAX( 0,part.outerLine.getBottomPoint().y ) )) ) ,
-		cv::Point( static_cast<int>(MIN( colorImage.cols - 1, MAX( 0, part.outerLine.getTopPoint().x ) )),
-		           static_cast<int>(MIN( colorImage.rows - 1, MAX( 0,part.outerLine.getTopPoint().y ) )) ) };
+	part.laneColor = getColorBetweenLines( colorImage, part.innerLine, part.outerLine );
+}
 
-	part.laneColor = getMainColor( colorImage, rectPoints );
+cv::Vec3b sb::LaneComponent::getColorBetweenLines( const cv::Mat& colorImage, const sb::LineInfo& l1, const sb::LineInfo l2 )
+{
+	cv::Point rectPoints[4] = {
+		cv::Point( static_cast<int>(MIN( colorImage.cols - 1, MAX( 0, l1.getTopPoint().x ) )),
+		           static_cast<int>(MIN( colorImage.rows - 1, MAX( 0, l1.getTopPoint().y ) )) ),
+		cv::Point( static_cast<int>(MIN( colorImage.cols - 1, MAX( 0, l1.getBottomPoint().x ) )),
+		           static_cast<int>(MIN( colorImage.rows - 1, MAX( 0,l1.getBottomPoint().y ) )) ),
+		cv::Point( static_cast<int>(MIN( colorImage.cols - 1, MAX( 0, l2.getBottomPoint().x ) )),
+		           static_cast<int>(MIN( colorImage.rows - 1, MAX( 0,l2.getBottomPoint().y ) )) ) ,
+		cv::Point( static_cast<int>(MIN( colorImage.cols - 1, MAX( 0, l2.getTopPoint().x ) )),
+		           static_cast<int>(MIN( colorImage.rows - 1, MAX( 0,l2.getTopPoint().y ) )) ) };
+
+	return getMainColor( colorImage, rectPoints );
 }
 
 cv::Vec3b sb::LaneComponent::getMainColor( const cv::Mat image, const cv::Point rectPoints[4] )
@@ -687,6 +836,121 @@ double sb::LaneComponent::getColorDistance( const cv::Vec3b& color1, const cv::V
 	double d = std::sqrt( diff[0] * diff[0] + diff[1] * diff[1] + diff[2] * diff[2] );
 
 	return d;
+}
+
+cv::Vec3f sb::LaneComponent::cvtColorBGRtoLab( const cv::Vec3b& bgr )
+{
+	cv::Mat3f bgrMat = cv::Mat3f::zeros( 1, 1 );
+	bgrMat.at<cv::Vec3f>( 0, 0 ) = (cv::Vec3f( bgr.val[0] / 255.0f, bgr.val[1] / 255.0f, bgr.val[2] / 255.0f ));
+
+	cv::Mat3f lab;
+	cvtColor( bgrMat, lab, cv::COLOR_BGR2Lab );
+
+	return lab.at<cv::Vec3f>( cv::Point( 0, 0 ) );
+}
+
+double sb::LaneComponent::calculateDeltaE( const cv::Vec3f& bgr1, const cv::Vec3f& bgr2, double kL, double kC, double kH )
+{
+	cv::Vec3f lab1 = cvtColorBGRtoLab( bgr1 );
+	cv::Vec3f lab2 = cvtColorBGRtoLab( bgr2 );
+
+	double C1 = sqrt( lab1[1] * lab1[1] + lab1[2] * lab1[2] );
+	double C2 = sqrt( lab2[1] * lab2[1] + lab2[2] * lab2[2] );
+
+	double barC = (C1 + C2) / 2.0;
+
+	double G = 0.5 * (1 - sqrt( pow( barC, 7 ) / (pow( barC, 7 ) + pow( 25, 7 )) ));
+
+	double a1Prime = (1.0 + G) * lab1[1];
+	double a2Prime = (1.0 + G) * lab2[1];
+
+	double CPrime1 = sqrt( (a1Prime * a1Prime) + (lab1[2] * lab1[2]) );
+	double CPrime2 = sqrt( (a2Prime * a2Prime) + (lab2[2] * lab2[2]) );
+
+	double hPrime1;
+	if ( lab1[2] == 0 && a1Prime == 0 )
+		hPrime1 = 0.0;
+	else {
+		hPrime1 = atan2( lab1[2], a1Prime );
+
+		if ( hPrime1 < 0 )
+			hPrime1 += CV_2PI;
+	}
+	double hPrime2;
+	if ( lab2[2] == 0 && a2Prime == 0 )
+		hPrime2 = 0.0;
+	else {
+		hPrime2 = atan2( lab2[2], a2Prime );
+
+		if ( hPrime2 < 0 )
+			hPrime2 += CV_2PI;
+	}
+
+	double deltaLPrime = lab2[0] - lab1[0];
+
+	double deltaCPrime = CPrime2 - CPrime1;
+
+	double deltahPrime;
+	double CPrimeProduct = CPrime1 * CPrime2;
+	if ( CPrimeProduct == 0 )
+		deltahPrime = 0;
+	else {
+		deltahPrime = hPrime2 - hPrime1;
+		if ( deltahPrime < -CV_PI )
+			deltahPrime += CV_2PI;
+		else if ( deltahPrime > CV_PI )
+			deltahPrime -= CV_2PI;
+	}
+
+	double deltaHPrime = 2.0 * sqrt( CPrimeProduct ) *
+			sin( deltahPrime / 2.0 );
+
+	double barLPrime = (lab1[0] + lab2[0]) / 2.0;
+
+	double barCPrime = (CPrime1 + CPrime2) / 2.0;
+
+	double barhPrime, hPrimeSum = hPrime1 + hPrime2;
+	if ( CPrime1 * CPrime2 == 0 ) {
+		barhPrime = hPrimeSum;
+	}
+	else {
+		if ( fabs( hPrime1 - hPrime2 ) <= CV_PI )
+			barhPrime = hPrimeSum / 2.0;
+		else {
+			if ( hPrimeSum < CV_2PI )
+				barhPrime = (hPrimeSum + CV_2PI) / 2.0;
+			else
+				barhPrime = (hPrimeSum - CV_2PI) / 2.0;
+		}
+	}
+
+	double T = 1.0 - (0.17 * cos( barhPrime - (CV_PI * 30 / 180) )) +
+			(0.24 * cos( 2.0 * barhPrime )) +
+			(0.32 * cos( (3.0 * barhPrime) + (CV_PI * 6 / 180) )) -
+			(0.20 * cos( (4.0 * barhPrime) - (CV_PI * 63 / 180) ));
+
+	double deltaTheta = (CV_PI * 30 / 180) *
+			exp( -pow( (barhPrime - (CV_PI * 275 / 180)) / (CV_PI * 25 / 180), 2.0 ) );
+
+	double R_C = 2.0 * sqrt( pow( barCPrime, 7.0 ) /
+	                        (pow( barCPrime, 7.0 ) + pow( 25, 7 )) );
+
+	double S_L = 1 + ((0.015 * pow( barLPrime - 50.0, 2.0 )) /
+		sqrt( 20 + pow( barLPrime - 50.0, 2.0 ) ));
+
+	double S_C = 1 + (0.045 * barCPrime);
+
+	double S_H = 1 + (0.015 * barCPrime * T);
+
+	double R_T = (-sin( 2.0 * deltaTheta )) * R_C;
+
+	double deltaE = sqrt(
+	                     pow( deltaLPrime / (kL * S_L), 2.0 ) +
+	                     pow( deltaCPrime / (kC * S_C), 2.0 ) +
+	                     pow( deltaHPrime / (kH * S_H), 2.0 ) +
+	                     (R_T * (deltaCPrime / (kC * S_C)) * (deltaHPrime / (kH * S_H))) );
+
+	return deltaE;
 }
 
 #ifdef SB_DEBUG
