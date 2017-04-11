@@ -2,6 +2,7 @@
 #define __SB_CALCULATOR_H__
 
 #include "../Params.h"
+#include "../Timer.h"
 #include "../collector/RawContent.h"
 #include "FrameInfo.h"
 #include "Formatter.h"
@@ -10,26 +11,26 @@
 
 namespace sb
 {
-class Calculator
+struct Calculator
 {
-private:
-	sb::EdgeDetector _edgeDetector;
-	sb::LineDetector _lineDetector;
+	sb::EdgeDetector edgeDetector;
+	sb::LineDetector lineDetector;
 
-	cv::Rect _cropBox;
-	std::vector<cv::Rect> _splitBoxes;
-
-public:
-	Calculator() {};
-
-	int init( const sb::Params& params );
-
-	int calculate( const sb::RawContent& rawContent,
-	               sb::FrameInfo& frameInfo ) const;
-
-	void release();
+	cv::Rect cropBox;
+	std::vector<cv::Rect> splitBoxes;
 };
+
+void construct( sb::Calculator*& calculator );
+
+void destruct( sb::Calculator*& calculator );
+
+int init( sb::Calculator* calculator, sb::Params* params );
+
+int calculate( sb::Calculator* calculator,
+               sb::RawContent* rawContent,
+               sb::FrameInfo* frameInfo );
+
+void release( sb::Calculator* calculator );
 }
 
 #endif //!__SB_CALCULATOR_H__
-

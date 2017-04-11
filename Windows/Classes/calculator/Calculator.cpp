@@ -1,33 +1,43 @@
 #include "Calculator.h"
-#include "../Timer.h"
 
-int sb::Calculator::init( const sb::Params& params )
+void sb::construct( sb::Calculator*& calculator )
 {
-	_edgeDetector = sb::EdgeDetector( params.EDGE_DETECTOR_KERNEL_SIZE,
-	                                  params.EDGE_DETECTOR_LOW_THRESH,
-	                                  params.EDGE_DETECTOR_HIGH_THRESH,
-	                                  params.BINARIZE_THRESH,
-	                                  params.BINARIZE_MAX_VALUE );
+	calculator = new Calculator;
+}
 
-	_lineDetector = sb::LineDetector( params.HOUGH_LINES_P_RHO,
-	                                  params.HOUGH_LINES_P_THETA,
-	                                  params.HOUGH_LINES_P_THRESHOLD,
-	                                  params.HOUGH_LINES_P_MIN_LINE_LENGTH,
-	                                  params.HOUGH_LINES_P_MAX_LINE_GAP );
+void sb::destruct( sb::Calculator*& calculator )
+{
+	delete calculator;
+	calculator = nullptr;
+}
 
-	_cropBox = params.CROP_BOX;
+int sb::init( sb::Calculator* calculator, sb::Params* params )
+{
+	calculator->edgeDetector = sb::EdgeDetector( params->EDGE_DETECTOR_KERNEL_SIZE,
+	                                             params->EDGE_DETECTOR_LOW_THRESH,
+	                                             params->EDGE_DETECTOR_HIGH_THRESH,
+	                                             params->BINARIZE_THRESH,
+	                                             params->BINARIZE_MAX_VALUE );
+
+	calculator->lineDetector = sb::LineDetector( params->HOUGH_LINES_P_RHO,
+	                                             params->HOUGH_LINES_P_THETA,
+	                                             params->HOUGH_LINES_P_THRESHOLD,
+	                                             params->HOUGH_LINES_P_MIN_LINE_LENGTH,
+	                                             params->HOUGH_LINES_P_MAX_LINE_GAP );
+
+	calculator->cropBox = params->CROP_BOX;
 
 	std::vector<double> _splitRatio = { 0.2, 0.25, 0.25, 0.3 };
 
-	_splitBoxes.clear(); {
+	calculator->splitBoxes.clear(); {
 		int y = 0;
 		for ( double ratio : _splitRatio ) {
-			int h = static_cast<int>(round( 1.0 * params.CROP_BOX.height * ratio ));
+			int h = static_cast<int>(round( 1.0 * params->CROP_BOX.height * ratio ));
 
-			if ( y + h > params.CROP_BOX.height ) h = params.CROP_BOX.height - y;
+			if ( y + h > params->CROP_BOX.height ) h = params->CROP_BOX.height - y;
 
-			cv::Rect box( 0, y, params.CROP_BOX.width, h );
-			_splitBoxes.push_back( box );
+			cv::Rect box( 0, y, params->CROP_BOX.width, h );
+			calculator->splitBoxes.push_back( box );
 			y += h;
 		}
 	}
@@ -35,45 +45,40 @@ int sb::Calculator::init( const sb::Params& params )
 	return 0;
 }
 
-int sb::Calculator::calculate( const sb::RawContent& rawContent,
-                               sb::FrameInfo& frameInfo ) const
+int sb::calculate( sb::Calculator* calculator,
+                   sb::RawContent* rawContent,
+                   sb::FrameInfo* frameInfo )
 {
 	// 1) color image
-	cv::Mat colorImage;
 
 	// crop to correct format
-	if ( _cropBox.x < 0 || _cropBox.y < 0 ||
-		_cropBox.x + _cropBox.width > rawContent.getColorImage().cols ||
-		_cropBox.y + _cropBox.height > rawContent.getColorImage().rows ) {
+	if ( calculator->cropBox.x < 0 || calculator->cropBox.y < 0 ||
+		calculator->cropBox.x + calculator->cropBox.width > rawContent->colorImage.cols ||
+		calculator->cropBox.y + calculator->cropBox.height > rawContent->colorImage.rows ) {
 		std::cerr << "Input image and crop box aren't suitable." << std::endl;
 		return -1;
 	}
-	colorImage = rawContent.getColorImage()( _cropBox );
+	frameInfo->colorImage = rawContent->colorImage( calculator->cropBox );
 
 	// flip to natural direction ( input image from camera was flipped )
-	cv::flip( colorImage, colorImage, 1 );
-	
-	frameInfo.setColorImage( colorImage );
+	cv::flip( frameInfo->colorImage, frameInfo->colorImage, 1 );
 
 	// 2) generate edges-frame
-	cv::Mat edgesFrame;
-	cv::cvtColor( colorImage, edgesFrame, cv::COLOR_BGR2GRAY );
-	_edgeDetector.apply( edgesFrame );
-
-	frameInfo.setEdgesImage( edgesFrame );
+	cv::cvtColor( frameInfo->colorImage, frameInfo->edgesImage, cv::COLOR_BGR2GRAY );
+	calculator->edgeDetector.apply( frameInfo->edgesImage );
 
 	// 3) generate sections
-	std::vector<sb::Section> sections;
-	sections.reserve( 5 );
-	for ( auto it = _splitBoxes.crbegin(); it != _splitBoxes.crend(); ++it ) {
-		sections.push_back( sb::Section( edgesFrame, *it ) );
+	frameInfo->imageSections.clear();
+	frameInfo->imageSections.reserve( 5 );
+	for ( auto it = calculator->splitBoxes.crbegin(); it != calculator->splitBoxes.crend(); ++it ) {
+		frameInfo->imageSections.push_back( sb::Section( frameInfo->edgesImage, *it ) );
 	}
 
 	// 4) generate lines for each section
 
-	for ( auto it_section = sections.begin(); it_section != sections.end(); ++it_section ) {
+	for ( auto it_section = frameInfo->imageSections.begin(); it_section != frameInfo->imageSections.end(); ++it_section ) {
 		std::vector<sb::Line> lines;
-		_lineDetector.apply( it_section->getBinaryImage(), lines );
+		calculator->lineDetector.apply( it_section->getBinaryImage(), lines );
 
 		std::vector<sb::LineInfo> lineInfos;
 		lineInfos.reserve( lines.size() );
@@ -102,9 +107,8 @@ int sb::Calculator::calculate( const sb::RawContent& rawContent,
 
 		it_section->setImageLines( lineInfos );
 	}
-	frameInfo.setImageSections( sections );
 
 	return 0;
 }
 
-void sb::Calculator::release() {}
+void sb::release( sb::Calculator* calculator ) {}

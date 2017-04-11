@@ -3,17 +3,17 @@
 #include "../Classes/Timer.h"
 #include <conio.h>
 
-int init( sb::Collector& collector,
-          sb::Calculator& calculator,
-          const sb::Params& params );
+int init( sb::Collector* collector,
+          sb::Calculator* calculator,
+          sb::Params* params );
 
-void test( const sb::Collector& collector,
-           const sb::Calculator& calculator,
-           const sb::RawContent& rawContent,
-           const sb::FrameInfo& frameInfo );
+void test( sb::Collector* collector,
+           sb::Calculator* calculator,
+           sb::RawContent* rawContent,
+           sb::FrameInfo* frameInfo );
 
-void release( sb::Collector& collector,
-              sb::Calculator& calculator );
+void release( sb::Collector* collector,
+              sb::Calculator* calculator );
 
 int main( const int argc, const char** argv )
 {
@@ -23,22 +23,28 @@ int main( const int argc, const char** argv )
 	}
 
 	// Application parameters
-	sb::Params params;
-	params.load( argv[1] );
+	sb::Params* params;
+	sb::construct( params );
+	sb::load( params, argv[1] );
 
 	// Timer for performance test
 	sb::Timer timer;
 
 	// Data sent&receive between components
-	sb::RawContent rawContent;
-	rawContent.create( params );
+	sb::RawContent* rawContent;
+	sb::construct( rawContent );
+	sb::create( rawContent, params );
 
-	sb::FrameInfo frameInfo;
-	frameInfo.create( params );
+	sb::FrameInfo* frameInfo;
+	sb::construct( frameInfo );
+	sb::create( frameInfo, params );
 
 	// Main components
-	sb::Collector collector;
-	sb::Calculator calculator;
+	sb::Collector* collector;
+	sb::construct( collector );
+
+	sb::Calculator* calculator;
+	sb::construct( calculator );
 
 	// Init components
 	if ( init( collector, calculator, params ) < 0 ) {
@@ -61,7 +67,7 @@ int main( const int argc, const char** argv )
 		////// <Collector> /////
 
 		timer.reset( "collector" );
-		if ( collector.collect( rawContent ) < 0 ) {
+		if ( sb::collect( collector, rawContent ) < 0 ) {
 			std::cerr << "Collector collect failed." << std::endl;
 			break;
 		}
@@ -72,7 +78,7 @@ int main( const int argc, const char** argv )
 		////// <Calculator> /////
 
 		timer.reset( "calculator" );
-		if ( calculator.calculate( rawContent, frameInfo ) < 0 ) {
+		if ( sb::calculate( calculator, rawContent, frameInfo ) < 0 ) {
 			std::cerr << "Calculator calculate failed." << std::endl;
 			break;
 		}
@@ -102,19 +108,26 @@ int main( const int argc, const char** argv )
 
 	// Release components
 	release( collector, calculator );
+
+	sb::destruct( params );
+	sb::destruct( rawContent );
+	sb::destruct( frameInfo );
+	sb::destruct( collector );
+	sb::destruct( calculator );
+
 	return 0;
 }
 
-int init( sb::Collector& collector,
-          sb::Calculator& calculator,
-          const sb::Params& params )
+int init( sb::Collector* collector,
+          sb::Calculator* calculator,
+          sb::Params* params )
 {
-	if ( collector.init( params ) < 0 ) {
+	if ( sb::init( collector, params ) < 0 ) {
 		std::cerr << "Collector init failed." << std::endl;
 		return -1;
 	}
 
-	if ( calculator.init( params ) < 0 ) {
+	if ( sb::init( calculator, params ) < 0 ) {
 		std::cerr << "Calculator init failed." << std::endl;
 		return -1;
 	}
@@ -122,22 +135,22 @@ int init( sb::Collector& collector,
 	return 0;
 }
 
-void test( const sb::Collector& collector,
-           const sb::Calculator& calculator,
-           const sb::RawContent& rawContent,
-           const sb::FrameInfo& frameInfo )
+void test( sb::Collector* collector,
+					 sb::Calculator* calculator,
+					 sb::RawContent* rawContent,
+					 sb::FrameInfo* frameInfo )
 {
 	// debug each line in section
 	cv::Mat images[3];
 
 	// edges image
-	images[0] = frameInfo.getEdgesImage().clone();
+	images[0] = frameInfo->edgesImage.clone();
 	cv::cvtColor( images[0], images[0], cv::COLOR_GRAY2BGR );
 
 	// lines image
-	images[1] = cv::Mat( frameInfo.getColorImage().size(), CV_8UC3, cv::Scalar( 0, 0, 0 ) );
-	for ( auto it_section = frameInfo.getImageSections().cbegin();
-	      it_section != frameInfo.getImageSections().cend(); ++it_section ) {
+	images[1] = cv::Mat( frameInfo->colorImage.size(), CV_8UC3, cv::Scalar( 0, 0, 0 ) );
+	for ( auto it_section = frameInfo->imageSections.cbegin();
+	      it_section != frameInfo->imageSections.cend(); ++it_section ) {
 
 		for ( auto it_line = it_section->getImageLines().begin();
 		      it_line != it_section->getImageLines().end(); ++it_line ) {
@@ -149,12 +162,12 @@ void test( const sb::Collector& collector,
 	}
 
 	// color image
-	images[2] = frameInfo.getColorImage().clone();
+	images[2] = frameInfo->colorImage.clone();
 
 	// debug
 	for ( int i = 0; i < 3; i++ ) {
-		for ( auto it_section = frameInfo.getImageSections().cbegin();
-		      it_section != frameInfo.getImageSections().cend(); ++it_section ) {
+		for ( auto it_section = frameInfo->imageSections.cbegin();
+		      it_section != frameInfo->imageSections.cend(); ++it_section ) {
 			cv::line( images[i],
 			          cv::Point2d( 0, it_section->getTopLine().getStartingPoint().y ),
 			          cv::Point2d( images[i].cols - 1, it_section->getTopLine().getStartingPoint().y ),
@@ -166,8 +179,8 @@ void test( const sb::Collector& collector,
 		}
 	}
 
-	for ( auto it_section = frameInfo.getImageSections().cbegin();
-	      it_section != frameInfo.getImageSections().cend(); ++it_section ) {
+	for ( auto it_section = frameInfo->imageSections.cbegin();
+	      it_section != frameInfo->imageSections.cend(); ++it_section ) {
 
 		for ( auto it_line = it_section->getImageLines().cbegin();
 		      it_line != it_section->getImageLines().cend(); ++it_line ) {
@@ -223,10 +236,10 @@ void test( const sb::Collector& collector,
 	}
 }
 
-void release( sb::Collector& collector,
-              sb::Calculator& calculator )
+void release( sb::Collector* collector,
+              sb::Calculator* calculator )
 {
-	calculator.release();
+	sb::release( calculator );
 
-	collector.release();
+	sb::release( collector );
 }

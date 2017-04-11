@@ -6,33 +6,21 @@
 
 namespace sb
 {
-class FrameInfo
+struct FrameInfo
 {
-private:
-	cv::Mat _colorImage;
+	cv::Mat colorImage;
 
-	cv::Mat _edgesImage;
+	cv::Mat edgesImage;
 
-	std::vector<sb::Section> _imageSections;
-public:
-	FrameInfo() {}
-
-	void create( const sb::Params& params );
-
-	const cv::Mat& getColorImage() const;
-
-	void setColorImage( const cv::Mat& colorImage );
-
-	const std::vector<sb::Section>& getImageSections() const;
-
-	void setImageSections( const std::vector<sb::Section>& imageSections );
-
-	const cv::Mat& getEdgesImage() const;
-
-	void setEdgesImage( const cv::Mat& edgesImage );
-
+	std::vector<sb::Section> imageSections;
 };
+
+void construct( sb::FrameInfo*& frameInfo );
+
+void destruct( sb::FrameInfo*& frameInfo );
+
+void create( sb::FrameInfo* frameInfo, sb::Params* params );
+
 }
 
 #endif //!__SB_FRAME_INFO_H__
-
