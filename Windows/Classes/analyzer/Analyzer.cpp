@@ -51,10 +51,12 @@ void sb::Analyzer::release() {}
 int sb::Analyzer::firstAnalyze( const sb::FrameInfo& frameInfo,
                                 sb::RoadInfo& roadInfo )
 {
+	sb::Timer timer;
+	timer.reset( "find" );
 	if ( _leftLane.find( frameInfo ) < 0 ) return -1;
 	if ( _rightLane.find( frameInfo ) < 0 ) return -1;
+	std::cout << "find: " << timer.milliseconds( "find" ) << "ms." << std::endl;
 
-#ifdef SB_DEBUG
 	cv::Mat colorImage = frameInfo.getColorImage();
 
 	auto it_left_part = _leftLane.getParts().cbegin();
@@ -72,7 +74,6 @@ int sb::Analyzer::firstAnalyze( const sb::FrameInfo& frameInfo,
 
 	cv::imshow( "Analyzer", colorImage );
 	cv::waitKey();
-#endif
 
 	return 0;
 }
@@ -80,8 +81,25 @@ int sb::Analyzer::firstAnalyze( const sb::FrameInfo& frameInfo,
 int sb::Analyzer::trackAnalyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInfo )
 {
 	_leftLane.track( frameInfo );
-
 	_rightLane.track( frameInfo );
+
+	cv::Mat colorImage = frameInfo.getColorImage();
+
+	auto it_left_part = _leftLane.getParts().cbegin();
+	auto it_right_part = _rightLane.getParts().cbegin();
+	for ( ; it_left_part != _leftLane.getParts().cend(); ++it_left_part , ++it_right_part ) {
+		cv::line( colorImage,
+		          it_left_part->part.innerLine.getBottomPoint(), it_left_part->part.innerLine.getTopPoint(), cv::Scalar( 0, 255, 0 ), 2 );
+		cv::line( colorImage,
+		          it_left_part->part.outerLine.getBottomPoint(), it_left_part->part.outerLine.getTopPoint(), cv::Scalar( 0, 255, 0 ), 2 );
+		cv::line( colorImage,
+		          it_right_part->part.innerLine.getBottomPoint(), it_right_part->part.innerLine.getTopPoint(), cv::Scalar( 0, 255, 0 ), 2 );
+		cv::line( colorImage,
+		          it_right_part->part.outerLine.getBottomPoint(), it_right_part->part.outerLine.getTopPoint(), cv::Scalar( 0, 255, 0 ), 2 );
+	}
+
+	cv::imshow( "Analyzer", colorImage );
+	cv::waitKey();
 
 	/*
 	 * _leftLane.track(frameInfo);
@@ -98,7 +116,6 @@ int sb::Analyzer::trackAnalyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& ro
 	 *
 	 *target = (_leftLane.getTop() + _rightLane.getTop())*0.5
 	 */
-
 
 	return 0;
 }
