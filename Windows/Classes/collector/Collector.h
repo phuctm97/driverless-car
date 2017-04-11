@@ -5,22 +5,21 @@
 
 namespace sb
 {
-class Collector
+struct Collector
 {
-private:
 	// sample input stream
-	cv::VideoCapture _tempCap;
-
-public:
-	Collector() {}
-
-	int init( const sb::Params& params );
-
-	int collect( sb::RawContent& rawContent );
-
-	void release();
+	cv::VideoCapture tempCap;
 };
+
+void construct( sb::Collector*& collector );
+
+void destruct( sb::Collector*& collector );
+
+int init( sb::Collector* collector, sb::Params* params );
+
+int collect( sb::Collector* collector, sb::RawContent* rawContent );
+
+void release( sb::Collector* collector );
 }
 
 #endif //!__SB_COLLECTOR_H__
-

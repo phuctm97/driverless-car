@@ -16,7 +16,3 @@ const cv::Mat& sb::FrameInfo::getEdgesImage() const { return _edgesImage; }
 
 void sb::FrameInfo::setEdgesImage( const cv::Mat& edgesImage ) { _edgesImage = edgesImage; }
 
-const cv::Mat& sb::FrameInfo::getHsvImage() const { return _hsvImage; }
-
-void sb::FrameInfo::setHsvImage( const cv::Mat& hsvImage ) { _hsvImage = hsvImage; }
-

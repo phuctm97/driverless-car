@@ -2,11 +2,6 @@
 #include "../Classes/Timer.h"
 #include <conio.h>
 
-int init( sb::Collector& collector,
-          const sb::Params& params );
-
-void release( sb::Collector& collector );
-
 int main( const int argc, const char** argv )
 {
 	if ( argc < 2 ) {
@@ -15,22 +10,25 @@ int main( const int argc, const char** argv )
 	}
 
 	// Application parameters
-	sb::Params params;
-	params.load( argv[1] );
+	sb::Params* params;
+	sb::construct( params );
+	sb::load( params, argv[1] );
 
 	// Timer for performance test
 	sb::Timer timer;
 
 	// Data sent&receive between components
-	sb::RawContent rawContent;
-	rawContent.create( params );
+	sb::RawContent* rawContent;
+	sb::construct( rawContent );
+	sb::create( rawContent, params );
 
 	// Main components
-	sb::Collector collector;
+	sb::Collector* collector;
+	sb::construct( collector );
 
 	// Init components
-	if ( init( collector, params ) < 0 ) {
-		std::cerr << "Init failed." << std::endl;
+	if( sb::init( collector, params ) < 0 ) {
+		std::cerr << "Collector init failed." << std::endl;
 		return -1;
 	}
 
@@ -46,7 +44,7 @@ int main( const int argc, const char** argv )
 	///// <Result-writer> /////
 	cv::VideoWriter colorAvi;
 	if ( argc > 2 ) {
-		colorAvi.open( argv[2], CV_FOURCC( 'M', 'J', 'P', 'G' ), 15, params.COLOR_FRAME_SIZE );
+		colorAvi.open( argv[2], CV_FOURCC( 'M', 'J', 'P', 'G' ), 15, params->COLOR_FRAME_SIZE );
 	}
 	///// </Result-writer> /////
 
@@ -56,7 +54,7 @@ int main( const int argc, const char** argv )
 		////// <Collector> /////
 
 		timer.reset( "collector" );
-		if ( collector.collect( rawContent ) < 0 ) {
+		if ( sb::collect( collector, rawContent ) < 0 ) {
 			std::cerr << "Collector collect failed." << std::endl;
 			break;
 		}
@@ -71,14 +69,14 @@ int main( const int argc, const char** argv )
 
 		///// <Test> //////
 
-		cv::imshow( "Window", rawContent.getColorImage() );
+		cv::imshow( "Window", rawContent->colorImage );
 		cv::waitKey( 33 );
 
 		///// </Test> /////
 
 		///// <Result-writer> /////
-		if ( colorAvi.isOpened() && !rawContent.getColorImage().empty() ) {
-			colorAvi << rawContent.getColorImage();
+		if ( colorAvi.isOpened() && !rawContent->colorImage.empty() ) {
+			colorAvi << rawContent->colorImage;
 		}
 		///// </Result-writer> /////
 
@@ -100,21 +98,9 @@ int main( const int argc, const char** argv )
 	colorAvi.release();
 	///// </Result-writer> /////
 
-	return 0;
-}
-
-int init( sb::Collector& collector,
-          const sb::Params& params )
-{
-	if ( collector.init( params ) < 0 ) {
-		std::cerr << "Collector init failed." << std::endl;
-		return -1;
-	}
+	sb::destruct( params );
+	sb::destruct( rawContent );
+	sb::destruct( collector );
 
 	return 0;
-}
-
-void release( sb::Collector& collector )
-{
-	collector.release();
 }

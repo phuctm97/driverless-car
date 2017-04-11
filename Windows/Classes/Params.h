@@ -40,14 +40,18 @@ struct Params
 	int MAX_VELOCITY = 45;
 	int INITIAL_VELOCITY = 10;
 
-	void load( const cv::String& yamlFileName );
-
 	void read( const cv::FileNode& node );
-
-	void save( const cv::String& yamlFileName ) const;
 
 	void write( cv::FileStorage& fs ) const;
 };
+
+void construct( sb::Params*& params );
+
+void destruct( sb::Params*& params );
+
+void load( sb::Params* params, const cv::String& yamlFileName );
+
+void save( sb::Params* params, const cv::String& yamlFileName );
 
 void write( cv::FileStorage& fs, const std::string&, const sb::Params& data );
 

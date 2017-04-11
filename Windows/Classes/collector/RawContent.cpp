@@ -1,11 +1,17 @@
 #include "RawContent.h"
 
-void sb::RawContent::create( const sb::Params & params )
+void sb::construct( sb::RawContent*& rawContent )
 {
-	_colorImage = cv::Mat::zeros( params.COLOR_FRAME_SIZE, CV_8UC3 );
+	rawContent = new RawContent;
 }
 
-const cv::Mat& sb::RawContent::getColorImage() const { return _colorImage; }
+void sb::destruct( sb::RawContent*& rawContent )
+{
+	delete rawContent;
+	rawContent = nullptr;
+}
 
-void sb::RawContent::setColorImage( const cv::Mat& colorImage ) { _colorImage = colorImage; }
-
+void sb::create( sb::RawContent* rawContent, sb::Params* params )
+{
+	rawContent->colorImage = cv::Mat::zeros( params->COLOR_FRAME_SIZE, CV_8UC3 );
+}

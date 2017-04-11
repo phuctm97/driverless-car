@@ -11,8 +11,6 @@ class FrameInfo
 private:
 	cv::Mat _colorImage;
 
-	cv::Mat _hsvImage;
-
 	cv::Mat _edgesImage;
 
 	std::vector<sb::Section> _imageSections;
@@ -33,9 +31,6 @@ public:
 
 	void setEdgesImage( const cv::Mat& edgesImage );
 
-	const cv::Mat& getHsvImage() const;
-
-	void setHsvImage( const cv::Mat& hsvImage );
 };
 }
 
