@@ -5,52 +5,25 @@
 
 namespace sb
 {
-class LineInfo
+struct LineInfo
 {
-private:
-	sb::Line _line;
+	sb::Line line;
 
-	double _length;
+	double length;
 
-	double _angle;
+	double angle;
 
-	cv::Point2d _middlePoint;
+	cv::Point2d middlePoint;
 
-	cv::Point2d _topPoint;
+	cv::Point2d topPoint;
 
-	cv::Point2d _bottomPoint;
+	cv::Point2d bottomPoint;
 
-	cv::Point2d _centerPoint;
-
-public:
-	LineInfo() {}
-
-	LineInfo( const sb::Line& line );
-
-	const sb::Line& getLine() const;
-
-	const cv::Point2d& getStartingPoint() const;
-
-	const cv::Point2d& getEndingPoint() const;
-
-	double getLength() const;
-
-	double getAngle() const;
-
-	const cv::Point2d& getMiddlePoint() const;
-
-	const cv::Point2d& getTopPoint() const;
-
-	void setTopPoint( const cv::Point2d& topPoint );
-
-	const cv::Point2d& getBottomPoint() const;
-
-	void setBottomPoint( const cv::Point2d& bottomPoint );
-
-	const cv::Point2d& getCenterPoint() const;
-
-	void setCenterPoint( const cv::Point2d& centerPoint );
+	cv::Point2d centerPoint;
 };
+
+void create( sb::LineInfo* lineInfo, const sb::Line& line );
+
 }
 
 #endif //!__SB_LINE_INFO_H__

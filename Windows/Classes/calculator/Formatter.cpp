@@ -31,11 +31,9 @@ int sb::Formatter::crop( const cv::Mat& inputImage, cv::Mat& outputImage ) const
 	return 0;
 }
 
-int sb::Formatter::warp( const std::vector<sb::LineInfo> imageLines,
-                         std::vector<sb::LineInfo>& outputRealLines ) const
+int sb::Formatter::warp( const std::vector<sb::LineInfo*> imageLines,
+                         std::vector<sb::LineInfo*>& outputRealLines ) const
 {
-	outputRealLines.clear();
-
 	const int N_LINES = static_cast<int>(imageLines.size());
 
 	if ( N_LINES == 0 )return 0;
@@ -46,8 +44,8 @@ int sb::Formatter::warp( const std::vector<sb::LineInfo> imageLines,
 	std::vector<cv::Point2f> endingPoints( N_LINES );
 
 	for ( int i = 0; i < N_LINES; i++ ) {
-		startingPoints[i] = imageLines[i].getStartingPoint();
-		endingPoints[i] = imageLines[i].getEndingPoint();
+		startingPoints[i] = imageLines[i]->line.getStartingPoint();
+		endingPoints[i] = imageLines[i]->line.getEndingPoint();
 	}
 
 	cv::perspectiveTransform( startingPoints, startingPoints, _warpMatrix );
@@ -59,8 +57,10 @@ int sb::Formatter::warp( const std::vector<sb::LineInfo> imageLines,
 	outputRealLines.reserve( N_LINES );
 
 	for ( int i = 0; i < N_LINES; i++ ) {
-		outputRealLines.push_back( sb::LineInfo( sb::Line( convertToCoord( endingPoints[i] ),
-		                                                   convertToCoord( startingPoints[i] ) ) ) );
+		sb::LineInfo* lineInfo = new sb::LineInfo;
+		sb::create( lineInfo, sb::Line( convertToCoord( endingPoints[i] ),
+																		convertToCoord( startingPoints[i] ) ) );
+		outputRealLines.push_back( lineInfo );
 	}
 
 	return 0;

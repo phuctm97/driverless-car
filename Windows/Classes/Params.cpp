@@ -1,16 +1,5 @@
 ﻿#include "Params.h"
 
-void sb::construct( sb::Params*& params )
-{
-	params = new Params;
-}
-
-void sb::destruct( sb::Params*& params )
-{
-	delete params;
-	params = nullptr;
-}
-
 void sb::load( sb::Params* params, const cv::String& yamlFileName )
 {
 	cv::FileStorage fs( yamlFileName, cv::FileStorage::READ );

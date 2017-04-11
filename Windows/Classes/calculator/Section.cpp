@@ -1,37 +1,32 @@
 #include "Section.h"
 
-sb::Section::Section( const cv::Mat& containerBinaryImage,
-                      const cv::Rect& rect )
+void sb::create( sb::Section* section,
+								 const cv::Mat& containerBinaryImage,
+								 const cv::Mat& containerEdgesImage,
+								 const cv::Rect& rect )
 {
-	_binaryImage = containerBinaryImage( rect );
-	_imageRect = rect;
+	section->binaryImage = containerBinaryImage( rect );
+
+	section->edgesImage = containerEdgesImage( rect );
+
+	section->imageRect = rect;
+
+	section->bottomLine = sb::Line( cv::Point2d( 0, rect.y + rect.height - 1 ),
+	                                cv::Point2d( 1, rect.y + rect.height - 1 ) );
+	section->topLine = sb::Line( cv::Point2d( 0, rect.y ),
+	                             cv::Point2d( 1, rect.y ) );
 }
 
-const cv::Mat& sb::Section::getBinaryImage() const { return _binaryImage; }
-
-void sb::Section::setBinaryImage( const cv::Mat& binaryImage ) { _binaryImage = binaryImage; }
-
-const cv::Rect2d& sb::Section::getImageRect() const { return _imageRect; }
-
-void sb::Section::setImageRect( const cv::Rect2d& imageRect ) { _imageRect = imageRect; }
-
-const std::vector<sb::LineInfo>& sb::Section::getImageLines() const { return _imageLines; }
-
-void sb::Section::setImageLines( const std::vector<sb::LineInfo>& imageLines ) { _imageLines = imageLines; }
-
-sb::Line sb::Section::getBottomLine() const
+void sb::clear( sb::Section* section )
 {
-	return sb::Line( cv::Point2d( 0, _imageRect.y + _imageRect.height - 1 ),
-	                 cv::Point2d( 1, _imageRect.y + _imageRect.height - 1 ) );
+	section->binaryImage.release();
+	for( auto it_line = section->imageLines.begin(); it_line != section->imageLines.end(); ++it_line ) {
+		delete *it_line;
+	}
+	section->imageLines.clear();
 }
 
-sb::Line sb::Section::getTopLine() const
+cv::Point2d sb::convertToContainerSpace( sb::Section* section, const cv::Point2d& pos )
 {
-	return sb::Line( cv::Point2d( 0, _imageRect.y ),
-	                 cv::Point2d( 1, _imageRect.y ) );
-}
-
-cv::Point2d sb::Section::convertToContainerSpace( const cv::Point2d& pos ) const
-{
-	return cv::Point2d( _imageRect.x + pos.x, pos.y + _imageRect.y );
+	return cv::Point2d( section->imageRect.x + pos.x, pos.y + section->imageRect.y );
 }

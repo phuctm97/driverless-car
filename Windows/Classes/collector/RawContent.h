@@ -11,10 +11,6 @@ struct RawContent
 	cv::Mat colorImage;
 };
 
-void construct( sb::RawContent*& rawContent );
-
-void destruct( sb::RawContent*& rawContent );
-
 void create( sb::RawContent* rawContent, sb::Params* params );
 
 }

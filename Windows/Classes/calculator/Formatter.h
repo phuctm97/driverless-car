@@ -26,8 +26,8 @@ public:
 
 	int crop( const cv::Mat& inputImage, cv::Mat& outputImage ) const;
 
-	int warp( const std::vector<sb::LineInfo> imageLines,
-	          std::vector<sb::LineInfo>& outputRealLines ) const;
+	int warp( const std::vector<sb::LineInfo*> imageLines,
+	          std::vector<sb::LineInfo*>& outputRealLines ) const;
 
 	double convertXToCoord( double x ) const;
 

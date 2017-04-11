@@ -1,16 +1,5 @@
 #include "Collector.h"
 
-void sb::construct( sb::Collector*& collector )
-{
-	collector = new Collector;
-}
-
-void sb::destruct( sb::Collector*& collector )
-{
-	delete collector;
-	collector = nullptr;
-}
-
 int sb::init( sb::Collector* collector, sb::Params* params )
 {
 	// sample init

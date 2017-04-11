@@ -6,38 +6,29 @@
 
 namespace sb
 {
-class Section
+struct Section
 {
-	cv::Mat _binaryImage;
+	cv::Mat binaryImage;
 
-	// rect in container-image
-	cv::Rect2d _imageRect;
+	cv::Mat edgesImage;
 
-	// detected line with LineDetector
-	std::vector<sb::LineInfo> _imageLines;
+	cv::Rect2d imageRect;
 
-public:
-	Section( const cv::Mat& containerBinaryImage, const cv::Rect& rect );
+	sb::Line topLine;
 
-	const cv::Mat& getBinaryImage() const;
+	sb::Line bottomLine;
 
-	void setBinaryImage( const cv::Mat& binaryImage );
-
-	const cv::Rect2d& getImageRect() const;
-
-	void setImageRect( const cv::Rect2d& imageRect );
-
-	const std::vector<sb::LineInfo>& getImageLines() const;
-
-	void setImageLines( const std::vector<sb::LineInfo>& imageLines );
-
-	sb::Line getBottomLine() const;
-	
-	sb::Line getTopLine() const;
-
-	cv::Point2d convertToContainerSpace( const cv::Point2d& pos ) const;
-
+	std::vector<sb::LineInfo*> imageLines;
 };
+
+void create( sb::Section* section, 
+						 const cv::Mat& containerBinaryImage, 
+						 const cv::Mat& containerEdgesImage,
+						 const cv::Rect& rect );
+
+void clear( sb::Section* section );
+
+cv::Point2d convertToContainerSpace( sb::Section* section, const cv::Point2d& pos );
 
 
 }

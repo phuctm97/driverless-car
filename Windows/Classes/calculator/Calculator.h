@@ -20,10 +20,6 @@ struct Calculator
 	std::vector<cv::Rect> splitBoxes;
 };
 
-void construct( sb::Calculator*& calculator );
-
-void destruct( sb::Calculator*& calculator );
-
 int init( sb::Calculator* calculator, sb::Params* params );
 
 int calculate( sb::Calculator* calculator,
@@ -31,6 +27,9 @@ int calculate( sb::Calculator* calculator,
                sb::FrameInfo* frameInfo );
 
 void release( sb::Calculator* calculator );
+
+void findBlobs( const cv::Mat& binary, std::vector< std::vector<cv::Point2i> > &blobs );
+
 }
 
 #endif //!__SB_CALCULATOR_H__

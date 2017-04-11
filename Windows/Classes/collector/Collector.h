@@ -11,10 +11,6 @@ struct Collector
 	cv::VideoCapture tempCap;
 };
 
-void construct( sb::Collector*& collector );
-
-void destruct( sb::Collector*& collector );
-
 int init( sb::Collector* collector, sb::Params* params );
 
 int collect( sb::Collector* collector, sb::RawContent* rawContent );

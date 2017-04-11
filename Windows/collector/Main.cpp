@@ -10,21 +10,18 @@ int main( const int argc, const char** argv )
 	}
 
 	// Application parameters
-	sb::Params* params;
-	sb::construct( params );
+	sb::Params* params = new sb::Params;
 	sb::load( params, argv[1] );
 
 	// Timer for performance test
 	sb::Timer timer;
 
 	// Data sent&receive between components
-	sb::RawContent* rawContent;
-	sb::construct( rawContent );
+	sb::RawContent* rawContent = new sb::RawContent;
 	sb::create( rawContent, params );
 
 	// Main components
-	sb::Collector* collector;
-	sb::construct( collector );
+	sb::Collector* collector = new sb::Collector;
 
 	// Init components
 	if( sb::init( collector, params ) < 0 ) {
@@ -98,9 +95,9 @@ int main( const int argc, const char** argv )
 	colorAvi.release();
 	///// </Result-writer> /////
 
-	sb::destruct( params );
-	sb::destruct( rawContent );
-	sb::destruct( collector );
+	delete params;
+	delete rawContent;
+	delete collector;
 
 	return 0;
 }

@@ -45,10 +45,6 @@ struct Params
 	void write( cv::FileStorage& fs ) const;
 };
 
-void construct( sb::Params*& params );
-
-void destruct( sb::Params*& params );
-
 void load( sb::Params* params, const cv::String& yamlFileName );
 
 void save( sb::Params* params, const cv::String& yamlFileName );

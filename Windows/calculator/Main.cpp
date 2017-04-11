@@ -23,28 +23,23 @@ int main( const int argc, const char** argv )
 	}
 
 	// Application parameters
-	sb::Params* params;
-	sb::construct( params );
+	sb::Params* params = new sb::Params;
 	sb::load( params, argv[1] );
 
 	// Timer for performance test
 	sb::Timer timer;
 
 	// Data sent&receive between components
-	sb::RawContent* rawContent;
-	sb::construct( rawContent );
+	sb::RawContent* rawContent = new sb::RawContent;
 	sb::create( rawContent, params );
 
-	sb::FrameInfo* frameInfo;
-	sb::construct( frameInfo );
+	sb::FrameInfo* frameInfo = new sb::FrameInfo;
 	sb::create( frameInfo, params );
 
 	// Main components
-	sb::Collector* collector;
-	sb::construct( collector );
+	sb::Collector* collector = new sb::Collector;
 
-	sb::Calculator* calculator;
-	sb::construct( calculator );
+	sb::Calculator* calculator = new sb::Calculator;
 
 	// Init components
 	if ( init( collector, calculator, params ) < 0 ) {
@@ -109,11 +104,14 @@ int main( const int argc, const char** argv )
 	// Release components
 	release( collector, calculator );
 
-	sb::destruct( params );
-	sb::destruct( rawContent );
-	sb::destruct( frameInfo );
-	sb::destruct( collector );
-	sb::destruct( calculator );
+	delete params;
+	delete rawContent;
+
+	sb::clear( frameInfo );
+	delete frameInfo;
+
+	delete collector;
+	delete calculator;
 
 	return 0;
 }
@@ -136,9 +134,9 @@ int init( sb::Collector* collector,
 }
 
 void test( sb::Collector* collector,
-					 sb::Calculator* calculator,
-					 sb::RawContent* rawContent,
-					 sb::FrameInfo* frameInfo )
+           sb::Calculator* calculator,
+           sb::RawContent* rawContent,
+           sb::FrameInfo* frameInfo )
 {
 	// debug each line in section
 	cv::Mat images[3];
@@ -152,11 +150,11 @@ void test( sb::Collector* collector,
 	for ( auto it_section = frameInfo->imageSections.cbegin();
 	      it_section != frameInfo->imageSections.cend(); ++it_section ) {
 
-		for ( auto it_line = it_section->getImageLines().begin();
-		      it_line != it_section->getImageLines().end(); ++it_line ) {
+		for ( auto it_line = (*it_section)->imageLines.begin();
+		      it_line != (*it_section)->imageLines.end(); ++it_line ) {
 			cv::line( images[1],
-			          it_line->getStartingPoint(),
-			          it_line->getEndingPoint(),
+			          (*it_line)->line.getStartingPoint(),
+			          (*it_line)->line.getEndingPoint(),
 			          cv::Scalar( 255, 255, 255 ) );
 		}
 	}
@@ -169,12 +167,12 @@ void test( sb::Collector* collector,
 		for ( auto it_section = frameInfo->imageSections.cbegin();
 		      it_section != frameInfo->imageSections.cend(); ++it_section ) {
 			cv::line( images[i],
-			          cv::Point2d( 0, it_section->getTopLine().getStartingPoint().y ),
-			          cv::Point2d( images[i].cols - 1, it_section->getTopLine().getStartingPoint().y ),
+			          cv::Point2d( 0, (*it_section)->topLine.getStartingPoint().y ),
+			          cv::Point2d( images[i].cols - 1, (*it_section)->topLine.getStartingPoint().y ),
 			          cv::Scalar( 255, 0, 0 ) );
 			cv::line( images[i],
-			          cv::Point2d( 0, it_section->getBottomLine().getStartingPoint().y ),
-			          cv::Point2d( images[i].cols - 1, it_section->getBottomLine().getStartingPoint().y ),
+			          cv::Point2d( 0, (*it_section)->bottomLine.getStartingPoint().y ),
+			          cv::Point2d( images[i].cols - 1, (*it_section)->bottomLine.getStartingPoint().y ),
 			          cv::Scalar( 255, 0, 0 ) );
 		}
 	}
@@ -182,8 +180,8 @@ void test( sb::Collector* collector,
 	for ( auto it_section = frameInfo->imageSections.cbegin();
 	      it_section != frameInfo->imageSections.cend(); ++it_section ) {
 
-		for ( auto it_line = it_section->getImageLines().cbegin();
-		      it_line != it_section->getImageLines().cend(); ++it_line ) {
+		for ( auto it_line = (*it_section)->imageLines.cbegin();
+		      it_line != (*it_section)->imageLines.cend(); ++it_line ) {
 
 			std::stringstream stringBuilder;
 
@@ -191,11 +189,11 @@ void test( sb::Collector* collector,
 				cv::Mat tmpImage = images[i].clone();
 
 				cv::line( tmpImage,
-				          it_line->getTopPoint(),
-				          it_line->getBottomPoint(),
+				          (*it_line)->topPoint,
+				          (*it_line)->bottomPoint,
 				          cv::Scalar( 0, 255, 0 ), 2 );
 
-				stringBuilder << "Length: " << it_line->getLength();
+				stringBuilder << "Length: " << (*it_line)->length;
 				cv::putText( tmpImage,
 				             stringBuilder.str(),
 				             cv::Point( 20, 15 ),
@@ -203,21 +201,21 @@ void test( sb::Collector* collector,
 
 				stringBuilder.str( "" );
 
-				stringBuilder << "Angle: " << it_line->getAngle();
+				stringBuilder << "Angle: " << (*it_line)->angle;
 				cv::putText( tmpImage,
 				             stringBuilder.str(),
 				             cv::Point( 200, 15 ),
 				             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
 				stringBuilder.str( "" );
 
-				stringBuilder << "Bottom X: " << it_line->getBottomPoint().x;
+				stringBuilder << "Bottom X: " << (*it_line)->bottomPoint.x;
 				cv::putText( tmpImage,
 				             stringBuilder.str(),
 				             cv::Point( 20, 35 ),
 				             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
 				stringBuilder.str( "" );
 
-				stringBuilder << "Top X: " << it_line->getTopPoint().x;
+				stringBuilder << "Top X: " << (*it_line)->topPoint.x;
 				cv::putText( tmpImage,
 				             stringBuilder.str(),
 				             cv::Point( 200, 35 ),

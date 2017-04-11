@@ -10,16 +10,16 @@ struct FrameInfo
 {
 	cv::Mat colorImage;
 
+	cv::Mat binaryImage;
+
 	cv::Mat edgesImage;
 
-	std::vector<sb::Section> imageSections;
+	std::vector<sb::Section*> imageSections;
 };
 
-void construct( sb::FrameInfo*& frameInfo );
-
-void destruct( sb::FrameInfo*& frameInfo );
-
 void create( sb::FrameInfo* frameInfo, sb::Params* params );
+
+void clear( sb::FrameInfo* frameInfo );
 
 }
 
