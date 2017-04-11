@@ -1,45 +1,25 @@
 #include "RoadInfo.h"
 
-void sb::RoadInfo::create( const Params& params )
+void sb::create( sb::RoadInfo* roadInfo, Params* params )
 {
-	_leftKnots.clear();
-	_rightKnots.clear();
+	roadInfo->leftKnots.clear();
+	roadInfo->rightKnots.clear();
 }
-
-void sb::RoadInfo::setObstacleBoxes( const std::vector<cv::Rect2d>& obstacleBoxes ) { _obstacleBoxes = obstacleBoxes; }
-
-const std::vector<cv::Rect2d>& sb::RoadInfo::getObstacleBoxes() const { return _obstacleBoxes; }
-
-void sb::RoadInfo::setLeftKnots( const std::vector<cv::Point2d>& leftKnots ) { _leftKnots = leftKnots; }
-
-const std::vector<cv::Point2d>& sb::RoadInfo::getLeftKnots() const { return _leftKnots; }
-
-void sb::RoadInfo::setRightKnots( const std::vector<cv::Point2d>& rightKnots ) { _rightKnots = rightKnots; }
-
-const std::vector<cv::Point2d>& sb::RoadInfo::getRightKnots() const { return _rightKnots; }
-
-void sb::RoadInfo::setReliability( float reliability ) { _reliability = reliability; }
-
-float sb::RoadInfo::getReliability() const { return _reliability; }
-
-const cv::Point2d& sb::RoadInfo::getTarget() const { return _target; }
-
-void sb::RoadInfo::setTarget( const cv::Point2d& point ) { _target = point; }
 
 void sb::RoadInfo::read( const cv::FileNode& node )
 {
-	node["Target"] >> _target;
-	node["LeftKnots"] >> _leftKnots;
-	node["RightKnots"] >> _rightKnots;
+	node["Target"] >> target;
+	node["LeftKnots"] >> leftKnots;
+	node["RightKnots"] >> rightKnots;
 }
 
 void sb::RoadInfo::write( cv::FileStorage& fs ) const
 {
 	fs
 			<< "{"
-			<< "Target" << _target
-			<< "LeftKnots" << _leftKnots
-			<< "RightKnots" << _rightKnots
+			<< "Target" << target
+			<< "LeftKnots" << leftKnots
+			<< "RightKnots" << rightKnots
 			<< "}";
 }
 

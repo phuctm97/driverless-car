@@ -7,6 +7,8 @@ namespace sb
 {
 struct LineInfo
 {
+	// TODO: to float
+
 	sb::Line line;
 
 	double length;

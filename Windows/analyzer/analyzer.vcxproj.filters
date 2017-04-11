@@ -102,12 +102,6 @@
     <ClInclude Include="..\Classes\Timer.h">
       <Filter>shared</Filter>
     </ClInclude>
-    <ClInclude Include="..\Classes\analyzer\Lane.h">
-      <Filter>analyzer</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Classes\analyzer\Road.h">
-      <Filter>analyzer</Filter>
-    </ClInclude>
     <ClInclude Include="..\Classes\analyzer\LaneComponent.h">
       <Filter>analyzer</Filter>
     </ClInclude>

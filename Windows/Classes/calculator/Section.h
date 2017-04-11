@@ -3,6 +3,7 @@
 
 #include "../Include.h"
 #include "LineInfo.h"
+#include "Blob.h"
 
 namespace sb
 {
@@ -10,27 +11,24 @@ struct Section
 {
 	cv::Mat binaryImage;
 
-	cv::Mat edgesImage;
-
-	cv::Rect2d imageRect;
+	cv::Rect imageRect;
 
 	sb::Line topLine;
 
 	sb::Line bottomLine;
 
-	std::vector<sb::LineInfo*> imageLines;
+	std::vector<sb::Blob*> blobs;
 };
 
-void create( sb::Section* section, 
-						 const cv::Mat& containerBinaryImage, 
-						 const cv::Mat& containerEdgesImage,
-						 const cv::Rect& rect );
+void create( sb::Section* section,
+             const cv::Mat& containerBinaryImage,
+             const cv::Rect& rect );
 
 void clear( sb::Section* section );
 
-cv::Point2d convertToContainerSpace( sb::Section* section, const cv::Point2d& pos );
+cv::Point convertToContainerSpace( sb::Section* section, const cv::Point& pos );
 
-
+cv::Point2f convertToContainerSpace( sb::Section* section, const cv::Point2f& pos );
 }
 
 #endif //!__SB_SECTION_H__

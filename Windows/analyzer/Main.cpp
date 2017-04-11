@@ -4,19 +4,18 @@
 #include "../Classes/Timer.h"
 #include <conio.h>
 
-int init( sb::Collector& collector,
-          sb::Calculator& calculator,
-          sb::Analyzer& analyzer,
-          const sb::Params& params );
+int init( sb::Collector* collector,
+          sb::Calculator* calculator,
+          sb::Analyzer* analyzer,
+          sb::Params* params );
 
-void test( const sb::Calculator& calculator,
-           const sb::RawContent& rawContent,
-           const sb::FrameInfo& frameInfo,
-           const sb::RoadInfo& roadInfo );
+void test( sb::RawContent* rawContent,
+           sb::FrameInfo* frameInfo,
+           sb::RoadInfo* roadInfo );
 
-void release( sb::Collector& collector,
-              sb::Calculator& calculator,
-              sb::Analyzer& analyzer );
+void release( sb::Collector* collector,
+              sb::Calculator* calculator,
+              sb::Analyzer* analyzer );
 
 int main( const int argc, const char** argv )
 {
@@ -26,26 +25,26 @@ int main( const int argc, const char** argv )
 	}
 
 	// Application parameters
-	sb::Params params;
-	params.load( argv[1] );
+	sb::Params* params = new sb::Params;
+	sb::load( params, argv[1] );
 
 	// Timer for performance test
 	sb::Timer timer;
 
 	// Data sent&receive between components
-	sb::RawContent rawContent;
-	rawContent.create( params );
+	sb::RawContent* rawContent = new sb::RawContent;
+	sb::create( rawContent, params );
 
-	sb::FrameInfo frameInfo;
-	frameInfo.create( params );
+	sb::FrameInfo* frameInfo = new sb::FrameInfo;
+	sb::create( frameInfo, params );
 
-	sb::RoadInfo roadInfo;
-	roadInfo.create( params );
+	sb::RoadInfo* roadInfo = new sb::RoadInfo;
+	sb::create( roadInfo params );
 
 	// Main components
-	sb::Collector collector;
-	sb::Calculator calculator;
-	sb::Analyzer analyzer;
+	sb::Collector* collector = new sb::Collector;
+	sb::Calculator* calculator = new sb::Calculator;
+	sb::Analyzer* analyzer = new sb::Analyzer;
 
 	// Init components
 	if ( init( collector, calculator, analyzer, params ) < 0 ) {
@@ -86,7 +85,7 @@ int main( const int argc, const char** argv )
 		////// <Collector> /////
 
 		timer.reset( "collector" );
-		if ( collector.collect( rawContent ) < 0 ) {
+		if ( sb::collect( collector, rawContent ) < 0 ) {
 			std::cerr << "Collector collect failed." << std::endl;
 			break;
 		}
@@ -97,7 +96,7 @@ int main( const int argc, const char** argv )
 		////// <Calculator> /////
 
 		timer.reset( "calculator" );
-		if ( calculator.calculate( rawContent, frameInfo ) < 0 ) {
+		if ( sb::calculate( calculator, rawContent, frameInfo ) < 0 ) {
 			std::cerr << "Calculator calculate failed." << std::endl;
 			break;
 		}
@@ -108,7 +107,7 @@ int main( const int argc, const char** argv )
 		////// <Analyzer> /////
 
 		timer.reset( "analyzer" );
-		if ( analyzer.analyze( frameInfo, roadInfo ) ) {
+		if ( sb::analyze( analyzer, frameInfo, roadInfo ) ) {
 			std::cerr << "Analyzer analyze failed." << std::endl;
 			break;
 		}
@@ -122,12 +121,12 @@ int main( const int argc, const char** argv )
 		///// </Timer> /////
 
 		///// <Test> /////
-		test( calculator, rawContent, frameInfo, roadInfo );
+		test( rawContent, frameInfo, roadInfo );
 		///// <Test> /////
 
 		///// <Result-writer> /////
-		if ( colorAvi.isOpened() && !rawContent.getColorImage().empty() ) {
-			colorAvi << rawContent.getColorImage();
+		if ( colorAvi.isOpened() && !rawContent->colorImage.empty() ) {
+			colorAvi << rawContent->colorImage;
 		}
 
 		if ( roadInfoStream.isOpened() ) {
@@ -158,25 +157,34 @@ int main( const int argc, const char** argv )
 	roadInfoStream.release();
 	///// </Result-writer> /////
 
+	delete params;
+	delete rawContent;
+	sb::clear( frameInfo );
+	delete frameInfo;
+	delete roadInfo;
+	delete collector;
+	delete calculator;
+	delete analyzer;
+
 	return 0;
 }
 
-int init( sb::Collector& collector,
-          sb::Calculator& calculator,
-          sb::Analyzer& analyzer,
-          const sb::Params& params )
+int init( sb::Collector* collector,
+          sb::Calculator* calculator,
+          sb::Analyzer* analyzer,
+          sb::Params* params )
 {
-	if ( collector.init( params ) < 0 ) {
+	if ( sb::init( collector, params ) < 0 ) {
 		std::cerr << "Collector init failed." << std::endl;
 		return -1;
 	}
 
-	if ( calculator.init( params ) < 0 ) {
+	if ( sb::init( calculator, params ) < 0 ) {
 		std::cerr << "Calculator init failed." << std::endl;
 		return -1;
 	}
 
-	if ( analyzer.init( params ) < 0 ) {
+	if ( sb::init( analyzer, params ) < 0 ) {
 		std::cerr << "Analyzer init failed." << std::endl;
 		return -1;
 	}
@@ -184,10 +192,9 @@ int init( sb::Collector& collector,
 	return 0;
 }
 
-void test( const sb::Calculator& calculator,
-           const sb::RawContent& rawContent,
-           const sb::FrameInfo& frameInfo,
-           const sb::RoadInfo& roadInfo )
+void test( sb::RawContent* rawContent,
+           sb::FrameInfo* frameInfo,
+           sb::RoadInfo* roadInfo )
 {
 	/*///// Init image /////
 	const cv::Size FRAME_SIZE = frameInfo.getColorImage().size();
@@ -241,13 +248,13 @@ void test( const sb::Calculator& calculator,
 	cv::waitKey( 500 );*/
 }
 
-void release( sb::Collector& collector,
-              sb::Calculator& calculator,
-              sb::Analyzer& analyzer )
+void release( sb::Collector* collector,
+              sb::Calculator* calculator,
+              sb::Analyzer* analyzer )
 {
-	calculator.release();
+	sb::release( collector );
 
-	collector.release();
+	sb::release( calculator );
 
-	analyzer.release();
+	sb::release( analyzer );
 }

@@ -12,8 +12,6 @@ struct FrameInfo
 
 	cv::Mat binaryImage;
 
-	cv::Mat edgesImage;
-
 	std::vector<sb::Section*> imageSections;
 };
 

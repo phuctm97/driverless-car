@@ -1,7 +1,4 @@
 ﻿#include "LaneComponent.h"
-#include "../collector/Collector.h"
-#include "Lane.h"
-#include <queue>
 
 const std::vector<sb::LanePartInfo>& sb::LaneComponent::getParts() const { return _parts; }
 

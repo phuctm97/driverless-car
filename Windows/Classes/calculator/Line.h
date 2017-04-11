@@ -3,6 +3,8 @@
 
 #include "../Include.h"
 
+// TODO: to float
+
 namespace sb
 {
 // Line Mapping: ax + by + c = 0

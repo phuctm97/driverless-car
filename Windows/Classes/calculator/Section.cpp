@@ -2,12 +2,9 @@
 
 void sb::create( sb::Section* section,
 								 const cv::Mat& containerBinaryImage,
-								 const cv::Mat& containerEdgesImage,
 								 const cv::Rect& rect )
 {
 	section->binaryImage = containerBinaryImage( rect );
-
-	section->edgesImage = containerEdgesImage( rect );
 
 	section->imageRect = rect;
 
@@ -19,14 +16,19 @@ void sb::create( sb::Section* section,
 
 void sb::clear( sb::Section* section )
 {
+	for( auto it_blob = section->blobs.begin(); it_blob != section->blobs.end(); ++it_blob )
+		delete *it_blob;
+	section->blobs.clear();
+
 	section->binaryImage.release();
-	for( auto it_line = section->imageLines.begin(); it_line != section->imageLines.end(); ++it_line ) {
-		delete *it_line;
-	}
-	section->imageLines.clear();
 }
 
-cv::Point2d sb::convertToContainerSpace( sb::Section* section, const cv::Point2d& pos )
+cv::Point sb::convertToContainerSpace( sb::Section* section, const cv::Point& pos )
 {
-	return cv::Point2d( section->imageRect.x + pos.x, pos.y + section->imageRect.y );
+	return cv::Point( section->imageRect.x + pos.x, pos.y + section->imageRect.y );
+}
+
+cv::Point2f sb::convertToContainerSpace( sb::Section* section, const cv::Point2f& pos )
+{
+	return cv::Point2f( section->imageRect.x + pos.x, pos.y + section->imageRect.y );
 }

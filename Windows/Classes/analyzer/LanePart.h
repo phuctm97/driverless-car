@@ -38,8 +38,6 @@ struct LanePartInfo
 	double errorColor;
 
 	int errorCode;
-
-	// TODO : errorColor
 };
 }
 

@@ -13,9 +13,6 @@ namespace sb
 {
 struct Calculator
 {
-	sb::EdgeDetector edgeDetector;
-	sb::LineDetector lineDetector;
-
 	cv::Rect cropBox;
 	std::vector<cv::Rect> splitBoxes;
 };
@@ -28,7 +25,7 @@ int calculate( sb::Calculator* calculator,
 
 void release( sb::Calculator* calculator );
 
-void findBlobs( const cv::Mat& binary, std::vector< std::vector<cv::Point2i> > &blobs );
+void findBlobs( const cv::Mat& binary, std::vector<sb::Blob*> &blobs );
 
 }
 

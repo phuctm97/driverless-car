@@ -22,6 +22,8 @@ int main( const int argc, const char** argv )
 		return -1;
 	}
 
+	std::srand( static_cast<unsigned int>(time( 0 )) );
+
 	// Application parameters
 	sb::Params* params = new sb::Params;
 	sb::load( params, argv[1] );
@@ -138,7 +140,7 @@ void test( sb::Collector* collector,
            sb::RawContent* rawContent,
            sb::FrameInfo* frameInfo )
 {
-	// debug each line in section
+	/*// debug each line in section
 	cv::Mat images[3];
 
 	// edges image
@@ -231,7 +233,7 @@ void test( sb::Collector* collector,
 
 		}
 
-	}
+	}*/
 }
 
 void release( sb::Collector* collector,

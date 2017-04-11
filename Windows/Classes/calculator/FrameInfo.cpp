@@ -5,7 +5,6 @@ void sb::create( sb::FrameInfo* frameInfo, sb::Params* params ) {}
 void sb::clear( sb::FrameInfo* frameInfo )
 {
 	frameInfo->colorImage.release();
-	frameInfo->edgesImage.release();
 
 	for( auto it_section = frameInfo->imageSections.begin(); it_section != frameInfo->imageSections.end(); ++it_section ) {
 		sb::clear( *it_section );

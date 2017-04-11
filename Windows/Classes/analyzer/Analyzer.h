@@ -12,32 +12,30 @@
 
 namespace sb
 {
-class Analyzer
+struct Analyzer
 {
-private:
-	sb::LaneComponent _leftLane;
-	sb::LaneComponent _rightLane;
+	sb::LaneComponent leftLane;
+	sb::LaneComponent rightLane;
 
-public:
-	int init( const sb::Params& params );
-
-	int analyze( const sb::FrameInfo& frameInfo,
-	             sb::RoadInfo& roadInfo );
-
-	void release();
-
-private:
-	int _firstAnalyzeTimes;
-
-	int _trackAnalyzeTimes;
-
-	int firstAnalyze( const sb::FrameInfo& frameInfo,
-	                  sb::RoadInfo& roadInfo );
-
-
-	int trackAnalyze( const sb::FrameInfo& frameInfo,
-										sb::RoadInfo& roadInfo );
+	int firstAnalyzeTimes;
+	int trackAnalyzeTimes;
 };
+
+int init( sb::Analyzer* analyzer, sb::Params* params );
+
+int analyze( sb::Analyzer* analyzer,
+             sb::FrameInfo* frameInfo,
+             sb::RoadInfo* roadInfo );
+
+int firstAnalyze( sb::Analyzer* analyzer,
+                  sb::FrameInfo* frameInfo,
+                  sb::RoadInfo* roadInfo );
+
+int trackAnalyze( sb::Analyzer* analyzer,
+									sb::FrameInfo* frameInfo,
+                  sb::RoadInfo* roadInfo );
+
+void release( sb::Analyzer* analyzer );
 }
 
 #endif //!__SB_ANALYZER_H__

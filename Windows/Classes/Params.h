@@ -14,6 +14,7 @@ struct Params
 	cv::Rect CROP_BOX = cv::Rect( 0, 0, 0, 0 );
 	double CONVERT_COORD_COEF = 1.0 / 40;
 
+	// TODO: to float
 	double MIN_LANE_WIDTH = 2;
 	double MAX_LANE_WIDTH = 15;
 	double MIN_ROAD_WIDTH = 60;

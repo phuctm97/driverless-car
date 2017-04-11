@@ -7,49 +7,22 @@
 
 namespace sb
 {
-class RoadInfo
+struct RoadInfo
 {
-private:
-	cv::Point2d _target;
+	cv::Point target;
 
-	std::vector<cv::Point2d> _leftKnots;
+	std::vector<cv::Point> leftKnots;
 
-	std::vector<cv::Point2d> _rightKnots;
+	std::vector<cv::Point> rightKnots;
 
-	std::vector<cv::Rect2d> _obstacleBoxes;
-
-	float _reliability;
-
-public:
-	RoadInfo()
-		: _reliability( 0 ) {}
-
-	void create( const Params& params );
-
-	void setObstacleBoxes( const std::vector<cv::Rect2d>& obstacleBoxes );
-
-	const std::vector<cv::Rect2d>& getObstacleBoxes() const;
-
-	void setLeftKnots( const std::vector<cv::Point2d>& leftKnots );
-
-	const std::vector<cv::Point2d>& getLeftKnots() const;
-
-	void setRightKnots( const std::vector<cv::Point2d>& rightKnots );
-
-	const std::vector<cv::Point2d>& getRightKnots() const;
-
-	void setReliability( float reliability );
-
-	float getReliability() const;
-
-	const cv::Point2d& getTarget() const;
-
-	void setTarget( const cv::Point2d& point );
+	std::vector<cv::Rect> obstacleBoxes;
 
 	void read( const cv::FileNode& node );
 
 	void write( cv::FileStorage& fs ) const;
 };
+
+void create( sb::RoadInfo* roadInfo, Params* params );
 
 void write( cv::FileStorage& fs, const std::string&, const sb::RoadInfo& data );
 
