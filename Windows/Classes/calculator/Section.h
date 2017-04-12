@@ -9,7 +9,11 @@ namespace sb
 {
 struct Section
 {
-	cv::Mat binaryImage;
+	cv::Mat bgrImage;
+
+	cv::Mat binImage;
+
+	cv::Mat edgImage;
 
 	cv::Rect imageRect;
 
@@ -21,10 +25,12 @@ struct Section
 };
 
 void create( sb::Section* section,
-             const cv::Mat& containerBinaryImage,
+						 const cv::Mat& containerBgrImage,
+						 const cv::Mat& containerBinImage,
+						 const cv::Mat& containerEdgImage,
              const cv::Rect& rect );
 
-void clear( sb::Section* section );
+void release( sb::Section* section );
 
 cv::Point convertToContainerSpace( sb::Section* section, const cv::Point& pos );
 

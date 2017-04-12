@@ -24,6 +24,8 @@ struct LineInfo
 	cv::Point2d centerPoint;
 };
 
+void release( sb::LineInfo* lineInfo );
+
 void create( sb::LineInfo* lineInfo, const sb::Line& line );
 
 }

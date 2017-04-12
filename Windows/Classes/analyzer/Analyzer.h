@@ -14,8 +14,8 @@ namespace sb
 {
 struct Analyzer
 {
-	sb::LaneComponent leftLane;
-	sb::LaneComponent rightLane;
+	sb::LaneComponent* leftLane;
+	sb::LaneComponent* rightLane;
 
 	int firstAnalyzeTimes;
 	int trackAnalyzeTimes;
@@ -36,6 +36,7 @@ int trackAnalyze( sb::Analyzer* analyzer,
                   sb::RoadInfo* roadInfo );
 
 void release( sb::Analyzer* analyzer );
+
 }
 
 #endif //!__SB_ANALYZER_H__

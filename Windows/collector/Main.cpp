@@ -89,15 +89,15 @@ int main( const int argc, const char** argv )
 	}
 
 	// Release components
-	release( collector );
+	sb::release( params ); delete params;
+	sb::release( rawContent ); delete rawContent;
+	sb::release( collector );	delete collector;
 
 	///// <Result-writer> /////
 	colorAvi.release();
 	///// </Result-writer> /////
 
-	delete params;
-	delete rawContent;
-	delete collector;
+
 
 	return 0;
 }

@@ -7,38 +7,38 @@ namespace sb
 {
 struct LanePart
 {
-	sb::LineInfo innerLine;
-	sb::LineInfo outerLine;
-	cv::Vec3b innerColor;
-	cv::Vec3b outerColor;
-	cv::Vec3b laneColor;
+	cv::Point origin;
+
+	cv::Rect box;
+
+	cv::Vec3b bgr;
 };
 
 enum LanePartErrorCode
 {
-	BOTH_LINE_ATTACHED,
-	OUTER_LINE_LOST,
-	INNER_LINE_LOST,
-	BOTH_LINE_LOST,
-	OUTSIGHT,
-	OVERLAYED,
-	UNKNOWN
+	PART_NICE,
+	PART_OUTSIGHT_LEFT,
+	PART_OUTSIGHT_RIGHT,
+	PART_OVERLAYED,
+	PART_UNKNOWN
 };
 
 struct LanePartInfo
 {
-	LanePart part;
+	LanePart* part;
 
-	double errorWidth;
+	int errorWidth;
 
-	double errorPosition;
+	int errorPosition;
 
-	double errorAngle;
+	float errorAngle;
 
-	double errorColor;
+	float errorColor;
 
 	int errorCode;
 };
+
+void release( sb::LanePartInfo* lanePartInfo );
 }
 
 #endif //!__SB_LANE_PART_INFO_H__

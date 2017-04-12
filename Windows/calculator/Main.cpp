@@ -12,9 +12,6 @@ void test( sb::Collector* collector,
            sb::RawContent* rawContent,
            sb::FrameInfo* frameInfo );
 
-void release( sb::Collector* collector,
-              sb::Calculator* calculator );
-
 int main( const int argc, const char** argv )
 {
 	if ( argc < 2 ) {
@@ -104,15 +101,19 @@ int main( const int argc, const char** argv )
 	}
 
 	// Release components
-	release( collector, calculator );
-
+	sb::release( params );
 	delete params;
+
+	sb::release( rawContent );
 	delete rawContent;
 
-	sb::clear( frameInfo );
+	sb::release( frameInfo );
 	delete frameInfo;
 
+	sb::release( collector );
 	delete collector;
+
+	sb::release( calculator );
 	delete calculator;
 
 	return 0;
@@ -140,106 +141,29 @@ void test( sb::Collector* collector,
            sb::RawContent* rawContent,
            sb::FrameInfo* frameInfo )
 {
-	/*// debug each line in section
-	cv::Mat images[3];
-
-	// edges image
-	images[0] = frameInfo->edgesImage.clone();
-	cv::cvtColor( images[0], images[0], cv::COLOR_GRAY2BGR );
-
-	// lines image
-	images[1] = cv::Mat( frameInfo->colorImage.size(), CV_8UC3, cv::Scalar( 0, 0, 0 ) );
-	for ( auto it_section = frameInfo->imageSections.cbegin();
-	      it_section != frameInfo->imageSections.cend(); ++it_section ) {
-
-		for ( auto it_line = (*it_section)->imageLines.begin();
-		      it_line != (*it_section)->imageLines.end(); ++it_line ) {
-			cv::line( images[1],
-			          (*it_line)->line.getStartingPoint(),
-			          (*it_line)->line.getEndingPoint(),
-			          cv::Scalar( 255, 255, 255 ) );
-		}
+	cv::Mat images[2];
+	images[0] = frameInfo->bgrImage.clone();
+	images[1] = frameInfo->binImage.clone();
+	for( int i = 0; i < 2; i++ ) {
+		cv::imshow( "Image " + std::to_string( i ), images[i] );
 	}
+	cv::waitKey();
 
-	// color image
-	images[2] = frameInfo->colorImage.clone();
+	for ( auto it_section = frameInfo->imageSections.cbegin(); it_section != frameInfo->imageSections.cend(); ++it_section ) {
+		sb::Section* section = *it_section;
 
-	// debug
-	for ( int i = 0; i < 3; i++ ) {
-		for ( auto it_section = frameInfo->imageSections.cbegin();
-		      it_section != frameInfo->imageSections.cend(); ++it_section ) {
-			cv::line( images[i],
-			          cv::Point2d( 0, (*it_section)->topLine.getStartingPoint().y ),
-			          cv::Point2d( images[i].cols - 1, (*it_section)->topLine.getStartingPoint().y ),
-			          cv::Scalar( 255, 0, 0 ) );
-			cv::line( images[i],
-			          cv::Point2d( 0, (*it_section)->bottomLine.getStartingPoint().y ),
-			          cv::Point2d( images[i].cols - 1, (*it_section)->bottomLine.getStartingPoint().y ),
-			          cv::Scalar( 255, 0, 0 ) );
-		}
-	}
-
-	for ( auto it_section = frameInfo->imageSections.cbegin();
-	      it_section != frameInfo->imageSections.cend(); ++it_section ) {
-
-		for ( auto it_line = (*it_section)->imageLines.cbegin();
-		      it_line != (*it_section)->imageLines.cend(); ++it_line ) {
-
-			std::stringstream stringBuilder;
-
-			for ( int i = 0; i < 3; i++ ) {
-				cv::Mat tmpImage = images[i].clone();
-
-				cv::line( tmpImage,
-				          (*it_line)->topPoint,
-				          (*it_line)->bottomPoint,
-				          cv::Scalar( 0, 255, 0 ), 2 );
-
-				stringBuilder << "Length: " << (*it_line)->length;
-				cv::putText( tmpImage,
-				             stringBuilder.str(),
-				             cv::Point( 20, 15 ),
-				             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
-
-				stringBuilder.str( "" );
-
-				stringBuilder << "Angle: " << (*it_line)->angle;
-				cv::putText( tmpImage,
-				             stringBuilder.str(),
-				             cv::Point( 200, 15 ),
-				             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
-				stringBuilder.str( "" );
-
-				stringBuilder << "Bottom X: " << (*it_line)->bottomPoint.x;
-				cv::putText( tmpImage,
-				             stringBuilder.str(),
-				             cv::Point( 20, 35 ),
-				             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
-				stringBuilder.str( "" );
-
-				stringBuilder << "Top X: " << (*it_line)->topPoint.x;
-				cv::putText( tmpImage,
-				             stringBuilder.str(),
-				             cv::Point( 200, 35 ),
-				             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
-				stringBuilder.str( "" );
-
-				stringBuilder << "Image " << i;
-				cv::imshow( stringBuilder.str(), tmpImage );
-				stringBuilder.str( "" );
+		for ( auto it_blob = section->blobs.cbegin(); it_blob != section->blobs.cend(); ++it_blob ) {
+			sb::Blob* blob = *it_blob;
+			for ( auto pixel : blob->pixels ) {
+				for ( int i = 0; i < 2; i++ ) {
+					cv::circle( images[i], pixel, 1, cv::Scalar( blob->bgr[0], blob->bgr[1], blob->bgr[2] ), 1 );
+				}
 			}
-
-			cv::waitKey();
-
 		}
+	}
 
-	}*/
-}
-
-void release( sb::Collector* collector,
-              sb::Calculator* calculator )
-{
-	sb::release( calculator );
-
-	sb::release( collector );
+	for ( int i = 0; i < 2; i++ ) {
+		cv::imshow( "Image " + std::to_string( i ), images[i] );
+	}
+	cv::waitKey();
 }

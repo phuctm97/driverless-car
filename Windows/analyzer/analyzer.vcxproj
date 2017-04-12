@@ -21,7 +21,9 @@
   <ItemGroup>
     <ClCompile Include="..\Classes\analyzer\Analyzer.cpp" />
     <ClCompile Include="..\Classes\analyzer\LaneComponent.cpp" />
+    <ClCompile Include="..\Classes\analyzer\LanePart.cpp" />
     <ClCompile Include="..\Classes\analyzer\RoadInfo.cpp" />
+    <ClCompile Include="..\Classes\calculator\Blob.cpp" />
     <ClCompile Include="..\Classes\calculator\Calculator.cpp" />
     <ClCompile Include="..\Classes\calculator\EdgeDetector.cpp" />
     <ClCompile Include="..\Classes\calculator\Formatter.cpp" />
@@ -41,6 +43,7 @@
     <ClInclude Include="..\Classes\analyzer\LaneComponent.h" />
     <ClInclude Include="..\Classes\analyzer\LanePart.h" />
     <ClInclude Include="..\Classes\analyzer\RoadInfo.h" />
+    <ClInclude Include="..\Classes\calculator\Blob.h" />
     <ClInclude Include="..\Classes\calculator\Calculator.h" />
     <ClInclude Include="..\Classes\calculator\EdgeDetector.h" />
     <ClInclude Include="..\Classes\calculator\Formatter.h" />

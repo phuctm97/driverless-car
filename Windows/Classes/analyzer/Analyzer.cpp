@@ -6,20 +6,22 @@ int sb::init( sb::Analyzer* analyzer, sb::Params* params )
 
 	analyzer->trackAnalyzeTimes = ANALYZER_TRACK_ANALYZE_TIMEOUT;
 
-	analyzer->leftLane.init( -1 );
+	analyzer->leftLane = new sb::LaneComponent;
+	sb::init( analyzer->leftLane, -1 );
 
-	analyzer->rightLane.init( 1 );
+	analyzer->rightLane = new sb::LaneComponent;
+	sb::init( analyzer->rightLane, 1 );
 
 	return 0;
 }
 
 int sb::analyze( sb::Analyzer* analyzer,
-								 sb::FrameInfo* frameInfo,
-								 sb::RoadInfo* roadInfo )
+                 sb::FrameInfo* frameInfo,
+                 sb::RoadInfo* roadInfo )
 {
 	// first analyze
 	if ( analyzer->firstAnalyzeTimes < ANALYZER_FIRST_ANALYZE_TIMEOUT ) {
-		if ( firstAnalyze( frameInfo, roadInfo ) >= 0 ) {
+		if ( firstAnalyze( analyzer, frameInfo, roadInfo ) >= 0 ) {
 			// success, stop first analyze, go to analyze track
 			analyzer->firstAnalyzeTimes = ANALYZER_FIRST_ANALYZE_TIMEOUT;
 			analyzer->trackAnalyzeTimes = -1;
@@ -32,7 +34,7 @@ int sb::analyze( sb::Analyzer* analyzer,
 
 	// track analyze
 	if ( analyzer->trackAnalyzeTimes < ANALYZER_TRACK_ANALYZE_TIMEOUT ) {
-		if ( trackAnalyze( frameInfo, roadInfo ) >= 0 ) {
+		if ( trackAnalyze( analyzer, frameInfo, roadInfo ) >= 0 ) {
 			// success, to next frame
 			analyzer->trackAnalyzeTimes = -1;
 			return 0;
@@ -48,79 +50,80 @@ int sb::analyze( sb::Analyzer* analyzer,
 	return 0;
 }
 
-void sb::release( sb::Analyzer* analyzer ) {}
+void sb::release( sb::Analyzer* analyzer )
+{
+	sb::release( analyzer->leftLane );
+	delete analyzer->leftLane;
+
+	sb::release( analyzer->rightLane );
+	delete analyzer->rightLane;
+}
 
 int sb::firstAnalyze( sb::Analyzer* analyzer,
-											sb::FrameInfo* frameInfo,
-											sb::RoadInfo* roadInfo )
+                      sb::FrameInfo* frameInfo,
+                      sb::RoadInfo* roadInfo )
 {
-	sb::Timer timer;
-	timer.reset( "find" );
-	if ( analyzer->leftLane.find( frameInfo ) < 0 ) return -1;
-	if ( analyzer->rightLane.find( frameInfo ) < 0 ) return -1;
-	std::cout << "find: " << timer.milliseconds( "find" ) << "ms." << std::endl;
+	if ( sb::find( analyzer->leftLane, frameInfo ) < 0 ) return -1;
+	if ( sb::find( analyzer->rightLane, frameInfo ) < 0 ) return -1;
 
-	cv::Mat colorImage = frameInfo->colorImage.clone();
+	cv::Point target( (analyzer->leftLane->parts.back()->part->origin.x + analyzer->rightLane->parts.back()->part->origin.x) / 2,
+	                  (analyzer->leftLane->parts.back()->part->origin.y + analyzer->rightLane->parts.back()->part->origin.y) / 2 );
 
-	auto it_left_part = analyzer->leftLane.getParts().cbegin();
-	auto it_right_part = analyzer->rightLane.getParts().cbegin();
-	for ( ; it_left_part != analyzer->leftLane.getParts().cend(); ++it_left_part , ++it_right_part ) {
-		cv::line( colorImage,
-		          it_left_part->part.innerLine.getBottomPoint(), it_left_part->part.innerLine.getTopPoint(), cv::Scalar( 0, 255, 0 ), 2 );
-		cv::line( colorImage,
-		          it_left_part->part.outerLine.getBottomPoint(), it_left_part->part.outerLine.getTopPoint(), cv::Scalar( 0, 255, 0 ), 2 );
-		cv::line( colorImage,
-		          it_right_part->part.innerLine.getBottomPoint(), it_right_part->part.innerLine.getTopPoint(), cv::Scalar( 0, 255, 0 ), 2 );
-		cv::line( colorImage,
-		          it_right_part->part.outerLine.getBottomPoint(), it_right_part->part.outerLine.getTopPoint(), cv::Scalar( 0, 255, 0 ), 2 );
+	// debug
+	{
+		cv::Mat img = frameInfo->bgrImage.clone();
+		size_t n_parts = analyzer->leftLane->parts.size();
+
+		for ( size_t i = 1; i < n_parts; ++i ) {
+			cv::line( img,
+			          analyzer->leftLane->parts[i]->part->origin,
+			          analyzer->leftLane->parts[i - 1]->part->origin,
+			          cv::Scalar( 0, 255, 0 ), 3 );
+			cv::line( img,
+			          analyzer->rightLane->parts[i]->part->origin,
+			          analyzer->rightLane->parts[i - 1]->part->origin,
+			          cv::Scalar( 0, 255, 0 ), 3 );
+		}
+		cv::imshow( "Lanes detected", img );
+		cv::waitKey();
 	}
-
-	cv::imshow( "Analyzer", colorImage );
-	cv::waitKey();
 
 	return 0;
 }
 
 int sb::trackAnalyze( sb::Analyzer* analyzer,
-											sb::FrameInfo* frameInfo,
-											sb::RoadInfo* roadInfo )
+                      sb::FrameInfo* frameInfo,
+                      sb::RoadInfo* roadInfo )
 {
-	analyzer->leftLane.track( frameInfo );
-	analyzer->rightLane.track( frameInfo );
+	sb::track( analyzer->leftLane, frameInfo );
+	sb::track( analyzer->rightLane, frameInfo );
 
-	cv::Mat colorImage = frameInfo->colorImage.clone();
+	// debug
+	{
+		cv::Mat img = frameInfo->bgrImage.clone();
 
-	auto it_left_part = analyzer->leftLane.getParts().cbegin();
-	auto it_right_part = analyzer->rightLane.getParts().cbegin();
-	for ( ; it_left_part != analyzer->leftLane.getParts().cend(); ++it_left_part , ++it_right_part ) {
-		cv::line( colorImage,
-		          it_left_part->part.innerLine.getBottomPoint(), it_left_part->part.innerLine.getTopPoint(), cv::Scalar( 0, 255, 0 ), 2 );
-		cv::line( colorImage,
-		          it_left_part->part.outerLine.getBottomPoint(), it_left_part->part.outerLine.getTopPoint(), cv::Scalar( 0, 255, 0 ), 2 );
-		cv::line( colorImage,
-		          it_right_part->part.innerLine.getBottomPoint(), it_right_part->part.innerLine.getTopPoint(), cv::Scalar( 0, 255, 0 ), 2 );
-		cv::line( colorImage,
-		          it_right_part->part.outerLine.getBottomPoint(), it_right_part->part.outerLine.getTopPoint(), cv::Scalar( 0, 255, 0 ), 2 );
+		auto it_part_left = analyzer->leftLane->parts.cbegin();
+		auto it_part_right = analyzer->rightLane->parts.cbegin();
+		for ( ; it_part_left != analyzer->leftLane->parts.cend(); ++it_part_left , ++it_part_right ) {
+			sb::LanePartInfo* leftPart = *it_part_left;
+			sb::LanePartInfo* rightPart = *it_part_right;
+
+			cv::Scalar color;
+
+			if( leftPart->errorCode == sb::PART_NICE ) color = cv::Scalar( 0, 255, 0 );
+			else if( leftPart->errorCode == sb::PART_OUTSIGHT_LEFT || leftPart->errorCode == sb::PART_OUTSIGHT_RIGHT ) color = cv::Scalar( 0, 255, 255 );
+			else color = cv::Scalar( 0, 0, 255 );
+			cv::circle( img, leftPart->part->origin, 5, color, 2 );
+
+			if( rightPart->errorCode == sb::PART_NICE ) color = cv::Scalar( 0, 255, 0 );
+			else if( rightPart->errorCode == sb::PART_OUTSIGHT_LEFT || rightPart->errorCode == sb::PART_OUTSIGHT_RIGHT ) color = cv::Scalar( 0, 255, 255 );
+			else color = cv::Scalar( 0, 0, 255 );
+			cv::circle( img, rightPart->part->origin, 5, color, 2 );
+		}
+
+		cv::imshow( "Lanes detected", img );
+		cv::waitKey();
 	}
-
-	cv::imshow( "Analyzer", colorImage );
-	cv::waitKey();
-
-	/*
-	 * _leftLane.track(frameInfo);
-	 * _rightLane.track(frameInfo);
-	 *
-	 *if(_leftLane.getError() == LOST_LANE && _rightLane.getError() == LOST_LANE) return -1;
-	 *
-	 *if(_leftLane.getError() == LOST_LANE) {
-	 *	findLeftLaneWithRightLane();
-	 *}
-	 *if(_rightLane.getError() == LOST_LANE) {
-	 *	findRightLaneWithLeftLane();
-	 *}
-	 *
-	 *target = (_leftLane.getTop() + _rightLane.getTop())*0.5
-	 */
 
 	return 0;
 }

@@ -1,10 +1,16 @@
 #include "Section.h"
 
 void sb::create( sb::Section* section,
-								 const cv::Mat& containerBinaryImage,
+								 const cv::Mat& containerBgrImage,
+								 const cv::Mat& containerBinImage,
+								 const cv::Mat& containerEdgImage,
 								 const cv::Rect& rect )
 {
-	section->binaryImage = containerBinaryImage( rect );
+	section->bgrImage = containerBgrImage( rect );
+	
+	section->binImage = containerBinImage( rect );
+
+	section->edgImage = containerEdgImage( rect );
 
 	section->imageRect = rect;
 
@@ -14,13 +20,17 @@ void sb::create( sb::Section* section,
 	                             cv::Point2d( 1, rect.y ) );
 }
 
-void sb::clear( sb::Section* section )
+void sb::release( sb::Section* section )
 {
-	for( auto it_blob = section->blobs.begin(); it_blob != section->blobs.end(); ++it_blob )
-		delete *it_blob;
-	section->blobs.clear();
+	section->bgrImage.release();
+	section->binImage.release();
+	section->edgImage.release();
 
-	section->binaryImage.release();
+	for( auto it_blob = section->blobs.begin(); it_blob != section->blobs.end(); ++it_blob ) {
+		sb::release( *it_blob );
+		delete *it_blob;
+	}
+	section->blobs.clear();
 }
 
 cv::Point sb::convertToContainerSpace( sb::Section* section, const cv::Point& pos )

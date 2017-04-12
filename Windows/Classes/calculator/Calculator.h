@@ -5,15 +5,20 @@
 #include "../Timer.h"
 #include "../collector/RawContent.h"
 #include "FrameInfo.h"
-#include "Formatter.h"
 #include "EdgeDetector.h"
-#include "LineDetector.h"
+
+#define MIN_ACCEPTABLE_BLOB_OBJECTS_COUNT 20
 
 namespace sb
 {
 struct Calculator
 {
+	sb::EdgeDetector edgeDetector;
+
+	double binarizeThesh;
+
 	cv::Rect cropBox;
+
 	std::vector<cv::Rect> splitBoxes;
 };
 
@@ -25,8 +30,11 @@ int calculate( sb::Calculator* calculator,
 
 void release( sb::Calculator* calculator );
 
-void findBlobs( const cv::Mat& binary, std::vector<sb::Blob*> &blobs );
+void findBlobsInSection( sb::Section* section );
 
+cv::Vec3b cvtHSVtoBGR( const cv::Vec3f& hsv );
+
+cv::Vec3f cvtBGRtoHSV( const cv::Vec3b& bgr );
 }
 
 #endif //!__SB_CALCULATOR_H__

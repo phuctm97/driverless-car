@@ -24,6 +24,8 @@ struct RoadInfo
 
 void create( sb::RoadInfo* roadInfo, Params* params );
 
+void release( sb::RoadInfo* roadInfo );
+
 void write( cv::FileStorage& fs, const std::string&, const sb::RoadInfo& data );
 
 void read( const cv::FileNode& node, sb::RoadInfo& data, const sb::RoadInfo& defaultData = sb::RoadInfo() );

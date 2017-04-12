@@ -12,8 +12,12 @@ struct Blob
 
 	cv::Vec3b bgr;
 
-	int minX, maxX, minY, maxY;
+	cv::Rect box;
+
+	cv::Point origin;
 };
+
+void release( sb::Blob* blob );
 
 }
 

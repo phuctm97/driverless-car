@@ -6,6 +6,12 @@ void sb::create( sb::RoadInfo* roadInfo, Params* params )
 	roadInfo->rightKnots.clear();
 }
 
+void sb::release( sb::RoadInfo* roadInfo )
+{
+	roadInfo->leftKnots.clear();
+	roadInfo->rightKnots.clear();
+}
+
 void sb::RoadInfo::read( const cv::FileNode& node )
 {
 	node["Target"] >> target;

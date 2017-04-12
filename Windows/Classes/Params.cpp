@@ -57,6 +57,8 @@ void sb::Params::write( cv::FileStorage& fs ) const
 			<< "}";
 }
 
+void sb::release( sb::Params* params ) {}
+
 void sb::Params::read( const cv::FileNode& node )
 {
 	node["COLOR_FRAME_SIZE"] >> COLOR_FRAME_SIZE;

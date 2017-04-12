@@ -8,16 +8,18 @@ namespace sb
 {
 struct FrameInfo
 {
-	cv::Mat colorImage;
+	cv::Mat bgrImage;
 
-	cv::Mat binaryImage;
+	cv::Mat binImage;
+
+	cv::Mat edgImage;
 
 	std::vector<sb::Section*> imageSections;
 };
 
 void create( sb::FrameInfo* frameInfo, sb::Params* params );
 
-void clear( sb::FrameInfo* frameInfo );
+void release( sb::FrameInfo* frameInfo );
 
 }
 
