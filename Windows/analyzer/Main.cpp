@@ -9,10 +9,6 @@ int init( sb::Collector* collector,
           sb::Analyzer* analyzer,
           sb::Params* params );
 
-void test( sb::RawContent* rawContent,
-           sb::FrameInfo* frameInfo,
-           sb::RoadInfo* roadInfo );
-
 int main( const int argc, const char** argv )
 {
 	if ( argc < 2 ) {
@@ -57,13 +53,9 @@ int main( const int argc, const char** argv )
 	int timerTickCount = 0;
 	timer.reset( "entire-job" );
 
-	///// Debug //////
-	/*cv::namedWindow( "Ego-view" );
-	cv::namedWindow( "Birdeye-view" );
-	cv::waitKey();*/
-
 	///// <Result-writer> /////
 	cv::VideoWriter colorAvi;
+	cv::Mat colorVideoFrame;
 	if ( argc > 2 ) {
 		colorAvi.open( argv[2], CV_FOURCC( 'M', 'J', 'P', 'G' ), 15, params->COLOR_FRAME_SIZE );
 	}
@@ -88,6 +80,10 @@ int main( const int argc, const char** argv )
 		std::cout << "Collector: " << timer.milliseconds( "collector" ) << "ms." << std::endl;
 
 		////// </Collector> /////
+
+		if ( colorAvi.isOpened() ) {
+			cv::flip( rawContent->colorImage, colorVideoFrame, 1 );
+		}
 
 		////// <Calculator> /////
 
@@ -116,13 +112,30 @@ int main( const int argc, const char** argv )
 		timerTickCount++;
 		///// </Timer> /////
 
-		///// <Test> /////
-		test( rawContent, frameInfo, roadInfo );
-		///// <Test> /////
-
 		///// <Result-writer> /////
-		if ( colorAvi.isOpened() && !rawContent->colorImage.empty() ) {
-			colorAvi << rawContent->colorImage;
+		if ( colorAvi.isOpened() && !colorVideoFrame.empty() ) {
+			auto it_part_left = analyzer->leftLane->parts.cbegin();
+			auto it_part_right = analyzer->rightLane->parts.cbegin();
+			for ( ; it_part_left != analyzer->leftLane->parts.cend(); ++it_part_left , ++it_part_right ) {
+				sb::LanePartInfo* leftPart = *it_part_left;
+				sb::LanePartInfo* rightPart = *it_part_right;
+
+				cv::Scalar color;
+
+				if ( leftPart->errorCode == sb::PART_NICE ) color = cv::Scalar( 0, 255, 0 );
+				else if ( leftPart->errorCode == sb::PART_OUTSIGHT_LEFT || leftPart->errorCode == sb::PART_OUTSIGHT_RIGHT ) color = cv::Scalar( 0, 255, 255 );
+				else color = cv::Scalar( 0, 0, 255 );
+				cv::circle( colorVideoFrame, leftPart->part->origin + params->CROP_BOX.tl(), 5, color, 2 );
+
+				if ( rightPart->errorCode == sb::PART_NICE ) color = cv::Scalar( 0, 255, 0 );
+				else if ( rightPart->errorCode == sb::PART_OUTSIGHT_LEFT || rightPart->errorCode == sb::PART_OUTSIGHT_RIGHT ) color = cv::Scalar( 0, 255, 255 );
+				else color = cv::Scalar( 0, 0, 255 );
+				cv::circle( colorVideoFrame, rightPart->part->origin + params->CROP_BOX.tl(), 5, color, 2 );
+			}
+			cv::circle( colorVideoFrame, roadInfo->target + params->CROP_BOX.tl(), 5, cv::Scalar( 255, 255, 255 ), -1 );
+			cv::circle( colorVideoFrame, roadInfo->target + params->CROP_BOX.tl(), 5, cv::Scalar( 0, 0, 0 ), 3 );
+
+			colorAvi << colorVideoFrame;
 		}
 
 		if ( roadInfoStream.isOpened() ) {
@@ -197,11 +210,3 @@ int init( sb::Collector* collector,
 
 	return 0;
 }
-
-void test( sb::RawContent* rawContent,
-           sb::FrameInfo* frameInfo,
-           sb::RoadInfo* roadInfo )
-{
-	
-}
-

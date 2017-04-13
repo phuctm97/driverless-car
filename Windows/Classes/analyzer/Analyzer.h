@@ -7,7 +7,7 @@
 #include "LaneComponent.h"
 #include "RoadInfo.h"
 
-#define SB_DEBUG_ANALYZER
+//#define SB_DEBUG_ANALYZER
 
 #define ANALYZER_FIRST_ANALYZE_TIMEOUT 5
 #define ANALYZER_TRACK_ANALYZE_TIMEOUT 3
