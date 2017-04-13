@@ -4,6 +4,8 @@
 #include "../Classes/Timer.h"
 #include <conio.h>
 
+#define SB_DEBUG
+
 int init( sb::Collector* collector,
           sb::Calculator* calculator,
           sb::Analyzer* analyzer,
@@ -136,6 +138,8 @@ int main( const int argc, const char** argv )
 			cv::circle( colorVideoFrame, roadInfo->target + params->CROP_BOX.tl(), 5, cv::Scalar( 0, 0, 0 ), 3 );
 
 			colorAvi << colorVideoFrame;
+			cv::imshow( "Result", colorVideoFrame );
+			cv::waitKey( 33 );
 		}
 
 		if ( roadInfoStream.isOpened() ) {

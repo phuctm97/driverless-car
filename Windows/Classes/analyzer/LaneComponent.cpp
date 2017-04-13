@@ -339,12 +339,6 @@ int sb::track( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo )
 				lanes.pop();
 				previousSize--;
 
-				float oldAngle = 0;
-				if ( !parts.empty() ) {
-					oldAngle = static_cast<float>(sb::Line( laneComponent->parts[parts.size()]->part->origin,
-					                                        laneComponent->parts[parts.size() - 1]->part->origin ).getAngleWithOx());
-				}
-
 				for ( auto cit_tracked_part = cit_section_parts->cbegin(); cit_tracked_part != cit_section_parts->cend(); ++cit_tracked_part ) {
 					sb::LanePartInfo* trackedPart = *cit_tracked_part;
 
@@ -370,14 +364,6 @@ int sb::track( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo )
 					// TODO: check width diff
 
 					// TODO: check angle diff
-					float angleRating = 0;
-					float angleDiff = 0;
-					if ( parts.size() > 1 ) {
-						angleDiff = MAX( MAX_ACCEPTABLE_ANGLE_DIFF_IN_LANE_PARTS,
-							abs( static_cast<float>(sb::Line( trackedPart->part->origin, lastestPart->part->origin ).getAngleWithOx()) - oldAngle ) );
-					}
-					angleRating = 10.0f * (MAX_ACCEPTABLE_ANGLE_DIFF_IN_LANE_PARTS - angleDiff)
-							/ MAX_ACCEPTABLE_ANGLE_DIFF_IN_LANE_PARTS;
 
 					float colorRating = 0;
 					float colorDiff = MIN( MAX_ACCEPTABLE_COLOR_DIFF_IN_LANE_PARTS,
@@ -385,7 +371,7 @@ int sb::track( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo )
 					colorRating = 10.0f * (MAX_ACCEPTABLE_COLOR_DIFF_IN_LANE_PARTS - colorDiff)
 							/ MAX_ACCEPTABLE_COLOR_DIFF_IN_LANE_PARTS;
 
-					tempRating += 0.2f * posRating + 0.3f * angleDiff + 0.5f * colorRating;
+					tempRating += 0.3f * posRating + 0.7f * colorRating;
 
 					// finish a sequence of lane parts, check for rating
 					if ( tempParts.size() == frameInfo->imageSections.size() ) {
