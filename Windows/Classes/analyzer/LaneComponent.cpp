@@ -34,39 +34,43 @@ int sb::find( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo )
 	std::vector<sb::LanePart*> firstLaneParts;
 	findFirstLaneParts( laneComponent, frameInfo, firstLaneParts );
 
-	for ( auto lanePart : firstLaneParts ) poolParts.push( lanePart ); // push new parts to pool
+	// push new parts to pool
+	for ( auto cit_first_lane_part = firstLaneParts.cbegin(); cit_first_lane_part != firstLaneParts.cend(); ++cit_first_lane_part )
+		poolParts.push( *cit_first_lane_part );
 
 	// find full sequence of lane parts from these first lane parts
-	for ( auto it_first_lane_part = firstLaneParts.begin(); it_first_lane_part != firstLaneParts.end(); ++it_first_lane_part ) {
+	for ( auto cit_first_lane_part = firstLaneParts.cbegin(); cit_first_lane_part != firstLaneParts.cend(); ++cit_first_lane_part ) {
 		std::vector<sb::LanePart*> fullLaneParts;
 		float fullLaneRating;
 
-		sb::findBestLaneParts( laneComponent, frameInfo, *it_first_lane_part, fullLaneParts, fullLaneRating );
+		sb::findBestLaneParts( laneComponent, frameInfo, *cit_first_lane_part, fullLaneParts, fullLaneRating );
 
 		if ( fullLaneRating > highestRating ) {
 			bestLaneParts = fullLaneParts;
 			highestRating = fullLaneRating;
 		}
 
-		for ( auto lanePart : fullLaneParts ) poolParts.push( lanePart ); // push new parts to pool
+		for ( auto cit_full_lane_part = fullLaneParts.cbegin(); cit_full_lane_part != fullLaneParts.cend(); ++cit_full_lane_part )
+			poolParts.push( *cit_full_lane_part ); // push new parts to pool
+
 	}
 
 	// good sequence of lane parts detected, copy it to component's properties
 	if ( highestRating > 3.0f ) {
 
 		// clear old parts
-		for ( auto part : laneComponent->parts ) {
-			sb::release( part );
-			delete part;
+		for ( auto cit_part = laneComponent->parts.cbegin(); cit_part != laneComponent->parts.cend(); ++cit_part ) {
+			sb::release( *cit_part );
+			delete *cit_part;
 		}
 		laneComponent->parts.clear();
 		laneComponent->parts.reserve( 5 );
 
 		// allocate new parts
-		for ( auto it_part = bestLaneParts.cbegin(); it_part != bestLaneParts.cend(); ++it_part ) {
+		for ( auto cit_part = bestLaneParts.cbegin(); cit_part != bestLaneParts.cend(); ++cit_part ) {
 			sb::LanePartInfo* partInfo = new sb::LanePartInfo;
-			partInfo->part = new sb::LanePart( **it_part );
-			partInfo->errorCode = 0;
+			partInfo->part = new sb::LanePart( **cit_part );
+			partInfo->errorCode = sb::PART_NICE;
 			partInfo->errorAngle = 0;
 			partInfo->errorColor = 0;
 			partInfo->errorPosition = 0;
@@ -83,7 +87,7 @@ int sb::find( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo )
 		poolParts.pop();
 	}
 
-	return highestRating > 3.0 ? 0 : -1;
+	return highestRating > 3.0f ? 0 : -1;
 }
 
 void sb::findFirstLaneParts( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo, std::vector<sb::LanePart*>& firstLaneParts )
@@ -92,11 +96,11 @@ void sb::findFirstLaneParts( sb::LaneComponent* laneComponent, sb::FrameInfo* fr
 
 	// TODO: more complicated shape for lane part
 
-	for ( auto it_blob = frameInfo->imageSections.front()->blobs.cbegin();
-	      it_blob != frameInfo->imageSections.front()->blobs.cend(); ++it_blob ) {
-		sb::Blob* blob = *it_blob;
+	for ( auto cit_blob = frameInfo->imageSections.front()->blobs.cbegin();
+	      cit_blob != frameInfo->imageSections.front()->blobs.cend(); ++cit_blob ) {
+		sb::Blob* blob = *cit_blob;
 
-#ifdef SB_DEBUG
+#ifdef SB_DEBUG_LANE_COMPONENT_FIND
 		{
 			cv::Mat img = frameInfo->bgrImage.clone();
 			cv::rectangle( img, blob->box.tl(), blob->box.br(), cv::Scalar( 0, 0, 255 ), 2 );
@@ -147,7 +151,7 @@ void sb::findBestLaneParts( sb::LaneComponent* laneComponent, sb::FrameInfo* fra
 		float rating = stackParts.top().second;
 		stackParts.pop();
 
-#ifdef SB_DEBUG
+#ifdef SB_DEBUG_LANE_COMPONENT_FIND
 		{
 			cv::Mat img = frameInfo->bgrImage.clone();
 			for ( auto part : parts ) {
@@ -175,14 +179,14 @@ void sb::findBestLaneParts( sb::LaneComponent* laneComponent, sb::FrameInfo* fra
 		sb::findNextLaneParts( laneComponent, frameInfo, frameInfo->imageSections[parts.size()], parts.back(), nextLaneParts );
 
 		// push to stack
-		for ( auto it_next_part = nextLaneParts.cbegin(); it_next_part != nextLaneParts.cend(); ++it_next_part ) {
+		for ( auto cit_next_part = nextLaneParts.cbegin(); cit_next_part != nextLaneParts.cend(); ++cit_next_part ) {
 			std::vector<sb::LanePart*> tempParts( parts.cbegin(), parts.cend() );
-			tempParts.push_back( it_next_part->first );
+			tempParts.push_back( cit_next_part->first );
 
-			float tempRating = rating + it_next_part->second;
+			float tempRating = rating + cit_next_part->second;
 			stackParts.push( std::make_pair( tempParts, tempRating ) );
 
-			poolParts.push( it_next_part->first ); // push new part to pool
+			poolParts.push( cit_next_part->first ); // push new part to pool
 		}
 
 	}
@@ -205,9 +209,9 @@ void sb::findNextLaneParts( sb::LaneComponent* laneComponent, sb::FrameInfo* fra
                             sb::Section* section, sb::LanePart* lastestLanePart,
                             std::vector<std::pair<sb::LanePart*, float>>& nextLaneParts )
 {
-	for ( auto it_blob = section->blobs.cbegin(); it_blob != section->blobs.cend(); ++it_blob ) {
+	for ( auto cit_blob = section->blobs.cbegin(); cit_blob != section->blobs.cend(); ++cit_blob ) {
 
-		sb::Blob* blob = *it_blob;
+		sb::Blob* blob = *cit_blob;
 
 		// check width
 		if ( blob->box.width < laneComponent->minLaneWidth ) continue;
@@ -217,7 +221,7 @@ void sb::findNextLaneParts( sb::LaneComponent* laneComponent, sb::FrameInfo* fra
 		lanePart->box = blob->box;
 		lanePart->bgr = blob->bgr;
 
-#ifdef SB_DEBUG
+#ifdef SB_DEBUG_LANE_COMPONENT_FIND
 		{
 			cv::Mat img = frameInfo->bgrImage.clone();
 			cv::rectangle( img, lanePart->box.tl(), lanePart->box.br(), cv::Scalar( 0, 0, 255 ), 2 );
@@ -272,106 +276,122 @@ int sb::track( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo )
 	lanePartsTrackResults.reserve( frameInfo->imageSections.size() );
 
 	// track individual part
-	auto it_part_info = laneComponent->parts.cbegin();
-	auto it_section = frameInfo->imageSections.cbegin();
-	for ( ; it_section != frameInfo->imageSections.cend(); ++it_section , ++it_part_info ) {
-		sb::Section* section = *it_section;
+	{
+		auto cit_part_info = laneComponent->parts.cbegin();
+		auto cit_section = frameInfo->imageSections.cbegin();
+		for ( ; cit_section != frameInfo->imageSections.cend(); ++cit_section , ++cit_part_info ) {
+			sb::Section* section = *cit_section;
 
-		std::vector<sb::LanePartInfo*> trackedParts;
-		sb::trackIndividualPart( laneComponent, frameInfo, section, *it_part_info, trackedParts );
+			std::vector<sb::LanePartInfo*> trackedParts;
+			sb::trackIndividualPart( laneComponent, frameInfo, section, *cit_part_info, trackedParts );
 
-		// not any part tracked, estimate a new one
-		if ( trackedParts.empty() ) {
+			// not any part tracked, estimate a new one
+			if ( trackedParts.empty() ) {
 
-			sb::LanePartInfo* lanePartInfo = new sb::LanePartInfo;
-			lanePartInfo->part = new sb::LanePart;
-			if ( (*it_part_info)->part->origin.x < 50 ) {
-				lanePartInfo->errorCode = sb::PART_OUTSIGHT_LEFT;
-				lanePartInfo->part->origin = cv::Point( 0, (*it_part_info)->part->origin.y );
+				sb::LanePartInfo* lanePartInfo = new sb::LanePartInfo;
+				lanePartInfo->part = new sb::LanePart;
+
+				// outsight left
+				if ( (*cit_part_info)->part->origin.x < 50 ) {
+					lanePartInfo->errorCode = sb::PART_OUTSIGHT_LEFT;
+					lanePartInfo->part->origin = (*cit_part_info)->part->origin;
+				}
+
+				// outsight right
+				else if ( (*cit_part_info)->part->origin.x > frameInfo->bgrImage.cols - 50 ) {
+					lanePartInfo->errorCode = sb::PART_OUTSIGHT_RIGHT;
+					lanePartInfo->part->origin = (*cit_part_info)->part->origin;
+				}
+
+				// unknown
+				else {
+					lanePartInfo->errorCode = sb::PART_UNKNOWN;
+					lanePartInfo->part->origin = (*cit_part_info)->part->origin;
+				}
+
+				// TODO: errorCode == PART_OVERLAYED
+
+				lanePartInfo->part->box = cv::Rect( lanePartInfo->part->origin.x - (*cit_part_info)->part->box.width / 2,
+				                                    lanePartInfo->part->origin.y - (*cit_part_info)->part->box.height / 2,
+				                                    (*cit_part_info)->part->box.width,
+				                                    (*cit_part_info)->part->box.height );
+				lanePartInfo->part->bgr = (*cit_part_info)->part->bgr;
+
+				trackedParts.push_back( lanePartInfo );
 			}
-			else if ( (*it_part_info)->part->origin.x > frameInfo->bgrImage.cols - 50 ) {
-				lanePartInfo->errorCode = sb::PART_OUTSIGHT_RIGHT;
-				lanePartInfo->part->origin = cv::Point( frameInfo->bgrImage.cols - 1, (*it_part_info)->part->origin.y );
-			}
-			else {
-				lanePartInfo->errorCode = sb::PART_UNKNOWN;
-				lanePartInfo->part->origin = (*it_part_info)->part->origin;
-			}
-			// TODO: errorCode == PART_OVERLAYED
 
-			lanePartInfo->part->box = cv::Rect( cv::Point( lanePartInfo->part->origin.x - (*it_part_info)->part->box.size().width / 2,
-			                                               lanePartInfo->part->origin.y - (*it_part_info)->part->box.size().height / 2 ),
-			                                    (*it_part_info)->part->box.size() );
-			lanePartInfo->part->bgr = (*it_part_info)->part->bgr;
+			// push to pool
+			for ( auto cit_tracked_part = trackedParts.cbegin(); cit_tracked_part != trackedParts.cend(); ++cit_tracked_part )
+				poolParts.push( *cit_tracked_part );
 
-			trackedParts.push_back( lanePartInfo );
+			lanePartsTrackResults.push_back( trackedParts );
 		}
-
-		for ( auto lanePart : trackedParts ) poolParts.push( lanePart ); // push to pool
-
-		lanePartsTrackResults.push_back( trackedParts );
 	}
 
 	// combine results
-	std::queue<std::pair<std::vector<sb::LanePartInfo*>, float>> lanes;
-	lanes.push( std::make_pair( std::vector<sb::LanePartInfo*>(), 0.0f ) );
+	{
+		std::queue<std::pair<std::vector<sb::LanePartInfo*>, float>> lanes;
+		lanes.push( std::make_pair( std::vector<sb::LanePartInfo*>(), 0.0f ) );
 
-	for ( auto it_section_parts = lanePartsTrackResults.cbegin(); it_section_parts != lanePartsTrackResults.cend(); ++it_section_parts ) {
-		size_t previousSize = lanes.size();
-		while ( previousSize > 0 ) {
-			std::vector<sb::LanePartInfo*> parts = lanes.front().first;
-			float rating = lanes.front().second;
-			lanes.pop();
-			previousSize--;
+		for ( auto cit_section_parts = lanePartsTrackResults.cbegin(); cit_section_parts != lanePartsTrackResults.cend(); ++cit_section_parts ) {
+			size_t previousSize = lanes.size();
+			while ( previousSize > 0 ) {
+				std::vector<sb::LanePartInfo*> parts = lanes.front().first;
+				float rating = lanes.front().second;
+				lanes.pop();
+				previousSize--;
 
-			for ( auto it_tracked_part = it_section_parts->cbegin(); it_tracked_part != it_section_parts->cend(); ++it_tracked_part ) {
-				sb::LanePartInfo* trackedPart = *it_tracked_part;
+				for ( auto cit_tracked_part = cit_section_parts->cbegin(); cit_tracked_part != cit_section_parts->cend(); ++cit_tracked_part ) {
+					sb::LanePartInfo* trackedPart = *cit_tracked_part;
 
-				std::vector<sb::LanePartInfo*> tempParts = parts;
-				tempParts.push_back( trackedPart );
+					std::vector<sb::LanePartInfo*> tempParts = parts;
+					tempParts.push_back( trackedPart );
 
-				float tempRating = rating;
+					float tempRating = rating;
 
-				if ( parts.empty() ) {
-					lanes.push( std::make_pair( tempParts, tempRating ) );
-					continue;
-				}
-
-				sb::LanePartInfo* lastestPart = parts.back();
-
-				// check pos diff
-				float posRating = 0;
-				if ( trackedPart->errorCode != sb::PART_UNKNOWN ) {
-					float posDiff = static_cast<float>(abs( trackedPart->part->origin.x - lastestPart->part->origin.x ));
-					posRating = 10.0f * (MAX_ACCEPTABLE_POSITION_DIFF_IN_LANE_PARTS - posDiff)
-							/ MAX_ACCEPTABLE_POSITION_DIFF_IN_LANE_PARTS;
-				}
-
-				// TODO: check width diff
-
-				// TODO: more relative value to calculate rating
-
-				float colorRating = 0;
-				if ( trackedPart->errorCode != sb::PART_UNKNOWN ) {
-					float colorDiff = static_cast<float>(sb::calculateDeltaE( trackedPart->part->bgr, lastestPart->part->bgr ));
-					colorRating = 10.0f * (MAX_ACCEPTABLE_COLOR_DIFF_IN_LANE_PARTS - colorDiff)
-							/ MAX_ACCEPTABLE_COLOR_DIFF_IN_LANE_PARTS;
-				}
-
-				tempRating += 0.3f * posRating + 0.7f * colorRating;
-
-				// finish a sequence of lane parts, check for rating
-				if ( tempParts.size() == frameInfo->imageSections.size() ) {
-					tempRating /= tempParts.size() - 1;
-
-					if ( tempRating > highestRating ) {
-						bestLaneParts = tempParts;
-						highestRating = tempRating;
+					if ( parts.empty() ) {
+						lanes.push( std::make_pair( tempParts, tempRating ) );
+						continue;
 					}
-					continue;
-				}
 
-				lanes.push( std::make_pair( tempParts, tempRating ) );
+					sb::LanePartInfo* lastestPart = parts.back();
+
+					// check pos diff
+					float posRating = 0;
+					if ( trackedPart->errorCode != sb::PART_UNKNOWN ) {
+						float posDiff = MIN( MAX_ACCEPTABLE_POSITION_DIFF_IN_LANE_PARTS,
+							static_cast<float>(abs( trackedPart->part->origin.x - lastestPart->part->origin.x )));
+						posRating = 10.0f * (MAX_ACCEPTABLE_POSITION_DIFF_IN_LANE_PARTS - posDiff)
+								/ MAX_ACCEPTABLE_POSITION_DIFF_IN_LANE_PARTS;
+					}
+
+					// TODO: check width diff
+
+					// TODO: more relative value to calculate rating
+
+					float colorRating = 0;
+					if ( trackedPart->errorCode != sb::PART_UNKNOWN ) {
+						float colorDiff = MIN( MAX_ACCEPTABLE_COLOR_DIFF_IN_LANE_PARTS,
+							static_cast<float>(sb::calculateDeltaE( trackedPart->part->bgr, lastestPart->part->bgr )));
+						colorRating = 10.0f * (MAX_ACCEPTABLE_COLOR_DIFF_IN_LANE_PARTS - colorDiff)
+								/ MAX_ACCEPTABLE_COLOR_DIFF_IN_LANE_PARTS;
+					}
+
+					tempRating += 0.3f * posRating + 0.7f * colorRating;
+
+					// finish a sequence of lane parts, check for rating
+					if ( tempParts.size() == frameInfo->imageSections.size() ) {
+						tempRating /= tempParts.size() - 1;
+
+						if ( tempRating > highestRating ) {
+							bestLaneParts = tempParts;
+							highestRating = tempRating;
+						}
+						continue;
+					}
+
+					lanes.push( std::make_pair( tempParts, tempRating ) );
+				}
 			}
 		}
 	}
@@ -380,10 +400,11 @@ int sb::track( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo )
 	if ( highestRating > 0 ) {
 
 		// copy best result
-		auto it_this_part = laneComponent->parts.begin();
-		for ( auto it_tracked_part = bestLaneParts.cbegin(); it_tracked_part != bestLaneParts.cend(); ++it_tracked_part , ++it_this_part ) {
-			sb::LanePartInfo* thisPart = *it_this_part;
-			sb::LanePartInfo* trackedPart = *it_tracked_part;
+		auto cit_this_part = laneComponent->parts.cbegin();
+		auto cit_tracked_part = bestLaneParts.cbegin();
+		for ( ; cit_tracked_part != bestLaneParts.cend(); ++cit_tracked_part , ++cit_this_part ) {
+			sb::LanePartInfo* thisPart = *cit_this_part;
+			sb::LanePartInfo* trackedPart = *cit_tracked_part;
 
 			*thisPart->part = *trackedPart->part;
 			thisPart->errorCode = trackedPart->errorCode;
@@ -392,6 +413,9 @@ int sb::track( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo )
 			thisPart->errorAngle = trackedPart->errorAngle;
 			thisPart->errorColor = trackedPart->errorColor;
 		}
+
+		// fix error parts
+		// TODO: fix error parts width common error position, previous diff position
 	}
 
 	// release pool
@@ -401,7 +425,7 @@ int sb::track( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo )
 		poolParts.pop();
 	}
 
-	return 0;
+	return highestRating > 0.0f ? 0 : -1;
 }
 
 void sb::trackIndividualPart( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo,
@@ -410,12 +434,13 @@ void sb::trackIndividualPart( sb::LaneComponent* laneComponent, sb::FrameInfo* f
 {
 	// TODO: track in situations that errorCode == { PART_UNKNOWN, PART_OUTSIGHT_LEFT, PART_OUTSIGHTED_RIGHT, PART_OVERLAYED }
 
-	for ( auto it_blob = section->blobs.cbegin(); it_blob != section->blobs.cend(); ++it_blob ) {
-		sb::Blob* blob = *it_blob;
+	for ( auto cit_blob = section->blobs.cbegin(); cit_blob != section->blobs.cend(); ++cit_blob ) {
+		sb::Blob* blob = *cit_blob;
 
 		// check width
 		if ( blob->box.width < laneComponent->minLaneWidth ) continue;
 
+		// create new part
 		sb::LanePartInfo* newPartInfo = new sb::LanePartInfo;
 		newPartInfo->part = new sb::LanePart;
 		newPartInfo->part->origin = blob->origin;
@@ -423,19 +448,20 @@ void sb::trackIndividualPart( sb::LaneComponent* laneComponent, sb::FrameInfo* f
 		newPartInfo->part->bgr = blob->bgr;
 		newPartInfo->errorAngle = 0.0f;
 		newPartInfo->errorWidth = 0;
+		newPartInfo->errorCode = sb::PART_NICE;
 
-#ifdef SB_DEBUG_TRACK
+#ifdef SB_DEBUG_LANE_COMPONENT_TRACK
 		{
 			cv::Mat img = frameInfo->bgrImage.clone();
 			cv::rectangle( img, oldPartInfo->part->box.tl(), oldPartInfo->part->box.br(), cv::Scalar( 0, 0, 255 ), 2 );
 			cv::circle( img, oldPartInfo->part->origin, 3, cv::Scalar( 0, 255, 0 ), 2 );
 			cv::imshow( "Old", img );
-		} {
+		} { 
 			cv::Mat img = frameInfo->bgrImage.clone();
 			cv::rectangle( img, newPartInfo->part->box.tl(), newPartInfo->part->box.br(), cv::Scalar( 0, 0, 255 ), 2 );
 			cv::circle( img, newPartInfo->part->origin, 3, cv::Scalar( 0, 255, 0 ), 2 );
 			cv::imshow( "New", img );
-			cv::waitKey(200);
+			cv::waitKey(500);
 		}
 #endif
 
@@ -460,10 +486,6 @@ void sb::trackIndividualPart( sb::LaneComponent* laneComponent, sb::FrameInfo* f
 			continue;
 		}
 		newPartInfo->errorColor = colorError;
-
-		newPartInfo->errorCode = sb::PART_NICE;
-
-		std::cout << "Track lane part: NICE_PART" << std::endl;
 
 		trackResults.push_back( newPartInfo );
 	}

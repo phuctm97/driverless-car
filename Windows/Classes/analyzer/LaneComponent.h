@@ -4,9 +4,6 @@
 #include "../calculator/FrameInfo.h"
 #include "LanePart.h"
 
-
-//#define SB_DEBUG_TRACK
-
 #define MAX_ACCEPTABLE_COLOR_ERROR_TO_WHITE 20
 
 #define MAX_ACCEPTABLE_POSITION_DIFF_IN_LANE_PARTS 70
