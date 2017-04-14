@@ -4,6 +4,8 @@
 #include "../calculator/FrameInfo.h"
 #include "LanePart.h"
 
+#define SB_DEBUG_LANE_COMPONENT_FIND
+
 #define MAX_ACCEPTABLE_COLOR_ERROR_TO_WHITE 20
 
 #define MAX_ACCEPTABLE_POSITION_DIFF_IN_LANE_PARTS 70
@@ -14,7 +16,6 @@
 
 namespace sb
 {
-
 enum LaneError
 {
 	NICE_LANE,
@@ -38,7 +39,7 @@ struct LaneComponent
 
 void release( sb::LaneComponent* laneComponent );
 
-void init( sb::LaneComponent* laneComponent, int side );
+void init( sb::LaneComponent* laneComponent, int side, int minLaneWidth, int maxLaneWidth );
 
 int find( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo );
 
@@ -52,7 +53,26 @@ void findNextLaneParts( sb::LaneComponent* laneComponent, sb::FrameInfo* frameIn
                         sb::Section* section, sb::LanePart* lastestLanePart,
                         std::vector<std::pair<sb::LanePart*, float>>& nextLaneParts );
 
+int find1( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo );
+
+void findFirstPart( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo, std::vector<sb::LanePart*>& firstParts );
+
+void findNextPart( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo, 
+								   sb::Section* section, sb::LanePart* lastestPart, int tendency,
+									 std::vector<sb::LanePart*>& nextParts );
+
 int track( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo );
+
+int track1( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo );
+
+void trackFirstLanePart( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo,
+                         std::vector<sb::LanePartInfo*>& firstLaneParts );
+
+void trackSecondLanePart( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo,
+												 std::vector<sb::LanePartInfo*>& firstLaneParts );
+
+void trackThirdLanePart( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo,
+													std::vector<sb::LanePartInfo*>& firstLaneParts );
 
 void trackIndividualPart( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo,
                           sb::Section* section, sb::LanePartInfo* oldPartInfo,
