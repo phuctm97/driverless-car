@@ -49,7 +49,10 @@ int main( const int argc, const char** argv )
 	// Pressed key
 	char key = 0;
 	std::cout << "Enter 's' to start! ";
-	while ( key != 's' ) std::cin >> key;
+	while( key != 's' ) {
+		fflush( stdin );
+		std::cin >> key;
+	}
 
 	// Timer
 	int timerTickCount = 0;

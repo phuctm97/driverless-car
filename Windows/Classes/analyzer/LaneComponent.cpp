@@ -16,8 +16,6 @@ void sb::init( sb::LaneComponent* laneComponent, int side, int minLaneWidth, int
 {
 	laneComponent->side = side;
 
-	// TODO: allow set min lane width and max lane width via params
-
 	laneComponent->minLaneWidth = minLaneWidth;
 
 	laneComponent->maxLaneWidth = maxLaneWidth;
@@ -185,7 +183,7 @@ void sb::findBestLaneParts( sb::LaneComponent* laneComponent, sb::FrameInfo* fra
 
 		// push to stack
 		for ( auto cit_next_part = nextLaneParts.cbegin(); cit_next_part != nextLaneParts.cend(); ++cit_next_part ) {
-			std::vector<sb::LanePart*> tempParts( parts.cbegin(), parts.cend() );
+			std::vector<sb::LanePart*> tempParts = parts;
 			tempParts.push_back( cit_next_part->first );
 
 			float tempRating = rating + cit_next_part->second;
@@ -265,153 +263,6 @@ void sb::findNextLaneParts( sb::LaneComponent* laneComponent, sb::FrameInfo* fra
 		float rating = 0.4f * posRating + 0.6f * colorRating;
 
 		nextLaneParts.push_back( std::make_pair( lanePart, rating ) );
-	}
-}
-
-int sb::find1( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo )
-{
-	std::stack<std::pair<std::vector<sb::LanePart*>, int>> fullLaneResults;
-
-	// first part
-	std::vector<sb::LanePart*> firstParts;
-	findFirstPart( laneComponent, frameInfo, firstParts );
-
-	// push first parts into stack
-	for ( auto cit_first_part = firstParts.cbegin(); cit_first_part != firstParts.cend(); ++cit_first_part ) {
-		fullLaneResults.push( std::make_pair( std::vector<sb::LanePart*>( 1, *cit_first_part ), 0 ) );
-	}
-
-	for ( auto cit_section = frameInfo->imageSections.cbegin() + 1; cit_section != frameInfo->imageSections.cend(); ++cit_section ) {
-		sb::Section* section = *cit_section;
-
-		size_t preSize = fullLaneResults.size();
-		while ( preSize > 0 ) {
-			std::vector<sb::LanePart*> parts = fullLaneResults.top().first;
-			int tendency = fullLaneResults.top().second;
-			fullLaneResults.pop();
-			preSize--;
-
-
-		}
-
-	}
-
-	for ( auto cit_first_part = firstParts.cbegin(); cit_first_part != firstParts.cend(); ++cit_first_part ) {
-		sb::LanePart* lastestPart = *cit_first_part;
-		int tendency = 0;
-
-		for ( auto cit_section = frameInfo->imageSections.cbegin() + 1; cit_section != frameInfo->imageSections.cend(); ++cit_section ) {
-			sb::Section* section = *cit_section;
-
-			std::vector<sb::LanePart*> nextParts;
-			findNextPart( laneComponent, frameInfo, section, lastestPart, tendency, nextParts );
-
-		}
-	}
-
-	return 0;
-}
-
-void sb::findFirstPart( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo, std::vector<sb::LanePart*>& firstParts )
-{
-	int centerX = frameInfo->bgrImage.cols / 2;
-
-	for ( auto cit_blob = frameInfo->imageSections.front()->blobs.cbegin();
-	      cit_blob != frameInfo->imageSections.front()->blobs.cend(); ++cit_blob ) {
-		sb::Blob* blob = *cit_blob;
-
-#ifdef SB_DEBUG_LANE_COMPONENT_FIND
-		{
-			cv::Mat img = frameInfo->bgrImage.clone();
-			cv::rectangle( img, blob->box.tl(), blob->box.br(), cv::Scalar( 0, 0, 255 ), 2 );
-			cv::circle( img, blob->origin, 3, cv::Scalar( 0, 0, 255 ), 2 );
-			cv::imshow( "Fírst part", img );
-			cv::waitKey();
-		}
-#endif
-
-		// check pos
-		if ( (laneComponent->side < 0 && blob->origin.x > centerX)
-			|| (laneComponent->side > 0 && blob->origin.x < centerX) )
-			continue;
-
-		// check width
-		if ( blob->box.width < laneComponent->minLaneWidth ) continue;
-
-		// check color
-		double colorError = sb::calculateDeltaE( blob->bgr, cv::Vec3b( 255, 255, 255 ) );
-		if ( colorError > MAX_ACCEPTABLE_COLOR_ERROR_TO_WHITE ) continue;
-
-		sb::LanePart* part = new sb::LanePart;
-		part->origin = blob->origin;
-		part->box = blob->box;
-		part->bgr = blob->bgr;
-		firstParts.push_back( part );
-
-#ifdef SB_DEBUG_LANE_COMPONENT_FIND
-		{
-			cv::Mat img = frameInfo->bgrImage.clone();
-			cv::rectangle( img, part->box.tl(), part->box.br(), cv::Scalar( 0, 255, 0 ), 2 );
-			cv::circle( img, part->origin, 3, cv::Scalar( 0, 255, 0 ), 2 );
-			cv::imshow( "Fírst part", img );
-			cv::waitKey();
-		}
-#endif
-
-	}
-}
-
-void sb::findNextPart( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo,
-                       sb::Section* section, sb::LanePart* lastestPart, int tendency,
-                       std::vector<sb::LanePart*>& nextParts )
-{
-	int minX, maxX;
-
-	if ( tendency == 0 ) {
-		minX = lastestPart->origin.x - MAX_ACCEPTABLE_POSITION_DIFF_IN_LANE_PARTS;
-		maxX = lastestPart->origin.x + MAX_ACCEPTABLE_POSITION_DIFF_IN_LANE_PARTS;
-	}
-	else if ( tendency < 0 ) {
-		minX = lastestPart->origin.x - MAX_ACCEPTABLE_POSITION_DIFF_IN_LANE_PARTS;
-		maxX = lastestPart->origin.x + 3;
-	}
-	else {
-		minX = lastestPart->origin.x - 3;
-		maxX = lastestPart->origin.x + MAX_ACCEPTABLE_POSITION_DIFF_IN_LANE_PARTS;
-	}
-
-	for ( auto cit_blob = section->blobs.cbegin(); cit_blob != section->blobs.cend(); ++cit_blob ) {
-		sb::Blob* blob = *cit_blob;
-
-		// check width
-		if ( blob->box.width < laneComponent->minLaneWidth ) continue;
-
-		sb::LanePart* part = new sb::LanePart;
-		part->origin = blob->origin;
-		part->box = blob->box;
-		part->bgr = blob->bgr;
-
-#ifdef SB_DEBUG_LANE_COMPONENT_FIND
-		{
-			cv::Mat img = frameInfo->bgrImage.clone();
-			cv::circle( img, lastestPart->origin, 3, cv::Scalar( 0, 0, 0 ), 2 );
-			cv::line( img, lastestPart->origin, part->origin, cv::Scalar( 0, 0, 255 ), 2 );
-			cv::circle( img, part->origin, 3, cv::Scalar( 0, 0, 255 ), 2 );
-			cv::imshow( "Next lane", img );
-			cv::waitKey();
-		}
-#endif
-
-		// check position
-		if ( part->origin.x < minX || part->origin.x > maxX ) continue;
-
-		float colorDiff = static_cast<float>(sb::calculateDeltaE( part->bgr, lastestPart->bgr ));
-		if ( colorDiff > MAX_ACCEPTABLE_COLOR_DIFF_IN_LANE_PARTS ) {
-			delete part;
-			continue;
-		}
-
-		nextParts.push_back( part );
 	}
 }
 
@@ -574,12 +425,6 @@ int sb::track( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo )
 	return highestRating > 0.0f ? 0 : -1;
 }
 
-void sb::trackFirstLanePart( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo, std::vector<sb::LanePartInfo*>& firstLaneParts ) { }
-
-void sb::trackSecondLanePart( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo, std::vector<sb::LanePartInfo*>& firstLaneParts ) { }
-
-void sb::trackThirdLanePart( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo, std::vector<sb::LanePartInfo*>& firstLaneParts ) {}
-
 void sb::trackIndividualPart( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo,
                               sb::Section* section, sb::LanePartInfo* oldPartInfo,
                               std::vector<sb::LanePartInfo*>& trackResults )
@@ -640,47 +485,6 @@ void sb::trackIndividualPart( sb::LaneComponent* laneComponent, sb::FrameInfo* f
 		newPartInfo->errorColor = colorError;
 
 		trackResults.push_back( newPartInfo );
-	}
-}
-
-int sb::track1( sb::LaneComponent* laneComponent, sb::FrameInfo* frameInfo )
-{
-	int angleTendency = 0;
-	std::vector<std::vector<sb::LanePartInfo*>> trackResult;
-	trackResult.assign( frameInfo->imageSections.size(), std::vector<sb::LanePartInfo*>() );
-
-	return 0;
-
-	std::vector<sb::LanePartInfo*> firstLaneParts;
-	trackFirstLanePart( laneComponent, frameInfo, firstLaneParts );
-
-	std::vector<sb::LanePartInfo*> secondLaneParts;
-	trackSecondLanePart( laneComponent, frameInfo, secondLaneParts );
-
-	std::vector<sb::LanePartInfo*> thirdLaneParts;
-	trackThirdLanePart( laneComponent, frameInfo, thirdLaneParts );
-
-	for ( auto cit_first_part = firstLaneParts.cbegin(); cit_first_part != firstLaneParts.cend(); ++cit_first_part ) {
-		sb::LanePartInfo* firstPart = *cit_first_part;
-
-		for ( auto cit_second_part = secondLaneParts.cbegin(); cit_second_part != secondLaneParts.cend(); ++cit_second_part ) {
-			sb::LanePartInfo* secondPart = *cit_second_part;
-
-			float firstAngle = static_cast<float>(sb::Line( firstPart->part->origin, secondPart->part->origin ).getAngleWithOx());
-			int angleTendency = 0;
-
-			for ( auto cit_third_part = thirdLaneParts.cbegin(); cit_third_part != thirdLaneParts.cend(); ++cit_third_part ) {
-				sb::LanePartInfo* thirdPart = *cit_third_part;
-
-				float secondAngle = static_cast<float>(sb::Line( secondPart->part->origin, thirdPart->part->origin ).getAngleWithOx());
-				float angleDiff = secondAngle - firstAngle;
-
-				if ( angleDiff > 3 ) angleTendency = -1;
-				else if ( angleDiff < -3 ) angleTendency = 1;
-
-			}
-		}
-
 	}
 }
 

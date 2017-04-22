@@ -42,6 +42,7 @@
     <ClInclude Include="..\Classes\analyzer\Analyzer.h" />
     <ClInclude Include="..\Classes\analyzer\LaneComponent.h" />
     <ClInclude Include="..\Classes\analyzer\LanePart.h" />
+    <ClInclude Include="..\Classes\analyzer\Repository.h" />
     <ClInclude Include="..\Classes\analyzer\RoadInfo.h" />
     <ClInclude Include="..\Classes\calculator\Blob.h" />
     <ClInclude Include="..\Classes\calculator\Calculator.h" />

@@ -123,5 +123,8 @@
     <ClInclude Include="..\Classes\calculator\Blob.h">
       <Filter>calculator</Filter>
     </ClInclude>
+    <ClInclude Include="..\Classes\analyzer\Repository.h">
+      <Filter>analyzer</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

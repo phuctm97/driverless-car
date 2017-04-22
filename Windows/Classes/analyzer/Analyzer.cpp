@@ -12,6 +12,7 @@ int sb::init( sb::Analyzer* analyzer, sb::Params* params )
 	analyzer->rightLane = new sb::LaneComponent;
 	sb::init( analyzer->rightLane, 1, 20, 40 );
 
+
 	return 0;
 }
 
@@ -67,8 +68,8 @@ int sb::firstAnalyze( sb::Analyzer* analyzer,
                       sb::FrameInfo* frameInfo,
                       sb::RoadInfo* roadInfo )
 {
-	if ( sb::find1( analyzer->leftLane, frameInfo ) < 0 ) return -1;
-	if ( sb::find1( analyzer->rightLane, frameInfo ) < 0 ) return -1;
+	if ( sb::find( analyzer->leftLane, frameInfo ) < 0 ) return -1;
+	if ( sb::find( analyzer->rightLane, frameInfo ) < 0 ) return -1;
 
 	// calculate road width
 	{

@@ -76,7 +76,6 @@ int sb::calculate( sb::Calculator* calculator,
 			           return b1->box.tl().x < b2->box.tl().x;
 		           } );
 
-		// TODO: calculate blob shape, pos, angle,...
 	}
 
 	return 0;
@@ -278,3 +277,4 @@ cv::Vec3f sb::cvtBGRtoHSV( const cv::Vec3b& bgr )
 
 	return cv::Vec3f( hue, saturation, value );
 }
+
