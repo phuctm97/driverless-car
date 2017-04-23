@@ -203,7 +203,11 @@ void sb::trackBothLanes( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo )
 	// both line must be obtained, and in good condition
 	if ( largestBlobs[0] == nullptr || largestBlobs[1] == nullptr
 		|| largestBlobs[0]->size < MIN_ACCEPTABLE_FULL_LANE_BLOB_OBJECTS_COUNT
-		|| largestBlobs[1]->size < MIN_ACCEPTABLE_FULL_LANE_BLOB_OBJECTS_COUNT ) {
+		|| largestBlobs[1]->size < MIN_ACCEPTABLE_FULL_LANE_BLOB_OBJECTS_COUNT
+		|| std::count_if( largestBlobs[0]->childBlobs.cbegin(), largestBlobs[0]->childBlobs.cend(),
+		                  []( sb::Blob* blob ) { return blob->size > 20; } ) < 3
+		|| std::count_if( largestBlobs[1]->childBlobs.cbegin(), largestBlobs[1]->childBlobs.cend(),
+		                  []( sb::Blob* blob ) { return blob->size > 20; } ) < 3 ) {
 		analyzer->roadState = sb::RoadState::UNKNOWN;
 		return;
 	}
@@ -234,7 +238,12 @@ void sb::trackLeftLane( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo )
 		}
 	}
 
-	if ( largestBlob == nullptr || largestBlob->size < MIN_ACCEPTABLE_FULL_LANE_BLOB_OBJECTS_COUNT ) {
+	bool validBlob = true;
+
+	if ( largestBlob == nullptr
+		|| largestBlob->size < MIN_ACCEPTABLE_FULL_LANE_BLOB_OBJECTS_COUNT
+		|| std::count_if( largestBlob->childBlobs.cbegin(), largestBlob->childBlobs.cend(),
+		                  []( sb::Blob* blob ) { return blob->size > 20; } ) < 3 ) {
 		analyzer->roadState = sb::RoadState::UNKNOWN;
 		return;
 	}
@@ -257,7 +266,10 @@ void sb::trackRightLane( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo )
 		}
 	}
 
-	if ( largestBlob == nullptr || largestBlob->size < MIN_ACCEPTABLE_FULL_LANE_BLOB_OBJECTS_COUNT ) {
+	if ( largestBlob == nullptr
+		|| largestBlob->size < MIN_ACCEPTABLE_FULL_LANE_BLOB_OBJECTS_COUNT
+		|| std::count_if( largestBlob->childBlobs.cbegin(), largestBlob->childBlobs.cend(),
+		                  []( sb::Blob* blob ) { return blob->size > 20; } ) < 3 ) {
 		analyzer->roadState = sb::RoadState::UNKNOWN;
 		return;
 	}
