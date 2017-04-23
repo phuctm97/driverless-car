@@ -4,7 +4,7 @@ int sb::init( sb::Collector* collector, sb::Params* params )
 {
 	// sample init
 
-	collector->tempCap = cv::VideoCapture( "../../Debug/sample-1.avi" );
+	collector->tempCap = cv::VideoCapture( "../../Debug/sample-2.avi" );
 
 	if ( !collector->tempCap.isOpened() ) {
 		std::cerr << "Init stream failed." << std::endl;

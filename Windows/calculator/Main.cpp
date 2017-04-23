@@ -145,6 +145,9 @@ void test( sb::Collector* collector,
 	cv::imshow( "Calculator", debugImage );
 	cv::waitKey();
 
+	cv::imshow( "Calculator", frameInfo->binImage );
+	cv::waitKey();
+
 	for ( auto cit_blob = frameInfo->blobs.cbegin(); cit_blob != frameInfo->blobs.cend(); ++cit_blob ) {
 		cv::Mat img = debugImage.clone();
 

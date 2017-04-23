@@ -127,7 +127,11 @@ void sb::findBothLanes( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo )
 	// both line must be obtained, and in good condition
 	if ( largestBlobs[0] == nullptr || largestBlobs[1] == nullptr
 		|| largestBlobs[0]->size < MIN_ACCEPTABLE_FULL_LANE_BLOB_OBJECTS_COUNT
-		|| largestBlobs[1]->size < MIN_ACCEPTABLE_FULL_LANE_BLOB_OBJECTS_COUNT ) {
+		|| largestBlobs[1]->size < MIN_ACCEPTABLE_FULL_LANE_BLOB_OBJECTS_COUNT
+		|| std::count_if( largestBlobs[0]->childBlobs.cbegin(), largestBlobs[0]->childBlobs.cend(),
+		                  []( sb::Blob* b ) { return b->size > MIN_ACCEPTABLE_CHILD_BLOB_OBJECTS_COUNT; } ) < 3
+		|| std::count_if( largestBlobs[1]->childBlobs.cbegin(), largestBlobs[1]->childBlobs.cend(),
+		                  []( sb::Blob* b ) { return b->size > MIN_ACCEPTABLE_CHILD_BLOB_OBJECTS_COUNT; } ) < 3 ) {
 		analyzer->roadState = sb::RoadState::UNKNOWN;
 		return;
 	}
@@ -205,9 +209,9 @@ void sb::trackBothLanes( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo )
 		|| largestBlobs[0]->size < MIN_ACCEPTABLE_FULL_LANE_BLOB_OBJECTS_COUNT
 		|| largestBlobs[1]->size < MIN_ACCEPTABLE_FULL_LANE_BLOB_OBJECTS_COUNT
 		|| std::count_if( largestBlobs[0]->childBlobs.cbegin(), largestBlobs[0]->childBlobs.cend(),
-		                  []( sb::Blob* blob ) { return blob->size > 20; } ) < 3
+		                  []( sb::Blob* blob ) { return blob->size > MIN_ACCEPTABLE_CHILD_BLOB_OBJECTS_COUNT; } ) < 3
 		|| std::count_if( largestBlobs[1]->childBlobs.cbegin(), largestBlobs[1]->childBlobs.cend(),
-		                  []( sb::Blob* blob ) { return blob->size > 20; } ) < 3 ) {
+		                  []( sb::Blob* blob ) { return blob->size > MIN_ACCEPTABLE_CHILD_BLOB_OBJECTS_COUNT; } ) < 3 ) {
 		analyzer->roadState = sb::RoadState::UNKNOWN;
 		return;
 	}
@@ -231,19 +235,17 @@ void sb::trackLeftLane( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo )
 	for ( auto cit_blob = frameInfo->blobs.cbegin(); cit_blob != frameInfo->blobs.cend(); ++cit_blob ) {
 		sb::Blob* blob = *cit_blob;
 
-		if ( abs( blob->origin.x - analyzer->repo->leftBlob->origin.x ) > 100 ) continue;
+		if ( abs( blob->origin.x - analyzer->repo->leftBlob->origin.x ) > MAX_ACCEPTABLE_LANE_POSITION_DIFF ) continue;
 
 		if ( largestBlob == nullptr || blob->size > largestBlob->size ) {
 			largestBlob = blob;
 		}
 	}
 
-	bool validBlob = true;
-
 	if ( largestBlob == nullptr
 		|| largestBlob->size < MIN_ACCEPTABLE_FULL_LANE_BLOB_OBJECTS_COUNT
 		|| std::count_if( largestBlob->childBlobs.cbegin(), largestBlob->childBlobs.cend(),
-		                  []( sb::Blob* blob ) { return blob->size > 20; } ) < 3 ) {
+		                  []( sb::Blob* blob ) { return blob->size > MIN_ACCEPTABLE_CHILD_BLOB_OBJECTS_COUNT; } ) < 3 ) {
 		analyzer->roadState = sb::RoadState::UNKNOWN;
 		return;
 	}
@@ -259,7 +261,7 @@ void sb::trackRightLane( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo )
 	for ( auto cit_blob = frameInfo->blobs.cbegin(); cit_blob != frameInfo->blobs.cend(); ++cit_blob ) {
 		sb::Blob* blob = *cit_blob;
 
-		if ( abs( blob->origin.x - analyzer->repo->rightBlob->origin.x ) > 100 ) continue;
+		if ( abs( blob->origin.x - analyzer->repo->rightBlob->origin.x ) > MAX_ACCEPTABLE_LANE_POSITION_DIFF ) continue;
 
 		if ( largestBlob == nullptr || blob->size > largestBlob->size ) {
 			largestBlob = blob;
@@ -269,7 +271,7 @@ void sb::trackRightLane( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo )
 	if ( largestBlob == nullptr
 		|| largestBlob->size < MIN_ACCEPTABLE_FULL_LANE_BLOB_OBJECTS_COUNT
 		|| std::count_if( largestBlob->childBlobs.cbegin(), largestBlob->childBlobs.cend(),
-		                  []( sb::Blob* blob ) { return blob->size > 20; } ) < 3 ) {
+		                  []( sb::Blob* blob ) { return blob->size > MIN_ACCEPTABLE_CHILD_BLOB_OBJECTS_COUNT; } ) < 3 ) {
 		analyzer->roadState = sb::RoadState::UNKNOWN;
 		return;
 	}
@@ -281,7 +283,6 @@ void sb::trackRightLane( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo )
 
 void sb::analyzeWithBothLane( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo, sb::RoadInfo* roadInfo )
 {
-	// TODO: MIN_ACCEPTABLE_LANE_PART_BLOB_OBJECTS_COUNT
 	analyzer->repo->possibleNextStates.clear();
 	analyzer->knots.reserve( analyzer->repo->leftBlob->childBlobs.size() );
 
@@ -297,7 +298,7 @@ void sb::analyzeWithBothLane( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo, 
 		sb::Blob* rightBlob = *cit_right_blob;
 
 		sb::LaneKnot first;
-		if ( leftBlob->size > 5 ) {
+		if ( leftBlob->size > MIN_ACCEPTABLE_CHILD_BLOB_OBJECTS_COUNT ) {
 			first.position = leftBlob->origin;
 			first.type = 1;
 		}
@@ -306,7 +307,7 @@ void sb::analyzeWithBothLane( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo, 
 		}
 
 		sb::LaneKnot second;
-		if ( rightBlob->size > 5 ) {
+		if ( rightBlob->size > MIN_ACCEPTABLE_CHILD_BLOB_OBJECTS_COUNT ) {
 			second.position = rightBlob->origin;
 			second.type = 1;
 		}
@@ -329,9 +330,9 @@ void sb::analyzeWithBothLane( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo, 
 		if ( second.type <= 0 || rightBlob->box.br().x >= frameInfo->bgrImage.cols - 5 ) voteIgnoreRight++;
 	}
 
+	analyzer->repo->possibleNextStates.push_back( sb::RoadState::BOTH_LANE_DETECTED );
 	if ( voteIgnoreLeft >= 2 ) analyzer->repo->possibleNextStates.push_back( sb::RoadState::IGNORE_LEFT_LANE );
 	if ( voteIgnoreRight >= 2 ) analyzer->repo->possibleNextStates.push_back( sb::RoadState::IGNORE_RIGHT_LANE );
-	analyzer->repo->possibleNextStates.push_back( sb::RoadState::BOTH_LANE_DETECTED );
 }
 
 void sb::analyzeWithoutLeftLane( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo, sb::RoadInfo* roadInfo )
@@ -351,7 +352,7 @@ void sb::analyzeWithoutLeftLane( sb::Analyzer* analyzer, sb::FrameInfo* frameInf
 		first.type = -1;
 
 		sb::LaneKnot second;
-		if ( rightBlob->size > 5 ) {
+		if ( rightBlob->size > MIN_ACCEPTABLE_CHILD_BLOB_OBJECTS_COUNT ) {
 			second.position = rightBlob->origin;
 			second.type = 1;
 		}
@@ -387,7 +388,7 @@ void sb::analyzeWithoutRightLane( sb::Analyzer* analyzer, sb::FrameInfo* frameIn
 		sb::Blob* leftBlob = *cit_left_blob;
 
 		sb::LaneKnot first;
-		if ( leftBlob->size > 5 ) {
+		if ( leftBlob->size > MIN_ACCEPTABLE_CHILD_BLOB_OBJECTS_COUNT ) {
 			first.position = leftBlob->origin;
 			first.type = 1;
 		}
