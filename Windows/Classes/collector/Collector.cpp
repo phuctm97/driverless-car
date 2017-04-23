@@ -31,6 +31,5 @@ int sb::collect( sb::Collector* collector, sb::RawContent* rawContent )
 void sb::release( sb::Collector* collector )
 {
 	// sample release
-
 	collector->tempCap.release();
 }

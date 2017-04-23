@@ -1,6 +1,8 @@
 #include "LineInfo.h"
 
-void sb::release( sb::LineInfo* lineInfo ) {}
+void sb::release( sb::LineInfo* lineInfo )
+{
+}
 
 void sb::create( sb::LineInfo* lineInfo, const sb::Line& line )
 {

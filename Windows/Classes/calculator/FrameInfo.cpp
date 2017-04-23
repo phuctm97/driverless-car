@@ -2,15 +2,22 @@
 
 void sb::create( sb::FrameInfo* frameInfo, sb::Params* params ) {}
 
-void sb::release( sb::FrameInfo* frameInfo )
+void sb::release( sb::FrameInfo* frameInfo, bool releaseBlobs )
 {
+	if ( frameInfo == nullptr ) return;
+
 	frameInfo->bgrImage.release();
 	frameInfo->binImage.release();
 	frameInfo->edgImage.release();
 
-	for( auto it_section = frameInfo->imageSections.begin(); it_section != frameInfo->imageSections.end(); ++it_section ) {
-		sb::release( *it_section );
-		delete *it_section;
+	if ( releaseBlobs ) {
+		for ( auto it_blob = frameInfo->blobs.begin(); it_blob != frameInfo->blobs.end(); ++it_blob ) {
+			if ( *it_blob != nullptr ) {
+				sb::release( *it_blob );
+				delete *it_blob;
+			}
+		}
 	}
-	frameInfo->imageSections.clear();
+
+	frameInfo->blobs.clear();
 }

@@ -12,11 +12,11 @@ int sb::init( sb::Calculator* calculator, sb::Params* params )
 
 	calculator->binarizeThesh = params->BINARIZE_THRESH;
 
-	std::vector<double> _splitRatio = { 0.2, 0.25, 0.25, 0.3 };
+	std::vector<double> splitRatio = { 0.2, 0.25, 0.25, 0.3 };
 
 	calculator->splitBoxes.clear(); {
 		int y = 0;
-		for ( double ratio : _splitRatio ) {
+		for ( double ratio : splitRatio ) {
 			int h = static_cast<int>(round( 1.0 * params->CROP_BOX.height * ratio ));
 
 			if ( y + h > params->CROP_BOX.height ) h = params->CROP_BOX.height - y;
@@ -27,6 +27,8 @@ int sb::init( sb::Calculator* calculator, sb::Params* params )
 		}
 	}
 
+	std::reverse( calculator->splitBoxes.begin(), calculator->splitBoxes.end() );
+
 	return 0;
 }
 
@@ -34,10 +36,7 @@ int sb::calculate( sb::Calculator* calculator,
                    sb::RawContent* rawContent,
                    sb::FrameInfo* frameInfo )
 {
-	sb::release( frameInfo );
-
-	// TODO: remove images in section for optimization
-	// TODO: generated local shared hsv image to calculate color for all blobs
+	sb::release( frameInfo, false );
 
 	// 1) bgr image
 	// crop to correct format
@@ -58,25 +57,8 @@ int sb::calculate( sb::Calculator* calculator,
 	// 3) edges detector
 	calculator->edgeDetector.apply( frameInfo->edgImage );
 
-	// 4) generate sections
-	frameInfo->imageSections.reserve( 5 );
-	for ( auto it_box = calculator->splitBoxes.crbegin(); it_box != calculator->splitBoxes.crend(); ++it_box ) {
-		sb::Section* section = new sb::Section;
-		sb::create( section, frameInfo->bgrImage, frameInfo->binImage, frameInfo->edgImage, *it_box );
-		frameInfo->imageSections.push_back( section );
-	}
-
-	// 5) generate blobs
-	for ( auto it_section = frameInfo->imageSections.begin(); it_section != frameInfo->imageSections.end(); ++it_section ) {
-		sb::Section* section = *it_section;
-		sb::findBlobsInSection( section );
-
-		std::sort( section->blobs.begin(), section->blobs.end(),
-		           [](const sb::Blob* b1, const sb::Blob* b2)-> bool {
-			           return b1->box.tl().x < b2->box.tl().x;
-		           } );
-
-	}
+	// 4) generate blobs
+	findBlobs( calculator, frameInfo );
 
 	return 0;
 }
@@ -86,77 +68,98 @@ void sb::release( sb::Calculator* calculator )
 	calculator->splitBoxes.clear();
 }
 
-void sb::findBlobsInSection( sb::Section* section )
+void sb::findBlobs( sb::Calculator* calculator, sb::FrameInfo* frameInfo )
 {
+	// generate binary short image
 	cv::Mat labelImage;
-	section->binImage.convertTo( labelImage, CV_32SC1 );
+	frameInfo->binImage.convertTo( labelImage, CV_32SC1 );
 
-	int minX, minY, maxX, maxY;
-	long sumX, sumY;
-
+	// finding blob process
 	int labelCount = 2;
-
 	for ( int y = 0; y < labelImage.rows; y++ ) {
 		int* row = reinterpret_cast<int*>(labelImage.ptr( y ));
 		for ( int x = 0; x < labelImage.cols; x++ ) {
 			if ( row[x] != 255 )
 				continue;
+
+			// find signal of a blob, floodfill to find the full one
 			cv::Rect rect;
 			cv::floodFill( labelImage, cv::Point( x, y ), labelCount, &rect, 0, 0, 4 );
 
+			// allocate new blob
 			sb::Blob* blob = new sb::Blob;
-			minX = INT_MAX;
-			minY = INT_MAX;
-			maxX = 0;
-			maxY = 0;
-			sumX = 0;
-			sumY = 0;
+			blob->childBlobs.reserve( calculator->splitBoxes.size() );
+			for ( auto cit_section = calculator->splitBoxes.cbegin(); cit_section != calculator->splitBoxes.cend(); ++cit_section ) {
+				blob->childBlobs.push_back( new Blob );
+			}
 
-			int dominantHue = 0;
+			// <minX, minY, maxX, maxY, sumX, sumY, size>
+			std::tuple<int, int, int, int, long, long, size_t> blobInfo = std::make_tuple( INT_MAX, INT_MAX, 0, 0, 0, 0, 0 );
+			std::vector<std::tuple<int, int, int, int, long, long, size_t>> childBlobsInfo;
+			childBlobsInfo.assign( blob->childBlobs.size(), std::make_tuple( INT_MAX, INT_MAX, 0, 0, 0, 0, 0 ) );
 
-			int hueCounter[360]{ 0 };
-			float sSum = 0.0;
-			float vSum = 0.0;
-
+			// find pixels in blob
 			for ( int i = rect.y; i < (rect.y + rect.height); i++ ) {
 				int* row2 = reinterpret_cast<int*>(labelImage.ptr( i ));
 				for ( int j = rect.x; j < (rect.x + rect.width); j++ ) {
 					if ( row2[j] != labelCount )
 						continue;
-					cv::Vec3b pixel = section->bgrImage.at<cv::Vec3b>( cv::Point( j, i ) );
-					cv::Vec3f hsvPixel = cvtBGRtoHSV( pixel );
 
-					int hValue = static_cast<int>(hsvPixel[0]);
+					// update main blob info
+					std::get<0>( blobInfo ) = MIN( std::get<0>( blobInfo ), j );
+					std::get<1>( blobInfo ) = MIN( std::get<1>( blobInfo ), i );
+					std::get<2>( blobInfo ) = MAX( std::get<2>( blobInfo ), j );
+					std::get<3>( blobInfo ) = MAX( std::get<3>( blobInfo ), i );
+					std::get<4>( blobInfo ) += j;
+					std::get<5>( blobInfo ) += i;
+					std::get<6>( blobInfo )++;
 
-					hueCounter[hValue]++;
-					sSum += hsvPixel[1];
-					vSum += hsvPixel[2];
-
-					if ( hueCounter[hValue] > hueCounter[dominantHue] ) {
-						dominantHue = hValue;
+					// update child blobs info
+					auto cit_section = calculator->splitBoxes.cbegin();
+					auto it_blobinfo = childBlobsInfo.begin();
+					for ( ; it_blobinfo != childBlobsInfo.end(); ++it_blobinfo , ++cit_section ) {
+						if ( i >= cit_section->y ) {
+							std::get<0>( *it_blobinfo ) = MIN( std::get<0>( *it_blobinfo ), j );
+							std::get<1>( *it_blobinfo ) = MIN( std::get<1>( *it_blobinfo ), i );
+							std::get<2>( *it_blobinfo ) = MAX( std::get<2>( *it_blobinfo ), j );
+							std::get<3>( *it_blobinfo ) = MAX( std::get<3>( *it_blobinfo ), i );
+							std::get<4>( *it_blobinfo ) += j;
+							std::get<5>( *it_blobinfo ) += i;
+							std::get<6>( *it_blobinfo )++;
+							break;
+						}
 					}
-
-					cv::Point pos = sb::convertToContainerSpace( section, cv::Point( j, i ) );
-					blob->pixels.push_back( pos );
-					minX = MIN( minX, pos.x );
-					maxX = MAX( maxX, pos.x );
-					minY = MIN( minY, pos.y );
-					maxY = MAX( maxY, pos.y );
-					sumX += pos.x;
-					sumY += pos.y;
 				}
-
 			}
-			if ( blob->pixels.size() >= MIN_ACCEPTABLE_BLOB_OBJECTS_COUNT ) {
-				cv::Vec3f dominantHSV = cv::Vec3f( 1.0f * dominantHue, sSum / blob->pixels.size(), vSum / blob->pixels.size() );
 
-				blob->bgr = cvtHSVtoBGR( dominantHSV );
-				blob->box = cv::Rect( minX, minY, maxX - minX + 1, maxY - minY + 1 );
-				blob->origin = cv::Point( static_cast<int>(sumX / blob->pixels.size()),
-				                          static_cast<int>(sumY / blob->pixels.size()) );
-				section->blobs.push_back( blob );
+			if ( std::get<6>( blobInfo ) >= MIN_ACCEPTABLE_BLOB_OBJECTS_COUNT ) {
+				blob->box = cv::Rect( std::get<0>( blobInfo ), std::get<1>( blobInfo ),
+				                      std::get<2>( blobInfo ) - std::get<0>( blobInfo ) + 1,
+				                      std::get<3>( blobInfo ) - std::get<1>( blobInfo ) + 1 );
+				blob->size = std::get<6>( blobInfo );
+				blob->origin = cv::Point( static_cast<int>(std::get<4>( blobInfo ) / blob->size),
+				                          static_cast<int>(std::get<5>( blobInfo ) / blob->size) );
+
+				auto cit_info = childBlobsInfo.cbegin();
+				auto cit_childblob = blob->childBlobs.cbegin();
+				for ( ; cit_info != childBlobsInfo.cend(); ++cit_info , ++cit_childblob ) {
+
+					// TODO: MIN_ACCEPTABLE_CHILD_BLOB_OBJECTS_COUNT
+					if ( std::get<6>( *cit_info ) <= 5 ) continue;
+
+					Blob* childBlob = *cit_childblob;
+					childBlob->box = cv::Rect( std::get<0>( *cit_info ), std::get<1>( *cit_info ),
+					                           std::get<2>( *cit_info ) - std::get<0>( *cit_info ) + 1,
+					                           std::get<3>( *cit_info ) - std::get<1>( *cit_info ) + 1 );
+					childBlob->size = std::get<6>( *cit_info );
+					childBlob->origin = cv::Point( static_cast<int>(std::get<4>( *cit_info ) / childBlob->size),
+					                               static_cast<int>(std::get<5>( *cit_info ) / childBlob->size) );
+
+				}
+				frameInfo->blobs.push_back( blob );
 			}
 			else {
+				sb::release( blob );
 				delete blob;
 			}
 			labelCount++;
@@ -164,117 +167,3 @@ void sb::findBlobsInSection( sb::Section* section )
 
 	}
 }
-
-cv::Vec3b sb::cvtHSVtoBGR( const cv::Vec3f& hsv )
-{
-	float h = hsv[0];
-	float s = hsv[1];
-	float v = hsv[2];
-
-	float c = v * s;
-	float temp = h / 60;
-	temp = fmod( temp, 2.0f );
-	temp -= 1;
-	temp = fabs( temp );
-	temp = 1 - temp;
-	float x = temp * c;
-
-	float m = v - c;
-
-	float r;
-	float g;
-	float b;
-
-	if ( h >= 0 && h < 60 ) {
-		r = c;
-		g = x;
-		b = 0;
-	}
-	else if ( h >= 60 && h < 120 ) {
-		r = x;
-		g = c;
-		b = 0;
-	}
-	else if ( h >= 120 && h < 180 ) {
-		r = 0;
-		g = c;
-		b = x;
-	}
-	else if ( h >= 180 && h < 240 ) {
-		r = 0;
-		g = x;
-		b = c;
-	}
-	else if ( h >= 240 && h < 300 ) {
-		r = x;
-		g = 0;
-		b = c;
-	}
-	else {
-		r = c;
-		g = 0;
-		b = x;
-	}
-
-	r = (r + m) * 255;
-	g = (g + m) * 255;
-	b = (b + m) * 255;
-
-	return cv::Vec3b( static_cast<int>(b), static_cast<int>(g), static_cast<int>(r) );
-}
-
-cv::Vec3f sb::cvtBGRtoHSV( const cv::Vec3b& bgr )
-{
-	int b = bgr[0];
-	int g = bgr[1];
-	int r = bgr[2];
-
-	int cMax = MAX( b, MAX( g, r ) );
-	int cMin = MIN( b, MIN( g, r ) );
-
-	int delta = cMax - cMin;
-
-	float hue;
-	float saturation;
-	float value;
-
-	if ( delta == 0 ) {
-		hue = 0;
-	}
-	else {
-		if ( cMax == r ) {
-			hue = (g - b) / static_cast<float>(delta);
-			//hue /= 255.0;
-			hue = fmod( hue, 6.0f );
-			hue *= 60;
-		}
-		else if ( cMax == g ) {
-			hue = (b - r) / static_cast<float>(delta);
-			//hue /= 255.0;
-			hue += 2;
-			hue *= 60;
-		}
-		else {
-			hue = (r - g) / static_cast<float>(delta);
-			//hue /= 255.0;
-			hue += 4;
-			hue *= 60;
-		}
-	}
-
-	if ( cMax == 0 ) {
-		saturation = 0;
-	}
-	else {
-		saturation = delta / static_cast<float>(cMax);
-	}
-
-	value = cMax / 255.0f;
-
-	if ( hue < 0 ) {
-		hue += 360;
-	}
-
-	return cv::Vec3f( hue, saturation, value );
-}
-

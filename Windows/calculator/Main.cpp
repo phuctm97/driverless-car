@@ -141,29 +141,26 @@ void test( sb::Collector* collector,
            sb::RawContent* rawContent,
            sb::FrameInfo* frameInfo )
 {
-	cv::Mat images[2];
-	images[0] = frameInfo->bgrImage.clone();
-	images[1] = frameInfo->binImage.clone();
-	for( int i = 0; i < 2; i++ ) {
-		cv::imshow( "Image " + std::to_string( i ), images[i] );
-	}
+	cv::Mat debugImage = frameInfo->bgrImage;
+	cv::imshow( "Calculator", debugImage );
 	cv::waitKey();
 
-	for ( auto it_section = frameInfo->imageSections.cbegin(); it_section != frameInfo->imageSections.cend(); ++it_section ) {
-		sb::Section* section = *it_section;
+	for ( auto cit_blob = frameInfo->blobs.cbegin(); cit_blob != frameInfo->blobs.cend(); ++cit_blob ) {
+		cv::Mat img = debugImage.clone();
 
-		for ( auto it_blob = section->blobs.cbegin(); it_blob != section->blobs.cend(); ++it_blob ) {
-			sb::Blob* blob = *it_blob;
-			for ( auto pixel : blob->pixels ) {
-				for ( int i = 0; i < 2; i++ ) {
-					cv::circle( images[i], pixel, 1, cv::Scalar( blob->bgr[0], blob->bgr[1], blob->bgr[2] ), 1 );
-				}
-			}
+		sb::Blob* blob = *cit_blob;
+		for ( auto cit_childblob = blob->childBlobs.cbegin(); cit_childblob != blob->childBlobs.cend(); ++cit_childblob ) {
+			sb::Blob* childBlob = *cit_childblob;
+
+			if ( childBlob->size == 0 ) continue;
+
+			cv::rectangle( img, childBlob->box.tl(), childBlob->box.br(), cv::Scalar( 0, 0, 255 ), 1 );
+			cv::circle( img, childBlob->origin, 3, cv::Scalar( 0, 255, 0 ), 2 );
 		}
-	}
 
-	for ( int i = 0; i < 2; i++ ) {
-		cv::imshow( "Image " + std::to_string( i ), images[i] );
+		cv::putText( img, std::to_string( blob->size ), cv::Point( frameInfo->bgrImage.cols / 2, 30 ),
+		             cv::FONT_HERSHEY_PLAIN, 2, cv::Scalar( 0, 255, 255 ), 2 );
+		cv::imshow( "Calculator", img );
+		cv::waitKey();
 	}
-	cv::waitKey();
 }

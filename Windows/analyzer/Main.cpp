@@ -49,7 +49,7 @@ int main( const int argc, const char** argv )
 	// Pressed key
 	char key = 0;
 	std::cout << "Enter 's' to start! ";
-	while( key != 's' ) {
+	while ( key != 's' ) {
 		fflush( stdin );
 		std::cin >> key;
 	}
@@ -64,12 +64,6 @@ int main( const int argc, const char** argv )
 	if ( argc > 2 ) {
 		colorAvi.open( argv[2], CV_FOURCC( 'M', 'J', 'P', 'G' ), 15, params->COLOR_FRAME_SIZE );
 	}
-
-	cv::FileStorage roadInfoStream;
-	if ( argc > 3 ) {
-		roadInfoStream.open( argv[3], cv::FileStorage::WRITE );
-	}
-	int frameCount = 0;
 	///// </Result-writer> /////
 
 	while ( true ) {
@@ -119,36 +113,34 @@ int main( const int argc, const char** argv )
 
 		///// <Result-writer> /////
 		if ( colorAvi.isOpened() && !colorVideoFrame.empty() ) {
-			auto it_part_left = analyzer->leftLane->parts.cbegin();
-			auto it_part_right = analyzer->rightLane->parts.cbegin();
-			for ( ; it_part_left != analyzer->leftLane->parts.cend(); ++it_part_left , ++it_part_right ) {
-				sb::LanePartInfo* leftPart = *it_part_left;
-				sb::LanePartInfo* rightPart = *it_part_right;
-
-				cv::Scalar color;
-
-				if ( leftPart->errorCode == sb::PART_NICE ) color = cv::Scalar( 0, 255, 0 );
-				else if ( leftPart->errorCode == sb::PART_OUTSIGHT_LEFT || leftPart->errorCode == sb::PART_OUTSIGHT_RIGHT ) color = cv::Scalar( 0, 255, 255 );
-				else color = cv::Scalar( 0, 0, 255 );
-				cv::circle( colorVideoFrame, leftPart->part->origin + params->CROP_BOX.tl(), 5, color, 2 );
-
-				if ( rightPart->errorCode == sb::PART_NICE ) color = cv::Scalar( 0, 255, 0 );
-				else if ( rightPart->errorCode == sb::PART_OUTSIGHT_LEFT || rightPart->errorCode == sb::PART_OUTSIGHT_RIGHT ) color = cv::Scalar( 0, 255, 255 );
-				else color = cv::Scalar( 0, 0, 255 );
-				cv::circle( colorVideoFrame, rightPart->part->origin + params->CROP_BOX.tl(), 5, color, 2 );
+			if ( analyzer->roadState == sb::RoadState::UNKNOWN ) {
+				cv::putText( colorVideoFrame, "Failed!",
+				             cv::Point( frameInfo->bgrImage.cols / 3, frameInfo->bgrImage.rows / 2 ),
+				             cv::FONT_HERSHEY_PLAIN, 3, cv::Scalar( 0, 0, 255 ), 3 );
 			}
-			cv::circle( colorVideoFrame, roadInfo->target + params->CROP_BOX.tl(), 5, cv::Scalar( 255, 255, 255 ), -1 );
-			cv::circle( colorVideoFrame, roadInfo->target + params->CROP_BOX.tl(), 5, cv::Scalar( 0, 0, 0 ), 3 );
+			else {
+				for ( auto cit_knot = analyzer->knots.cbegin(); cit_knot != analyzer->knots.cend(); ++cit_knot ) {
+					if ( cit_knot->first.type > 0 ) {
+						cv::circle( colorVideoFrame, cit_knot->first.position + params->CROP_BOX.tl(), 4, cv::Scalar( 0, 255, 0 ), 2 );
+					}
+					if ( cit_knot->second.type > 0 ) {
+						cv::circle( colorVideoFrame, cit_knot->second.position + params->CROP_BOX.tl(), 4, cv::Scalar( 0, 255, 0 ), 2 );
+					}
+				}
+				cv::circle( colorVideoFrame, roadInfo->target + params->CROP_BOX.tl(), 12, cv::Scalar( 0, 0, 0 ), -1 );
+				cv::line( colorVideoFrame,
+				          roadInfo->target - cv::Point( 7, 0 ) + params->CROP_BOX.tl(),
+				          roadInfo->target + cv::Point( 7, 0 ) + params->CROP_BOX.tl(),
+				          cv::Scalar( 0, 0, 255 ), 2 );
+				cv::line( colorVideoFrame,
+				          roadInfo->target - cv::Point( 0, 7 ) + params->CROP_BOX.tl(),
+				          roadInfo->target + cv::Point( 0, 7 ) + params->CROP_BOX.tl(),
+				          cv::Scalar( 0, 0, 255 ), 2 );
+			}
 
 			colorAvi << colorVideoFrame;
-			cv::imshow( "Result", colorVideoFrame );
-			cv::waitKey( 33 );
-		}
-
-		if ( roadInfoStream.isOpened() ) {
-			std::stringstream stringBuilder;
-			stringBuilder << "road_" << frameCount++;
-			roadInfoStream << stringBuilder.str() << *roadInfo;
+			cv::imshow( "Analyzer", colorVideoFrame );
+			cv::waitKey( 1000 / 15 );
 		}
 		///// </Result-writer> /////
 
@@ -165,9 +157,6 @@ int main( const int argc, const char** argv )
 
 	///// <Result-writer> /////
 	colorAvi.release();
-
-	roadInfoStream << "frame_count" << frameCount;
-	roadInfoStream.release();
 	///// </Result-writer> /////
 
 	// Release components

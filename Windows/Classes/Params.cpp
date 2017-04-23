@@ -9,7 +9,7 @@ void sb::load( sb::Params* params, const cv::String& yamlFileName )
 	fs.release();
 }
 
-void sb::save( sb::Params* params, const cv::String& yamlFileName ) 
+void sb::save( sb::Params* params, const cv::String& yamlFileName )
 {
 	cv::FileStorage fs( yamlFileName, cv::FileStorage::WRITE );
 
@@ -57,7 +57,9 @@ void sb::Params::write( cv::FileStorage& fs ) const
 			<< "}";
 }
 
-void sb::release( sb::Params* params ) {}
+void sb::release( sb::Params* params )
+{
+}
 
 void sb::Params::read( const cv::FileNode& node )
 {

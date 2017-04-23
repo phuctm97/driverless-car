@@ -30,11 +30,8 @@ int calculate( sb::Calculator* calculator,
 
 void release( sb::Calculator* calculator );
 
-void findBlobsInSection( sb::Section* section );
+void findBlobs( sb::Calculator* calculator, sb::FrameInfo* frameInfo );
 
-cv::Vec3b cvtHSVtoBGR( const cv::Vec3f& hsv );
-
-cv::Vec3f cvtBGRtoHSV( const cv::Vec3b& bgr );
 }
 
 #endif //!__SB_CALCULATOR_H__

@@ -20,8 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Classes\analyzer\Analyzer.cpp" />
-    <ClCompile Include="..\Classes\analyzer\LaneComponent.cpp" />
-    <ClCompile Include="..\Classes\analyzer\LanePart.cpp" />
+    <ClCompile Include="..\Classes\analyzer\Repository.cpp" />
     <ClCompile Include="..\Classes\analyzer\RoadInfo.cpp" />
     <ClCompile Include="..\Classes\calculator\Blob.cpp" />
     <ClCompile Include="..\Classes\calculator\Calculator.cpp" />
@@ -31,7 +30,6 @@
     <ClCompile Include="..\Classes\calculator\Line.cpp" />
     <ClCompile Include="..\Classes\calculator\LineDetector.cpp" />
     <ClCompile Include="..\Classes\calculator\LineInfo.cpp" />
-    <ClCompile Include="..\Classes\calculator\Section.cpp" />
     <ClCompile Include="..\Classes\collector\Collector.cpp" />
     <ClCompile Include="..\Classes\collector\RawContent.cpp" />
     <ClCompile Include="..\Classes\Params.cpp" />
@@ -40,8 +38,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Classes\analyzer\Analyzer.h" />
-    <ClInclude Include="..\Classes\analyzer\LaneComponent.h" />
-    <ClInclude Include="..\Classes\analyzer\LanePart.h" />
     <ClInclude Include="..\Classes\analyzer\Repository.h" />
     <ClInclude Include="..\Classes\analyzer\RoadInfo.h" />
     <ClInclude Include="..\Classes\calculator\Blob.h" />
@@ -52,7 +48,6 @@
     <ClInclude Include="..\Classes\calculator\Line.h" />
     <ClInclude Include="..\Classes\calculator\LineDetector.h" />
     <ClInclude Include="..\Classes\calculator\LineInfo.h" />
-    <ClInclude Include="..\Classes\calculator\Section.h" />
     <ClInclude Include="..\Classes\collector\Collector.h" />
     <ClInclude Include="..\Classes\collector\RawContent.h" />
     <ClInclude Include="..\Classes\Include.h" />

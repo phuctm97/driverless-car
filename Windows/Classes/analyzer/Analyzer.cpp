@@ -1,4 +1,4 @@
-#include "Analyzer.h"
+﻿#include "Analyzer.h"
 
 int sb::init( sb::Analyzer* analyzer, sb::Params* params )
 {
@@ -6,12 +6,9 @@ int sb::init( sb::Analyzer* analyzer, sb::Params* params )
 
 	analyzer->trackAnalyzeTimes = ANALYZER_TRACK_ANALYZE_TIMEOUT;
 
-	analyzer->leftLane = new sb::LaneComponent;
-	sb::init( analyzer->leftLane, -1, 20, 40 );
+	analyzer->repo = new sb::Repository;
 
-	analyzer->rightLane = new sb::LaneComponent;
-	sb::init( analyzer->rightLane, 1, 20, 40 );
-
+	analyzer->knots.clear();
 
 	return 0;
 }
@@ -53,61 +50,22 @@ int sb::analyze( sb::Analyzer* analyzer,
 
 void sb::release( sb::Analyzer* analyzer )
 {
-	analyzer->roadWidths.clear();
 	analyzer->firstAnalyzeTimes = -1;
 	analyzer->trackAnalyzeTimes = ANALYZER_TRACK_ANALYZE_TIMEOUT;
 
-	sb::release( analyzer->leftLane );
-	delete analyzer->leftLane;
-
-	sb::release( analyzer->rightLane );
-	delete analyzer->rightLane;
+	sb::release( analyzer->repo );
+	delete analyzer->repo;
 }
 
 int sb::firstAnalyze( sb::Analyzer* analyzer,
                       sb::FrameInfo* frameInfo,
                       sb::RoadInfo* roadInfo )
 {
-	if ( sb::find( analyzer->leftLane, frameInfo ) < 0 ) return -1;
-	if ( sb::find( analyzer->rightLane, frameInfo ) < 0 ) return -1;
+	findLanes( analyzer, frameInfo );
 
-	// calculate road width
-	{
-		analyzer->roadWidths.clear();
-		analyzer->roadWidths.assign( frameInfo->imageSections.size(), 0 );
-		auto it_road_width = analyzer->roadWidths.begin();
-		auto cit_left_part = analyzer->leftLane->parts.cbegin();
-		auto cit_right_part = analyzer->rightLane->parts.cbegin();
-		for ( ; it_road_width != analyzer->roadWidths.end(); ++it_road_width , ++cit_left_part , ++cit_right_part ) {
-			*it_road_width = (*cit_right_part)->part->origin.x - (*cit_left_part)->part->origin.x;
-		}
-	}
+	analyzeResult( analyzer, frameInfo, roadInfo );
 
-	// calculate target
-	roadInfo->target = cv::Point( (analyzer->leftLane->parts[2]->part->origin.x + analyzer->rightLane->parts[2]->part->origin.x) / 2,
-	                              (analyzer->leftLane->parts[2]->part->origin.y + analyzer->rightLane->parts[2]->part->origin.y) / 2 );
-
-#ifdef SB_DEBUG_ANALYZER
-	{
-		cv::Mat img = frameInfo->bgrImage.clone();
-		size_t n_parts = analyzer->leftLane->parts.size();
-
-		for ( size_t i = 1; i < n_parts; ++i ) {
-			cv::line( img,
-			          analyzer->leftLane->parts[i]->part->origin,
-			          analyzer->leftLane->parts[i - 1]->part->origin,
-			          cv::Scalar( 0, 255, 0 ), 3 );
-			cv::line( img,
-			          analyzer->rightLane->parts[i]->part->origin,
-			          analyzer->rightLane->parts[i - 1]->part->origin,
-			          cv::Scalar( 0, 255, 0 ), 3 );
-		}
-		cv::circle( img, roadInfo->target, 5, cv::Scalar( 255, 255, 255 ), -1 );
-		cv::circle( img, roadInfo->target, 5, cv::Scalar( 0, 0, 0 ), 3 ); 
-		cv::imshow( "Lanes detected", img );
-		cv::waitKey();
-	}
-#endif
+	if ( analyzer->roadState == sb::RoadState::UNKNOWN ) return -1;
 
 	return 0;
 }
@@ -116,91 +74,356 @@ int sb::trackAnalyze( sb::Analyzer* analyzer,
                       sb::FrameInfo* frameInfo,
                       sb::RoadInfo* roadInfo )
 {
-	if ( sb::track( analyzer->leftLane, frameInfo ) < 0 ) return -1;
-	if ( sb::track( analyzer->rightLane, frameInfo ) < 0 )return -1;
+	trackLanes( analyzer, frameInfo );
 
-	// update road width
-	{
-		auto it_road_width = analyzer->roadWidths.begin();
-		auto cit_left_part = analyzer->leftLane->parts.cbegin();
-		auto cit_right_part = analyzer->rightLane->parts.cbegin();
-		for ( ; it_road_width != analyzer->roadWidths.end(); ++it_road_width , ++cit_left_part , ++cit_right_part ) {
-			sb::LanePartInfo* leftPart = *cit_left_part;
-			sb::LanePartInfo* rightPart = *cit_right_part;
-			if ( leftPart->errorCode != sb::PART_NICE || rightPart->errorCode != sb::PART_NICE ) continue;
+	analyzeResult( analyzer, frameInfo, roadInfo );
 
-			*it_road_width = rightPart->part->origin.x - leftPart->part->origin.x;
+	if ( analyzer->roadState == sb::RoadState::UNKNOWN ) return -1;
+
+	return 0;
+}
+
+void sb::findLanes( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo )
+{
+	findBothLanes( analyzer, frameInfo );
+
+	// release other blobs
+	for ( auto it_blob = frameInfo->blobs.begin(); it_blob != frameInfo->blobs.end(); ++it_blob ) {
+		sb::Blob* blob = *it_blob;
+		if ( blob == analyzer->repo->leftBlob || blob == analyzer->repo->rightBlob ) continue;
+
+		sb::release( blob );
+		delete blob;
+		*it_blob = nullptr;
+	}
+}
+
+void sb::findBothLanes( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo )
+{
+	if ( frameInfo->blobs.empty() ) {
+		analyzer->roadState = sb::RoadState::UNKNOWN;
+		return;
+	}
+
+	// allocate road width repo
+	if ( analyzer->repo->roadWidths.empty() ) {
+		analyzer->repo->roadWidths.assign( frameInfo->blobs.front()->childBlobs.size(), 0 );
+	}
+
+	// two largest blob, to left most is left lane, the right most is right lane
+	Blob* largestBlobs[2] = { nullptr };
+	for ( auto cit_blob = frameInfo->blobs.cbegin(); cit_blob != frameInfo->blobs.cend(); ++cit_blob ) {
+		sb::Blob* blob = *cit_blob;
+
+		if ( largestBlobs[0] == nullptr || blob->size > largestBlobs[0]->size ) {
+			largestBlobs[1] = largestBlobs[0];
+			largestBlobs[0] = blob;
+		}
+		else if ( largestBlobs[1] == nullptr || blob->size > largestBlobs[1]->size ) {
+			largestBlobs[1] = blob;
 		}
 	}
 
-	// fix error part
-	{
-		auto cit_road_width = analyzer->roadWidths.cbegin();
-		auto cit_left_part = analyzer->leftLane->parts.cbegin();
-		auto cit_right_part = analyzer->rightLane->parts.cbegin();
-		for ( ; cit_road_width != analyzer->roadWidths.cend(); ++cit_road_width , ++cit_left_part , ++cit_right_part ) {
-			sb::LanePartInfo* leftPart = *cit_left_part;
-			sb::LanePartInfo* rightPart = *cit_right_part;
+	// both line must be obtained, and in good condition
+	if ( largestBlobs[0] == nullptr || largestBlobs[1] == nullptr
+		|| largestBlobs[0]->size < MIN_ACCEPTABLE_FULL_LANE_BLOB_OBJECTS_COUNT
+		|| largestBlobs[1]->size < MIN_ACCEPTABLE_FULL_LANE_BLOB_OBJECTS_COUNT ) {
+		analyzer->roadState = sb::RoadState::UNKNOWN;
+		return;
+	}
 
-			if ( leftPart->errorCode == sb::PART_NICE && rightPart->errorCode == sb::PART_NICE ) continue;
-			if ( leftPart->errorCode != sb::PART_NICE && rightPart->errorCode != sb::PART_NICE ) continue;
+	// largestBlobs[0] is left, largestBlobs[1] is right
+	if ( largestBlobs[1]->origin.x < largestBlobs[0]->origin.x ) {
+		auto tmp = largestBlobs[1];
+		largestBlobs[1] = largestBlobs[0];
+		largestBlobs[0] = tmp;
+	}
 
-			if ( leftPart->errorCode != sb::PART_NICE )
-				leftPart->part->origin.x = rightPart->part->origin.x - *cit_road_width;
-			else
-				rightPart->part->origin.x = leftPart->part->origin.x + *cit_road_width;
+	sb::release( analyzer->repo );
+	analyzer->repo->leftBlob = largestBlobs[0];
+	analyzer->repo->rightBlob = largestBlobs[1];
+	analyzer->roadState = sb::RoadState::BOTH_LANE_DETECTED;
+}
+
+void sb::trackLanes( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo )
+{
+	bool trackSucceeded = false;
+
+	for ( auto cit_next_state = analyzer->repo->possibleNextStates.cbegin(); cit_next_state != analyzer->repo->possibleNextStates.cend(); ++cit_next_state ) {
+		switch ( *cit_next_state ) {
+		case sb::RoadState::BOTH_LANE_DETECTED: {
+			trackBothLanes( analyzer, frameInfo );
+			if ( analyzer->roadState == sb::RoadState::BOTH_LANE_DETECTED ) trackSucceeded = true;
+		}
+			break;
+
+		case sb::RoadState::IGNORE_LEFT_LANE: {
+			trackRightLane( analyzer, frameInfo );
+			if ( analyzer->roadState == sb::RoadState::IGNORE_LEFT_LANE ) trackSucceeded = true;
+		}
+			break;
+
+		case sb::RoadState::IGNORE_RIGHT_LANE: {
+			trackLeftLane( analyzer, frameInfo );
+			if ( analyzer->roadState == sb::RoadState::IGNORE_RIGHT_LANE ) trackSucceeded = true;
+		}
+			break;
+		}
+
+		if ( trackSucceeded ) break;
+	}
+
+	// release other blobs
+	for ( auto it_blob = frameInfo->blobs.begin(); it_blob != frameInfo->blobs.end(); ++it_blob ) {
+		sb::Blob* blob = *it_blob;
+		if ( blob == analyzer->repo->leftBlob || blob == analyzer->repo->rightBlob ) continue;
+
+		sb::release( blob );
+		delete blob;
+		*it_blob = nullptr;
+	}
+}
+
+void sb::trackBothLanes( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo )
+{
+	// two largest blob, to left most is left lane, the right most is right lane
+	Blob* largestBlobs[2] = { nullptr };
+	for ( auto cit_blob = frameInfo->blobs.cbegin(); cit_blob != frameInfo->blobs.cend(); ++cit_blob ) {
+		sb::Blob* blob = *cit_blob;
+
+		if ( largestBlobs[0] == nullptr || blob->size > largestBlobs[0]->size ) {
+			largestBlobs[1] = largestBlobs[0];
+			largestBlobs[0] = blob;
+		}
+		else if ( largestBlobs[1] == nullptr || blob->size > largestBlobs[1]->size ) {
+			largestBlobs[1] = blob;
 		}
 	}
 
-	// check for all parts failed, return -1 (stop)
-	{
-		bool trackFailed = true;
+	// both line must be obtained, and in good condition
+	if ( largestBlobs[0] == nullptr || largestBlobs[1] == nullptr
+		|| largestBlobs[0]->size < MIN_ACCEPTABLE_FULL_LANE_BLOB_OBJECTS_COUNT
+		|| largestBlobs[1]->size < MIN_ACCEPTABLE_FULL_LANE_BLOB_OBJECTS_COUNT ) {
+		analyzer->roadState = sb::RoadState::UNKNOWN;
+		return;
+	}
 
-		auto cit_left_part = analyzer->leftLane->parts.cbegin();
-		auto cit_right_part = analyzer->rightLane->parts.cbegin();
-		for ( ; cit_left_part != analyzer->leftLane->parts.cend(); ++cit_left_part , ++cit_right_part ) {
-			if ( (*cit_left_part)->errorCode == sb::PART_NICE || (*cit_right_part)->errorCode == sb::PART_NICE ) {
-				trackFailed = false;
-				break;
+	// largestBlobs[0] is left, largestBlobs[1] is right
+	if ( largestBlobs[1]->origin.x < largestBlobs[0]->origin.x ) {
+		auto tmp = largestBlobs[1];
+		largestBlobs[1] = largestBlobs[0];
+		largestBlobs[0] = tmp;
+	}
+
+	sb::release( analyzer->repo );
+	analyzer->repo->leftBlob = largestBlobs[0];
+	analyzer->repo->rightBlob = largestBlobs[1];
+	analyzer->roadState = sb::RoadState::BOTH_LANE_DETECTED;
+}
+
+void sb::trackLeftLane( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo )
+{
+	sb::Blob* largestBlob = nullptr;
+	for ( auto cit_blob = frameInfo->blobs.cbegin(); cit_blob != frameInfo->blobs.cend(); ++cit_blob ) {
+		sb::Blob* blob = *cit_blob;
+
+		if ( abs( blob->origin.x - analyzer->repo->leftBlob->origin.x ) > 100 ) continue;
+
+		if ( largestBlob == nullptr || blob->size > largestBlob->size ) {
+			largestBlob = blob;
+		}
+	}
+
+	if ( largestBlob == nullptr || largestBlob->size < MIN_ACCEPTABLE_FULL_LANE_BLOB_OBJECTS_COUNT ) {
+		analyzer->roadState = sb::RoadState::UNKNOWN;
+		return;
+	}
+
+	sb::release( analyzer->repo );
+	analyzer->repo->leftBlob = largestBlob;
+	analyzer->roadState = sb::RoadState::IGNORE_RIGHT_LANE;
+}
+
+void sb::trackRightLane( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo )
+{
+	sb::Blob* largestBlob = nullptr;
+	for ( auto cit_blob = frameInfo->blobs.cbegin(); cit_blob != frameInfo->blobs.cend(); ++cit_blob ) {
+		sb::Blob* blob = *cit_blob;
+
+		if ( abs( blob->origin.x - analyzer->repo->rightBlob->origin.x ) > 100 ) continue;
+
+		if ( largestBlob == nullptr || blob->size > largestBlob->size ) {
+			largestBlob = blob;
+		}
+	}
+
+	if ( largestBlob == nullptr || largestBlob->size < MIN_ACCEPTABLE_FULL_LANE_BLOB_OBJECTS_COUNT ) {
+		analyzer->roadState = sb::RoadState::UNKNOWN;
+		return;
+	}
+
+	sb::release( analyzer->repo );
+	analyzer->repo->rightBlob = largestBlob;
+	analyzer->roadState = sb::RoadState::IGNORE_LEFT_LANE;
+}
+
+void sb::analyzeWithBothLane( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo, sb::RoadInfo* roadInfo )
+{
+	// TODO: MIN_ACCEPTABLE_LANE_PART_BLOB_OBJECTS_COUNT
+	analyzer->repo->possibleNextStates.clear();
+	analyzer->knots.reserve( analyzer->repo->leftBlob->childBlobs.size() );
+
+	auto cit_left_blob = analyzer->repo->leftBlob->childBlobs.cbegin(); // left child blobs
+	auto cit_right_blob = analyzer->repo->rightBlob->childBlobs.cbegin(); // right child blobs
+	auto it_road_width = analyzer->repo->roadWidths.begin(); // for update road width repo
+
+	int voteIgnoreLeft = 0;
+	int voteIgnoreRight = 0;
+
+	for ( ; cit_left_blob != analyzer->repo->leftBlob->childBlobs.cend(); ++cit_left_blob , ++cit_right_blob , ++it_road_width ) {
+		sb::Blob* leftBlob = *cit_left_blob;
+		sb::Blob* rightBlob = *cit_right_blob;
+
+		sb::LaneKnot first;
+		if ( leftBlob->size > 5 ) {
+			first.position = leftBlob->origin;
+			first.type = 1;
+		}
+		else { // error left child blob
+			first.type = -1;
+		}
+
+		sb::LaneKnot second;
+		if ( rightBlob->size > 5 ) {
+			second.position = rightBlob->origin;
+			second.type = 1;
+		}
+		else { // error right child blob
+			second.type = -1;
+		}
+
+		analyzer->knots.push_back( std::make_pair( first, second ) );
+
+		if ( first.type > 0 && second.type > 0 ) { // good pair of lane
+			roadInfo->target = (first.position + second.position) * 0.5; // calculate road target
+
+			// update road width repo
+			if ( *it_road_width == 0 || (leftBlob->box.tl().x > 1 && rightBlob->box.br().x < frameInfo->bgrImage.cols - 2) ) {
+				*it_road_width = second.position.x - first.position.x;
 			}
 		}
 
-		if ( trackFailed ) return -1;
+		if ( first.type <= 0 || leftBlob->box.tl().x < 5 ) voteIgnoreLeft++;
+		if ( second.type <= 0 || rightBlob->box.br().x >= frameInfo->bgrImage.cols - 5 ) voteIgnoreRight++;
 	}
 
-	// calculate target
-	roadInfo->target = cv::Point( (analyzer->leftLane->parts[2]->part->origin.x + analyzer->rightLane->parts[2]->part->origin.x) / 2,
-	                              (analyzer->leftLane->parts[2]->part->origin.y + analyzer->rightLane->parts[2]->part->origin.y) / 2 );
+	if ( voteIgnoreLeft >= 2 ) analyzer->repo->possibleNextStates.push_back( sb::RoadState::IGNORE_LEFT_LANE );
+	if ( voteIgnoreRight >= 2 ) analyzer->repo->possibleNextStates.push_back( sb::RoadState::IGNORE_RIGHT_LANE );
+	analyzer->repo->possibleNextStates.push_back( sb::RoadState::BOTH_LANE_DETECTED );
+}
 
-#ifdef SB_DEBUG_ANALYZER
-	{
-		cv::Mat img = frameInfo->bgrImage.clone();
+void sb::analyzeWithoutLeftLane( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo, sb::RoadInfo* roadInfo )
+{
+	analyzer->repo->possibleNextStates.clear();
+	analyzer->knots.reserve( analyzer->repo->rightBlob->childBlobs.size() );
 
-		auto it_part_left = analyzer->leftLane->parts.cbegin();
-		auto it_part_right = analyzer->rightLane->parts.cbegin();
-		for ( ; it_part_left != analyzer->leftLane->parts.cend(); ++it_part_left , ++it_part_right ) {
-			sb::LanePartInfo* leftPart = *it_part_left;
-			sb::LanePartInfo* rightPart = *it_part_right;
+	auto cit_right_blob = analyzer->repo->rightBlob->childBlobs.cbegin(); // road child blobs
+	auto cit_road_width = analyzer->repo->roadWidths.cbegin(); // for estimate road center
 
-			cv::Scalar color;
+	int voteForBothLane = 0;
 
-			if ( leftPart->errorCode == sb::PART_NICE ) color = cv::Scalar( 0, 255, 0 );
-			else if ( leftPart->errorCode == sb::PART_OUTSIGHT_LEFT || leftPart->errorCode == sb::PART_OUTSIGHT_RIGHT ) color = cv::Scalar( 0, 255, 255 );
-			else color = cv::Scalar( 0, 0, 255 );
-			cv::circle( img, leftPart->part->origin, 5, color, 2 );
+	for ( ; cit_right_blob != analyzer->repo->rightBlob->childBlobs.cend(); ++cit_right_blob , ++cit_road_width ) {
+		sb::Blob* rightBlob = *cit_right_blob;
 
-			if ( rightPart->errorCode == sb::PART_NICE ) color = cv::Scalar( 0, 255, 0 );
-			else if ( rightPart->errorCode == sb::PART_OUTSIGHT_LEFT || rightPart->errorCode == sb::PART_OUTSIGHT_RIGHT ) color = cv::Scalar( 0, 255, 255 );
-			else color = cv::Scalar( 0, 0, 255 );
-			cv::circle( img, rightPart->part->origin, 5, color, 2 );
+		sb::LaneKnot first;
+		first.type = -1;
+
+		sb::LaneKnot second;
+		if ( rightBlob->size > 5 ) {
+			second.position = rightBlob->origin;
+			second.type = 1;
 		}
-		cv::circle( img, roadInfo->target, 5, cv::Scalar( 255, 255, 255 ), -1 );
-		cv::circle( img, roadInfo->target, 5, cv::Scalar( 0, 0, 0 ), 3 );
+		else { // error right lane
+			second.type = -1;
+		}
 
-		cv::imshow( "Lanes detected", img );
-		cv::waitKey();
+		analyzer->knots.push_back( std::make_pair( first, second ) );
+
+		// calculate road center
+		if ( second.type > 0 ) {
+			roadInfo->target = second.position - cv::Point( (*cit_road_width) / 2, 0 );
+
+			if ( second.position.x - *cit_road_width > 0 ) voteForBothLane++;
+		}
 	}
-#endif
 
-	return 0;
+	if ( voteForBothLane >= 2 ) analyzer->repo->possibleNextStates.push_back( sb::RoadState::BOTH_LANE_DETECTED );
+	analyzer->repo->possibleNextStates.push_back( sb::RoadState::IGNORE_LEFT_LANE );
+}
+
+void sb::analyzeWithoutRightLane( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo, sb::RoadInfo* roadInfo )
+{
+	analyzer->repo->possibleNextStates.clear();
+	analyzer->knots.reserve( analyzer->repo->leftBlob->childBlobs.size() );
+
+	auto cit_left_blob = analyzer->repo->leftBlob->childBlobs.cbegin(); // road child blobs
+	auto cit_road_width = analyzer->repo->roadWidths.cbegin(); // for estimate road center
+
+	int voteForBothLane = 0;
+
+	for ( ; cit_left_blob != analyzer->repo->leftBlob->childBlobs.cend(); ++cit_left_blob , ++cit_road_width ) {
+		sb::Blob* leftBlob = *cit_left_blob;
+
+		sb::LaneKnot first;
+		if ( leftBlob->size > 5 ) {
+			first.position = leftBlob->origin;
+			first.type = 1;
+		}
+		else {
+			first.type = -1;
+		}
+
+		sb::LaneKnot second;
+		second.type = -1;
+
+		analyzer->knots.push_back( std::make_pair( first, second ) );
+
+		// calculate road center
+		if ( first.type > 0 ) {
+			roadInfo->target = first.position + cv::Point( (*cit_road_width) / 2, 0 );
+
+			if ( first.position.x + *cit_road_width < frameInfo->bgrImage.cols ) voteForBothLane++;
+		}
+	}
+
+	if ( voteForBothLane >= 2 ) analyzer->repo->possibleNextStates.push_back( sb::RoadState::BOTH_LANE_DETECTED );
+	analyzer->repo->possibleNextStates.push_back( sb::RoadState::IGNORE_RIGHT_LANE );
+}
+
+void sb::analyzeResult( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo, sb::RoadInfo* roadInfo )
+{
+	analyzer->knots.clear();
+
+	switch ( analyzer->roadState ) {
+
+	case sb::RoadState::BOTH_LANE_DETECTED: {
+		sb::analyzeWithBothLane( analyzer, frameInfo, roadInfo );
+	}
+		break;
+
+	case sb::RoadState::IGNORE_LEFT_LANE: {
+		analyzeWithoutLeftLane( analyzer, frameInfo, roadInfo );
+	}
+		break;
+
+	case sb::RoadState::IGNORE_RIGHT_LANE: {
+		analyzeWithoutRightLane( analyzer, frameInfo, roadInfo );
+	}
+		break;
+
+	case sb::RoadState::UNKNOWN: {
+		roadInfo->target = cv::Point( 0, 0 );
+	}
+		break;
+	}
 }
