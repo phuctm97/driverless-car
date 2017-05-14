@@ -1,0 +1,238 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Collector">
+      <UniqueIdentifier>{cd93d696-7b58-4416-ba7a-e6d0e54bbfae}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Collector\CollectorWithVideo">
+      <UniqueIdentifier>{3f5e2d39-40e6-47cf-a835-bdf11a5dfa7f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Calculator">
+      <UniqueIdentifier>{0f666db2-6523-437c-803e-84c171e2eeed}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Collector\Data">
+      <UniqueIdentifier>{e4983f8b-e1b8-4c98-b274-5975640739e8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Calculator\Data">
+      <UniqueIdentifier>{11f39010-cf4b-42e7-ad44-c3b715ad2744}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Application">
+      <UniqueIdentifier>{647085b4-640c-4cf7-b4f4-15a33dea157d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Application\ApplicationTestCollector">
+      <UniqueIdentifier>{9b2039b9-dcce-4d3d-98f7-a731a21065e7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Application\ApplicationTestCalculator">
+      <UniqueIdentifier>{3a1122d9-70c4-4d96-affd-7396db6a52df}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Analyzer">
+      <UniqueIdentifier>{baed2a61-d600-4b37-9b6d-7127f0731b63}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Analyzer\Data">
+      <UniqueIdentifier>{7f974571-52c8-40ba-99fe-0c963472c1ed}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Application\ApplicationTestAnalyzer">
+      <UniqueIdentifier>{6be0074a-0491-4db4-916a-375a8b7451de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Application\Keyboard">
+      <UniqueIdentifier>{5baa7249-7c31-4685-a428-b8e21bd2cef2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Analyzer\AnalyzerCasesBased">
+      <UniqueIdentifier>{9e261326-a114-4627-b59b-4adf8fd8fc6b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Analyzer\AnalyzerCasesBased\Cases">
+      <UniqueIdentifier>{03dc3360-35f3-40f8-acde-6f523f36ffac}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Calculator\CalculatorBlobsBased">
+      <UniqueIdentifier>{45c82682-5201-49b1-a143-5a1d8063a04c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Application\ApplicationFinal">
+      <UniqueIdentifier>{44e6684b-a757-4717-8e95-7d35671dc42f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Driver">
+      <UniqueIdentifier>{289a3aef-ff53-4ca8-bf3f-19dbcb69e515}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Driver\DriverStupid">
+      <UniqueIdentifier>{d342282f-2702-4b0d-983b-dd65eada1d27}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Collector\CollectorWithVideo\CollectorWithVideo.cpp">
+      <Filter>Collector\CollectorWithVideo</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\ApplicationTestCollector\ApplicationTestCollector.cpp">
+      <Filter>Application\ApplicationTestCollector</Filter>
+    </ClCompile>
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Application\ApplicationTestCalculator\ApplicationTestCalculator.cpp">
+      <Filter>Application\ApplicationTestCalculator</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\ApplicationTestAnalyzer\ApplicationTestAnalyzer.cpp">
+      <Filter>Application\ApplicationTestAnalyzer</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\Keyboard\WindowsKeyboard.cpp">
+      <Filter>Application\Keyboard</Filter>
+    </ClCompile>
+    <ClCompile Include="Analyzer\AnalyzerCasesBased\AnalyzerCasesBased.cpp">
+      <Filter>Analyzer\AnalyzerCasesBased</Filter>
+    </ClCompile>
+    <ClCompile Include="Analyzer\AnalyzerCasesBased\CaseRepository.cpp">
+      <Filter>Analyzer\AnalyzerCasesBased</Filter>
+    </ClCompile>
+    <ClCompile Include="Calculator\CalculatorBlobsBased\CalculatorBlobsBased.cpp">
+      <Filter>Calculator\CalculatorBlobsBased</Filter>
+    </ClCompile>
+    <ClCompile Include="Calculator\CropTool.cpp">
+      <Filter>Calculator</Filter>
+    </ClCompile>
+    <ClCompile Include="Calculator\FlipTool.cpp">
+      <Filter>Calculator</Filter>
+    </ClCompile>
+    <ClCompile Include="Calculator\BinarizeTool.cpp">
+      <Filter>Calculator</Filter>
+    </ClCompile>
+    <ClCompile Include="Calculator\BlobTool.cpp">
+      <Filter>Calculator</Filter>
+    </ClCompile>
+    <ClCompile Include="Calculator\Data\Blob.cpp">
+      <Filter>Calculator\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="Calculator\Data\CalculateData.cpp">
+      <Filter>Calculator\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\ApplicationFinal\ApplicationFinal.cpp">
+      <Filter>Application\ApplicationFinal</Filter>
+    </ClCompile>
+    <ClCompile Include="Collector\Data\CollectData.cpp">
+      <Filter>Collector\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="Analyzer\Data\AnalyzeData.cpp">
+      <Filter>Analyzer\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="Driver\DriverStupid\DriverStupid.cpp">
+      <Filter>Driver\DriverStupid</Filter>
+    </ClCompile>
+    <ClCompile Include="Analyzer\AnalyzerCasesBased\Cases\ICase.cpp">
+      <Filter>Analyzer\AnalyzerCasesBased\Cases</Filter>
+    </ClCompile>
+    <ClCompile Include="Analyzer\AnalyzerCasesBased\Cases\BothLaneSolidCase.cpp">
+      <Filter>Analyzer\AnalyzerCasesBased\Cases</Filter>
+    </ClCompile>
+    <ClCompile Include="Analyzer\AnalyzerCasesBased\Cases\LeftLaneSolidCase.cpp">
+      <Filter>Analyzer\AnalyzerCasesBased\Cases</Filter>
+    </ClCompile>
+    <ClCompile Include="Analyzer\AnalyzerCasesBased\Cases\RightLaneSolidCase.cpp">
+      <Filter>Analyzer\AnalyzerCasesBased\Cases</Filter>
+    </ClCompile>
+    <ClCompile Include="Analyzer\AnalyzerCasesBased\ObstacleFinder.cpp">
+      <Filter>Analyzer\AnalyzerCasesBased</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Collector\ICollector.h">
+      <Filter>Collector</Filter>
+    </ClInclude>
+    <ClInclude Include="Collector\CollectorWithVideo\CollectorWithVideo.h">
+      <Filter>Collector\CollectorWithVideo</Filter>
+    </ClInclude>
+    <ClInclude Include="Calculator\ICalculator.h">
+      <Filter>Calculator</Filter>
+    </ClInclude>
+    <ClInclude Include="Collector\Data\CollectData.h">
+      <Filter>Collector\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="Calculator\Data\CalculateData.h">
+      <Filter>Calculator\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\IApplication.h">
+      <Filter>Application</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\ApplicationTestCollector\ApplicationTestCollector.h">
+      <Filter>Application\ApplicationTestCollector</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\ApplicationTestCalculator\ApplicationTestCalculator.h">
+      <Filter>Application\ApplicationTestCalculator</Filter>
+    </ClInclude>
+    <ClInclude Include="Analyzer\IAnalyzer.h">
+      <Filter>Analyzer</Filter>
+    </ClInclude>
+    <ClInclude Include="Analyzer\Data\AnalyzeData.h">
+      <Filter>Analyzer\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\ApplicationTestAnalyzer\ApplicationTestAnalyzer.h">
+      <Filter>Application\ApplicationTestAnalyzer</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\Keyboard\IKeyboard.h">
+      <Filter>Application\Keyboard</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\Keyboard\WindowsKeyboard.h">
+      <Filter>Application\Keyboard</Filter>
+    </ClInclude>
+    <ClInclude Include="Analyzer\AnalyzerCasesBased\AnalyzerCasesBased.h">
+      <Filter>Analyzer\AnalyzerCasesBased</Filter>
+    </ClInclude>
+    <ClInclude Include="Analyzer\AnalyzerCasesBased\Cases\ICase.h">
+      <Filter>Analyzer\AnalyzerCasesBased\Cases</Filter>
+    </ClInclude>
+    <ClInclude Include="Analyzer\AnalyzerCasesBased\CaseRepository.h">
+      <Filter>Analyzer\AnalyzerCasesBased</Filter>
+    </ClInclude>
+    <ClInclude Include="Calculator\CalculatorBlobsBased\CalculatorBlobsBased.h">
+      <Filter>Calculator\CalculatorBlobsBased</Filter>
+    </ClInclude>
+    <ClInclude Include="Calculator\ICropTool.h">
+      <Filter>Calculator</Filter>
+    </ClInclude>
+    <ClInclude Include="Calculator\IFlipTool.h">
+      <Filter>Calculator</Filter>
+    </ClInclude>
+    <ClInclude Include="Calculator\IBinarizeTool.h">
+      <Filter>Calculator</Filter>
+    </ClInclude>
+    <ClInclude Include="Calculator\IBlobTool.h">
+      <Filter>Calculator</Filter>
+    </ClInclude>
+    <ClInclude Include="Calculator\CropTool.h">
+      <Filter>Calculator</Filter>
+    </ClInclude>
+    <ClInclude Include="Calculator\FlipTool.h">
+      <Filter>Calculator</Filter>
+    </ClInclude>
+    <ClInclude Include="Calculator\BinarizeTool.h">
+      <Filter>Calculator</Filter>
+    </ClInclude>
+    <ClInclude Include="Calculator\BlobTool.h">
+      <Filter>Calculator</Filter>
+    </ClInclude>
+    <ClInclude Include="Calculator\Data\Blob.h">
+      <Filter>Calculator\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="Driver\IDriver.h">
+      <Filter>Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\ApplicationFinal\ApplicationFinal.h">
+      <Filter>Application\ApplicationFinal</Filter>
+    </ClInclude>
+    <ClInclude Include="Driver\DriverStupid\DriverStupid.h">
+      <Filter>Driver\DriverStupid</Filter>
+    </ClInclude>
+    <ClInclude Include="Calculator\Data\BlobRow.h">
+      <Filter>Calculator\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="Analyzer\AnalyzerCasesBased\Cases\BothLaneSolidCase.h">
+      <Filter>Analyzer\AnalyzerCasesBased\Cases</Filter>
+    </ClInclude>
+    <ClInclude Include="Analyzer\AnalyzerCasesBased\Cases\LeftLaneSolidCase.h">
+      <Filter>Analyzer\AnalyzerCasesBased\Cases</Filter>
+    </ClInclude>
+    <ClInclude Include="Analyzer\AnalyzerCasesBased\Cases\RightLaneSolidCase.h">
+      <Filter>Analyzer\AnalyzerCasesBased\Cases</Filter>
+    </ClInclude>
+    <ClInclude Include="Analyzer\Data\Params\AnalyzeParams.h">
+      <Filter>Analyzer\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="Analyzer\AnalyzerCasesBased\ObstacleFinder.h">
+      <Filter>Analyzer\AnalyzerCasesBased</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

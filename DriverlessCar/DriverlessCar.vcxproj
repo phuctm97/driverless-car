@@ -1,0 +1,189 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{0026FF23-9D7A-49D6-B5CD-054C2A0DABCE}</ProjectGuid>
+    <RootNamespace>DriverlessCar</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>$(OPENCV_BUILD)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <LibraryPath>$(OPENCV_BUILD)\x64\vc14\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>$(OPENCV_BUILD)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <LibraryPath>$(OPENCV_BUILD)\x64\vc14\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>opencv_calib3d2413d.lib;opencv_contrib2413d.lib;opencv_core2413d.lib;opencv_features2d2413d.lib;opencv_flann2413d.lib;opencv_gpu2413d.lib;opencv_haartraining_engined.lib;opencv_highgui2413d.lib;opencv_imgproc2413d.lib;opencv_legacy2413d.lib;opencv_ml2413d.lib;opencv_nonfree2413d.lib;opencv_objdetect2413d.lib;opencv_ocl2413d.lib;opencv_photo2413d.lib;opencv_stitching2413d.lib;opencv_superres2413d.lib;opencv_ts2413d.lib;opencv_video2413d.lib;opencv_videostab2413d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>opencv_calib3d2413.lib;opencv_contrib2413.lib;opencv_core2413.lib;opencv_features2d2413.lib;opencv_flann2413.lib;opencv_gpu2413.lib;opencv_haartraining_engine.lib;opencv_highgui2413.lib;opencv_imgproc2413.lib;opencv_java2413.lib;opencv_legacy2413.lib;opencv_ml2413.lib;opencv_nonfree2413.lib;opencv_objdetect2413.lib;opencv_ocl2413.lib;opencv_photo2413.lib;opencv_stitching2413.lib;opencv_superres2413.lib;opencv_ts2413.lib;opencv_video2413.lib;opencv_videostab2413.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="Analyzer\AnalyzerCasesBased\AnalyzerCasesBased.cpp" />
+    <ClCompile Include="Analyzer\AnalyzerCasesBased\CaseRepository.cpp" />
+    <ClCompile Include="Analyzer\AnalyzerCasesBased\Cases\BothLaneSolidCase.cpp" />
+    <ClCompile Include="Analyzer\AnalyzerCasesBased\Cases\ICase.cpp" />
+    <ClCompile Include="Analyzer\AnalyzerCasesBased\Cases\LeftLaneSolidCase.cpp" />
+    <ClCompile Include="Analyzer\AnalyzerCasesBased\Cases\RightLaneSolidCase.cpp" />
+    <ClCompile Include="Analyzer\AnalyzerCasesBased\ObstacleFinder.cpp" />
+    <ClCompile Include="Analyzer\Data\AnalyzeData.cpp" />
+    <ClCompile Include="Application\ApplicationFinal\ApplicationFinal.cpp" />
+    <ClCompile Include="Application\ApplicationTestAnalyzer\ApplicationTestAnalyzer.cpp" />
+    <ClCompile Include="Application\ApplicationTestCalculator\ApplicationTestCalculator.cpp" />
+    <ClCompile Include="Application\ApplicationTestCollector\ApplicationTestCollector.cpp" />
+    <ClCompile Include="Application\Keyboard\WindowsKeyboard.cpp" />
+    <ClCompile Include="Calculator\BinarizeTool.cpp" />
+    <ClCompile Include="Calculator\BlobTool.cpp" />
+    <ClCompile Include="Calculator\CalculatorBlobsBased\CalculatorBlobsBased.cpp" />
+    <ClCompile Include="Calculator\CropTool.cpp" />
+    <ClCompile Include="Calculator\Data\Blob.cpp" />
+    <ClCompile Include="Calculator\Data\CalculateData.cpp" />
+    <ClCompile Include="Calculator\FlipTool.cpp" />
+    <ClCompile Include="Collector\CollectorWithVideo\CollectorWithVideo.cpp" />
+    <ClCompile Include="Collector\Data\CollectData.cpp" />
+    <ClCompile Include="Driver\DriverStupid\DriverStupid.cpp" />
+    <ClCompile Include="Main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Analyzer\AnalyzerCasesBased\AnalyzerCasesBased.h" />
+    <ClInclude Include="Analyzer\AnalyzerCasesBased\CaseRepository.h" />
+    <ClInclude Include="Analyzer\AnalyzerCasesBased\Cases\BothLaneSolidCase.h" />
+    <ClInclude Include="Analyzer\AnalyzerCasesBased\Cases\ICase.h" />
+    <ClInclude Include="Analyzer\AnalyzerCasesBased\Cases\LeftLaneSolidCase.h" />
+    <ClInclude Include="Analyzer\AnalyzerCasesBased\Cases\RightLaneSolidCase.h" />
+    <ClInclude Include="Analyzer\AnalyzerCasesBased\ObstacleFinder.h" />
+    <ClInclude Include="Analyzer\Data\AnalyzeData.h" />
+    <ClInclude Include="Analyzer\Data\Params\AnalyzeParams.h" />
+    <ClInclude Include="Analyzer\IAnalyzer.h" />
+    <ClInclude Include="Application\ApplicationFinal\ApplicationFinal.h" />
+    <ClInclude Include="Application\ApplicationTestAnalyzer\ApplicationTestAnalyzer.h" />
+    <ClInclude Include="Application\ApplicationTestCalculator\ApplicationTestCalculator.h" />
+    <ClInclude Include="Application\ApplicationTestCollector\ApplicationTestCollector.h" />
+    <ClInclude Include="Application\IApplication.h" />
+    <ClInclude Include="Application\Keyboard\IKeyboard.h" />
+    <ClInclude Include="Application\Keyboard\WindowsKeyboard.h" />
+    <ClInclude Include="Calculator\BinarizeTool.h" />
+    <ClInclude Include="Calculator\BlobTool.h" />
+    <ClInclude Include="Calculator\CalculatorBlobsBased\CalculatorBlobsBased.h" />
+    <ClInclude Include="Calculator\CropTool.h" />
+    <ClInclude Include="Calculator\Data\Blob.h" />
+    <ClInclude Include="Calculator\Data\BlobRow.h" />
+    <ClInclude Include="Calculator\Data\CalculateData.h" />
+    <ClInclude Include="Calculator\FlipTool.h" />
+    <ClInclude Include="Calculator\IBinarizeTool.h" />
+    <ClInclude Include="Calculator\IBlobTool.h" />
+    <ClInclude Include="Calculator\ICalculator.h" />
+    <ClInclude Include="Calculator\ICropTool.h" />
+    <ClInclude Include="Calculator\IFlipTool.h" />
+    <ClInclude Include="Collector\CollectorWithVideo\CollectorWithVideo.h" />
+    <ClInclude Include="Collector\Data\CollectData.h" />
+    <ClInclude Include="Collector\ICollector.h" />
+    <ClInclude Include="Driver\DriverStupid\DriverStupid.h" />
+    <ClInclude Include="Driver\IDriver.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

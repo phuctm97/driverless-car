@@ -240,9 +240,3 @@ ModelManifest.xml
 
 # FAKE - F# Make
 .fake/
-
-.DS_Store
-
-cmake-build-debug/
-
-*.docx
