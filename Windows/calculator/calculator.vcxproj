@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\Classes\calculator\Blob.cpp" />
     <ClCompile Include="..\Classes\calculator\Calculator.cpp" />
     <ClCompile Include="..\Classes\calculator\EdgeDetector.cpp" />
     <ClCompile Include="..\Classes\calculator\Formatter.cpp" />
@@ -26,13 +27,14 @@
     <ClCompile Include="..\Classes\calculator\Line.cpp" />
     <ClCompile Include="..\Classes\calculator\LineDetector.cpp" />
     <ClCompile Include="..\Classes\calculator\LineInfo.cpp" />
-    <ClCompile Include="..\Classes\calculator\SectionInfo.cpp" />
     <ClCompile Include="..\Classes\collector\Collector.cpp" />
     <ClCompile Include="..\Classes\collector\RawContent.cpp" />
     <ClCompile Include="..\Classes\Params.cpp" />
+    <ClCompile Include="..\Classes\Timer.cpp" />
     <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\Classes\calculator\Blob.h" />
     <ClInclude Include="..\Classes\calculator\Calculator.h" />
     <ClInclude Include="..\Classes\calculator\EdgeDetector.h" />
     <ClInclude Include="..\Classes\calculator\Formatter.h" />
@@ -40,11 +42,11 @@
     <ClInclude Include="..\Classes\calculator\Line.h" />
     <ClInclude Include="..\Classes\calculator\LineDetector.h" />
     <ClInclude Include="..\Classes\calculator\LineInfo.h" />
-    <ClInclude Include="..\Classes\calculator\SectionInfo.h" />
     <ClInclude Include="..\Classes\collector\Collector.h" />
     <ClInclude Include="..\Classes\collector\RawContent.h" />
     <ClInclude Include="..\Classes\Include.h" />
     <ClInclude Include="..\Classes\Params.h" />
+    <ClInclude Include="..\Classes\Timer.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{837AD18D-D2B6-4AB3-BAC9-CB8146DC0C30}</ProjectGuid>

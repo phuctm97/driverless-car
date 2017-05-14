@@ -78,6 +78,22 @@ double sb::Line::getLength() const { return sb::Line::calculateLength( *this ); 
 
 double sb::Line::getDistance( const cv::Point2d& point ) const { return sb::Line::calculateDistance( *this, point ); }
 
+cv::Point2d sb::Line::getNormalizedHorizontalVector() const
+{
+	cv::Point2d vec( _b, -_a );
+	double length = std::sqrt( vec.x * vec.x + vec.y * vec.y );
+
+	return cv::Point2d( vec.x / length, vec.y / length );
+}
+
+cv::Point2d sb::Line::getNormalizedVerticalVector() const
+{
+	cv::Point2d vec( _a, _b );
+	double length = std::sqrt( vec.x * vec.x + vec.y * vec.y );
+
+	return cv::Point2d( vec.x / length, vec.y / length );
+}
+
 sb::Line sb::Line::rotate( double alpha, bool degree ) const { return sb::Line::rotate( *this, alpha, degree ); }
 
 sb::Line sb::Line::rotate( const cv::Point2d& anchor, double alpha, bool degree ) const { return sb::Line::rotate( *this, anchor, alpha, degree ); }

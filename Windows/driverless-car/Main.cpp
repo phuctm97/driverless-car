@@ -15,11 +15,15 @@ void release( sb::Collector& collector,
               sb::Analyzer& analyzer,
               sb::Driver& driver );
 
-int main()
+int main( const int argc, const char** argv )
 {
-	// Parameters container for every component
+	if( argc < 2 ) {
+		std::cerr << "Cann't find argument for Params path" << std::endl;
+		return -1;
+	}
+
 	sb::Params params;
-	params.load( PARAMS_PATH );
+	params.load( argv[1] );
 
 	// Timer for performance test
 	sb::Timer timer;

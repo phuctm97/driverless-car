@@ -1,149 +1,169 @@
 #include "Calculator.h"
 
-int sb::Calculator::init( const sb::Params& params )
+int sb::init( sb::Calculator* calculator, sb::Params* params )
 {
-	//** calculate crop box (considering use camera crop, dont crop manually)
-	cv::Point cropPosition;
-	cropPosition.x = (params.COLOR_FRAME_SIZE.width - params.CROPPED_FRAME_SIZE.width) / 2;
-	cropPosition.y = params.COLOR_FRAME_SIZE.height - params.CROPPED_FRAME_SIZE.height;
+	calculator->edgeDetector = sb::EdgeDetector( params->EDGE_DETECTOR_KERNEL_SIZE,
+	                                             params->EDGE_DETECTOR_LOW_THRESH,
+	                                             params->EDGE_DETECTOR_HIGH_THRESH,
+	                                             params->BINARIZE_THRESH,
+	                                             params->BINARIZE_MAX_VALUE );
 
-	_formatter = sb::Formatter( cv::Rect( cropPosition.x, cropPosition.y,
-	                                      params.CROPPED_FRAME_SIZE.width, params.CROPPED_FRAME_SIZE.height ),
-	                            params.WARP_SRC_QUAD,
-	                            params.WARP_DST_QUAD,
-	                            params.CONVERT_COORD_COEF,
-	                            params.SEPERATE_ROWS );
+	calculator->cropBox = params->CROP_BOX;
 
-	_edgeDetector = sb::EdgeDetector( params.EDGE_DETECTOR_KERNEL_SIZE,
-	                                  params.EDGE_DETECTOR_LOW_THRESH,
-	                                  params.EDGE_DETECTOR_HIGH_THRESH,
-	                                  params.BINARIZE_THRESH,
-	                                  params.BINARIZE_MAX_VALUE );
+	calculator->binarizeThesh = params->BINARIZE_THRESH;
 
-	_lineDetector = sb::LineDetector( params.HOUGH_LINES_P_RHO,
-	                                  params.HOUGH_LINES_P_THETA,
-	                                  params.HOUGH_LINES_P_THRESHOLD,
-	                                  params.HOUGH_LINES_P_MIN_LINE_LENGTH,
-	                                  params.HOUGH_LINES_P_MAX_LINE_GAP );
+	std::vector<double> splitRatio = { 0.2, 0.25, 0.25, 0.3 };
+
+	calculator->splitBoxes.clear(); {
+		int y = 0;
+		for ( double ratio : splitRatio ) {
+			int h = static_cast<int>(round( 1.0 * params->CROP_BOX.height * ratio ));
+
+			if ( y + h > params->CROP_BOX.height ) h = params->CROP_BOX.height - y;
+
+			cv::Rect box( 0, y, params->CROP_BOX.width, h );
+			calculator->splitBoxes.push_back( box );
+			y += h;
+		}
+	}
+
+	std::reverse( calculator->splitBoxes.begin(), calculator->splitBoxes.end() );
 
 	return 0;
 }
 
-int sb::Calculator::calculate( const sb::RawContent& rawContent,
-                               sb::FrameInfo& frameInfo ) const
+int sb::calculate( sb::Calculator* calculator,
+                   sb::RawContent* rawContent,
+                   sb::FrameInfo* frameInfo )
 {
-	///// Color image /////
-	cv::Mat colorImage;
-	if ( _formatter.crop( rawContent.getColorImage(), colorImage ) < 0 ) {
-		std::cerr << "Crop image failed." << std::endl;
+	sb::release( frameInfo, false );
+
+	// 1) bgr image
+	// crop to correct format
+	if ( calculator->cropBox.x < 0 || calculator->cropBox.y < 0 ||
+		calculator->cropBox.x + calculator->cropBox.width > rawContent->colorImage.cols ||
+		calculator->cropBox.y + calculator->cropBox.height > rawContent->colorImage.rows ) {
+		std::cerr << "Input image and crop box aren't suitable." << std::endl;
 		return -1;
 	}
+	frameInfo->bgrImage = rawContent->colorImage( calculator->cropBox );
+	// flip to natural direction ( input image from camera was flipped )
+	cv::flip( frameInfo->bgrImage, frameInfo->bgrImage, 1 );
 
-	frameInfo.setColorImage( colorImage );
+	// 2) binarize image
+	cv::cvtColor( frameInfo->bgrImage, frameInfo->edgImage, cv::COLOR_BGR2GRAY );
+	cv::threshold( frameInfo->edgImage, frameInfo->binImage, calculator->binarizeThesh, 255, cv::THRESH_BINARY );
 
-	///// Lines //////
-	std::vector<sb::LineInfo> imageLineInfos;
-	std::vector<sb::LineInfo> realLineInfos;
+	// 3) edges detector
+	calculator->edgeDetector.apply( frameInfo->edgImage );
 
-	// 1) generate edges-frame
-	cv::Mat edgesFrame;
-	cv::cvtColor( colorImage, edgesFrame, cv::COLOR_BGR2GRAY );
-	_edgeDetector.apply( edgesFrame );
-
-	// 2) generate lines in whole frame
-	std::vector<sb::Line> lines;
-	_lineDetector.apply( edgesFrame, lines );
-	calculateLineInfos( lines, colorImage, imageLineInfos );
-
-	// 3) generate warped lines
-	if ( _formatter.warp( imageLineInfos, realLineInfos ) < 0 ) {
-		std::cerr << "Warp lines failed." << std::endl;
-		return -1;
-	}
-
-	frameInfo.setImageLineInfos( imageLineInfos );
-	frameInfo.setRealLineInfos( realLineInfos );
-
-	///// Sections //////
-	std::vector<sb::SectionInfo> sectionInfos;
-
-	if ( _formatter.split( realLineInfos, sectionInfos ) < 0 ) {
-		std::cerr << "Split sections failed." << std::endl;
-		return -1;
-	}
-
-	frameInfo.setSectionInfos( sectionInfos );
+	// 4) generate blobs
+	findBlobs( calculator, frameInfo );
 
 	return 0;
 }
 
-void sb::Calculator::release() {}
-
-double sb::Calculator::convertXToCoord( double x ) const { return _formatter.convertXToCoord( x ); }
-
-double sb::Calculator::convertYToCoord( double y ) const { return _formatter.convertYToCoord( y ); }
-
-cv::Point2d sb::Calculator::convertToCoord( const cv::Point2d& point ) const { return _formatter.convertToCoord( point ); }
-
-double sb::Calculator::convertXFromCoord( double x ) const { return _formatter.convertXFromCoord( x ); }
-
-double sb::Calculator::convertYFromCoord( double y ) const { return _formatter.convertYFromCoord( y ); }
-
-cv::Point2d sb::Calculator::convertFromCoord( const cv::Point2d& point ) const { return _formatter.convertFromCoord( point ); }
-
-void sb::Calculator::calculateLineInfos( const std::vector<sb::Line>& lines,
-                                         const cv::Mat& colorImage,
-                                         std::vector<sb::LineInfo>& outputLineInfos ) const
+void sb::release( sb::Calculator* calculator )
 {
-	outputLineInfos.clear();
-	outputLineInfos.assign( lines.size(), sb::Line() );
+	calculator->splitBoxes.clear();
+}
 
-	for ( size_t i = 0; i < lines.size(); i++ ) {
-		const sb::Line& line = lines[i];
-		sb::LineInfo& lineInfo = outputLineInfos[i];
+void sb::findBlobs( sb::Calculator* calculator, sb::FrameInfo* frameInfo )
+{
+	// generate binary short image
+	cv::Mat labelImage;
+	frameInfo->binImage.convertTo( labelImage, CV_32SC1 );
 
-		lineInfo.setLine( line );
+	// finding blob process
+	int labelCount = 2;
+	for ( int y = 0; y < labelImage.rows; y++ ) {
+		int* row = reinterpret_cast<int*>(labelImage.ptr( y ));
+		for ( int x = 0; x < labelImage.cols; x++ ) {
+			if ( row[x] != 255 )
+				continue;
 
-		// unit vector for sweeping
-		cv::Point2d unitVec = line.getEndingPoint() - line.getStartingPoint();
-		unitVec = cv::Point2d( unitVec.x / lineInfo.getLength(),
-		                       unitVec.y / lineInfo.getLength() );
+			// find signal of a blob, floodfill to find the full one
+			cv::Rect rect;
+			cv::floodFill( labelImage, cv::Point( x, y ), labelCount, &rect, 0, 0, 4 );
 
-		// sweep to summarize line color intensities
-		cv::Vec3d sum( 0, 0, 0 );
-		int n = 0;
-		for ( int unit = 0; unit < lineInfo.getLength(); unit++ ) {
-
-			int c = static_cast<int>(line.getStartingPoint().x + unitVec.x * unit);
-			int r = static_cast<int>(line.getStartingPoint().y + unitVec.y * unit);
-
-			sum += colorImage.at<cv::Vec3b>( r, c );
-			n++;
-
-			// sweep with window 3x3
-			/*if( c > 0 ) {
-			sum += colorImage.at<cv::Vec3b>( r, c - 1 ); n++;
+			// allocate new blob
+			sb::Blob* blob = new sb::Blob;
+			blob->childBlobs.reserve( calculator->splitBoxes.size() );
+			for ( auto cit_section = calculator->splitBoxes.cbegin(); cit_section != calculator->splitBoxes.cend(); ++cit_section ) {
+				blob->childBlobs.push_back( new Blob );
 			}
-			if( r > 0 ) {
-			sum += colorImage.at<cv::Vec3b>( r - 1, c ); n++;
+
+			// <minX, minY, maxX, maxY, sumX, sumY, size>
+			std::tuple<int, int, int, int, long, long, size_t> blobInfo = std::make_tuple( INT_MAX, INT_MAX, 0, 0, 0, 0, 0 );
+			std::vector<std::tuple<int, int, int, int, long, long, size_t>> childBlobsInfo;
+			childBlobsInfo.assign( blob->childBlobs.size(), std::make_tuple( INT_MAX, INT_MAX, 0, 0, 0, 0, 0 ) );
+
+			// find pixels in blob
+			for ( int i = rect.y; i < (rect.y + rect.height); i++ ) {
+				int* row2 = reinterpret_cast<int*>(labelImage.ptr( i ));
+				for ( int j = rect.x; j < (rect.x + rect.width); j++ ) {
+					if ( row2[j] != labelCount )
+						continue;
+
+					// update main blob info
+					std::get<0>( blobInfo ) = MIN( std::get<0>( blobInfo ), j );
+					std::get<1>( blobInfo ) = MIN( std::get<1>( blobInfo ), i );
+					std::get<2>( blobInfo ) = MAX( std::get<2>( blobInfo ), j );
+					std::get<3>( blobInfo ) = MAX( std::get<3>( blobInfo ), i );
+					std::get<4>( blobInfo ) += j;
+					std::get<5>( blobInfo ) += i;
+					std::get<6>( blobInfo )++;
+
+					// update child blobs info
+					auto cit_section = calculator->splitBoxes.cbegin();
+					auto it_blobinfo = childBlobsInfo.begin();
+					for ( ; it_blobinfo != childBlobsInfo.end(); ++it_blobinfo , ++cit_section ) {
+						if ( i >= cit_section->y ) {
+							std::get<0>( *it_blobinfo ) = MIN( std::get<0>( *it_blobinfo ), j );
+							std::get<1>( *it_blobinfo ) = MIN( std::get<1>( *it_blobinfo ), i );
+							std::get<2>( *it_blobinfo ) = MAX( std::get<2>( *it_blobinfo ), j );
+							std::get<3>( *it_blobinfo ) = MAX( std::get<3>( *it_blobinfo ), i );
+							std::get<4>( *it_blobinfo ) += j;
+							std::get<5>( *it_blobinfo ) += i;
+							std::get<6>( *it_blobinfo )++;
+							break;
+						}
+					}
+				}
 			}
-			if( c > 0 && r > 0 ) {
-			sum += colorImage.at<cv::Vec3b>( r - 1, c - 1 ); n++;
+
+			if ( std::get<6>( blobInfo ) >= MIN_ACCEPTABLE_BLOB_OBJECTS_COUNT ) {
+				blob->box = cv::Rect( std::get<0>( blobInfo ), std::get<1>( blobInfo ),
+				                      std::get<2>( blobInfo ) - std::get<0>( blobInfo ) + 1,
+				                      std::get<3>( blobInfo ) - std::get<1>( blobInfo ) + 1 );
+				blob->size = std::get<6>( blobInfo );
+				blob->origin = cv::Point( static_cast<int>(std::get<4>( blobInfo ) / blob->size),
+				                          static_cast<int>(std::get<5>( blobInfo ) / blob->size) );
+
+				auto cit_info = childBlobsInfo.cbegin();
+				auto cit_childblob = blob->childBlobs.cbegin();
+				for ( ; cit_info != childBlobsInfo.cend(); ++cit_info , ++cit_childblob ) {
+
+					// TODO: MIN_ACCEPTABLE_CHILD_BLOB_OBJECTS_COUNT
+					if ( std::get<6>( *cit_info ) <= 5 ) continue;
+
+					Blob* childBlob = *cit_childblob;
+					childBlob->box = cv::Rect( std::get<0>( *cit_info ), std::get<1>( *cit_info ),
+					                           std::get<2>( *cit_info ) - std::get<0>( *cit_info ) + 1,
+					                           std::get<3>( *cit_info ) - std::get<1>( *cit_info ) + 1 );
+					childBlob->size = std::get<6>( *cit_info );
+					childBlob->origin = cv::Point( static_cast<int>(std::get<4>( *cit_info ) / childBlob->size),
+					                               static_cast<int>(std::get<5>( *cit_info ) / childBlob->size) );
+
+				}
+				frameInfo->blobs.push_back( blob );
 			}
-			if( c < colorImage.cols - 1 ) {
-			sum += colorImage.at<cv::Vec3b>( r, c + 1 ); n++;
+			else {
+				sb::release( blob );
+				delete blob;
 			}
-			if( r < colorImage.rows - 1 ) {
-			sum += colorImage.at<cv::Vec3b>( r + 1, c ); n++;
-			}
-			if( c < colorImage.cols - 1 && r < colorImage.rows - 1 ) {
-			sum += colorImage.at<cv::Vec3b>( r + 1, c + 1 ); n++;
-			}*/
+			labelCount++;
 		}
 
-		cv::Vec3b averageColor = cv::Vec3b( static_cast<uchar>(sum[0] / n),
-		                                    static_cast<uchar>(sum[1] / n),
-		                                    static_cast<uchar>(sum[2] / n) );
-		lineInfo.setAverageColor( averageColor );
 	}
 }

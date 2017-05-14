@@ -35,11 +35,17 @@
     <ClCompile Include="..\Classes\analyzer\RoadInfo.cpp">
       <Filter>analyzer</Filter>
     </ClCompile>
+    <ClCompile Include="..\Classes\Timer.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
     <ClCompile Include="..\Classes\analyzer\Analyzer.cpp">
       <Filter>analyzer</Filter>
     </ClCompile>
-    <ClCompile Include="..\Classes\Timer.cpp">
-      <Filter>shared</Filter>
+    <ClCompile Include="..\Classes\calculator\Blob.cpp">
+      <Filter>calculator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Classes\analyzer\Repository.cpp">
+      <Filter>analyzer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -93,11 +99,17 @@
     <ClInclude Include="..\Classes\analyzer\RoadInfo.h">
       <Filter>analyzer</Filter>
     </ClInclude>
+    <ClInclude Include="..\Classes\Timer.h">
+      <Filter>shared</Filter>
+    </ClInclude>
     <ClInclude Include="..\Classes\analyzer\Analyzer.h">
       <Filter>analyzer</Filter>
     </ClInclude>
-    <ClInclude Include="..\Classes\Timer.h">
-      <Filter>shared</Filter>
+    <ClInclude Include="..\Classes\calculator\Blob.h">
+      <Filter>calculator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\analyzer\Repository.h">
+      <Filter>analyzer</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -1,311 +1,442 @@
 ﻿#include "Analyzer.h"
-#include "../collector/RawContent.h"
 
-int sb::Analyzer::init( const sb::Params& params )
+int sb::init( sb::Analyzer* analyzer, sb::Params* params )
 {
-	cv::Point cropPosition;
-	cropPosition.x = (params.COLOR_FRAME_SIZE.width - params.CROPPED_FRAME_SIZE.width) / 2;
-	cropPosition.y = params.COLOR_FRAME_SIZE.height - params.CROPPED_FRAME_SIZE.height;
+	analyzer->firstAnalyzeTimes = -1;
 
-	_debugFormatter = sb::Formatter( cv::Rect( cropPosition.x, cropPosition.y,
-	                                           params.CROPPED_FRAME_SIZE.width, params.CROPPED_FRAME_SIZE.height ),
-	                                 params.WARP_SRC_QUAD,
-	                                 params.WARP_DST_QUAD,
-	                                 params.CONVERT_COORD_COEF,
-	                                 params.SEPERATE_ROWS );
+	analyzer->trackAnalyzeTimes = ANALYZER_TRACK_ANALYZE_TIMEOUT;
+
+	analyzer->repo = new sb::Repository;
+
+	analyzer->knots.clear();
 
 	return 0;
 }
 
-int sb::Analyzer::analyze( const sb::FrameInfo& frameInfo, sb::RoadInfo& roadInfo ) const
+int sb::analyze( sb::Analyzer* analyzer,
+                 sb::FrameInfo* frameInfo,
+                 sb::RoadInfo* roadInfo )
 {
-	const int N_LINES = static_cast<int>(frameInfo.getRealLineInfos().size());
-	const int N_SECTIONS = static_cast<int>(frameInfo.getSectionInfos().size());
-
-	///// Old values /////
-	std::vector<cv::Point2d> oldLeftKnots = roadInfo.getLeftKnots();
-	std::vector<cv::Point2d> oldRightKnots = roadInfo.getRightKnots();
-	std::vector<double> oldAngles( N_SECTIONS, 0 );
-	for ( int i = 0; i < N_SECTIONS; i++ ) {
-		sb::Line line( oldLeftKnots[i], oldLeftKnots[i + 1] );
-		oldAngles[i] = line.getAngleWithOx();
-	}
-
-	///// Ratings /////
-	//* 1) sử dụng hàm cộng với các hằng số cộng cao/thấp tương úng với tính chất thuộc tính
-	//* 2) sử dụng hàm nhân cho mỗi thuộc tính đáp ứng
-	//* 3) sử dụng các hàm số có đồ thị đúng yêu cầu
-
-	std::vector<double> lineRatings( N_LINES, 0 );
-	std::vector<double> sideRatings( N_LINES, 0 );
-
-	// independent ratings in whole frame
-	/*for ( int i = 0; i < N_LINES; i++ ) {
-		const sb::LineInfo& realLine = frameInfo.getRealLineInfos()[i];
-
-		// length
-		_lineRatings[i] += realLine.getLength();
-
-		//** color
-		_lineRatings[i] += 5.0 * (realLine.getAverageColor()[0] + realLine.getAverageColor()[1] + realLine.getAverageColor()[2]) / 3;
-	}*/
-
-	// independent ratings in section
-	for ( int i = 0; i < N_SECTIONS; i++ ) {
-		const sb::SectionInfo& sectionInfo = frameInfo.getSectionInfos()[i];
-		const int n_lines = static_cast<int>(sectionInfo.lines.size());
-
-		for ( int j = 0; j < n_lines; j++ ) {
-			const std::pair<int, cv::Vec2d>& sectionLineInfo = sectionInfo.lines[j];
-			const sb::LineInfo realLine = frameInfo.getRealLineInfos()[sectionLineInfo.first];
-
-			const int lineIndex = sectionLineInfo.first;
-			const double angle = realLine.getAngle();
-			const double length = realLine.getLength();
-			const double lowerX = sectionLineInfo.second[0];
-			const double upperX = sectionLineInfo.second[1];
-
-			//** position and rotation
-
-			if ( abs( lowerX - oldLeftKnots[i].x ) < 15 ) {
-				sideRatings[lineIndex] -= 500;
-				lineRatings[lineIndex] += 100/*  x length  */;
-				if ( abs( angle - oldAngles[i] ) < 15 ) {
-					lineRatings[lineIndex] += 1000/*  x length  */;
-					sideRatings[lineIndex] -= 1000;
-				}
-			}
-			if ( abs( lowerX - oldRightKnots[i].x ) < 15 ) {
-				sideRatings[lineIndex] += 500;
-				lineRatings[lineIndex] += 100/*  x length  */;
-				if ( abs( angle - oldAngles[i] ) < 15 ) {
-					lineRatings[lineIndex] += 1000/*  x length  */;
-					sideRatings[lineIndex] += 1000;
-				}
-			}
+	// first analyze
+	if ( analyzer->firstAnalyzeTimes < ANALYZER_FIRST_ANALYZE_TIMEOUT ) {
+		if ( firstAnalyze( analyzer, frameInfo, roadInfo ) >= 0 ) {
+			// success, stop first analyze, go to analyze track
+			analyzer->firstAnalyzeTimes = ANALYZER_FIRST_ANALYZE_TIMEOUT;
+			analyzer->trackAnalyzeTimes = -1;
+			return 0;
 		}
 
+		// increase hops and check for timeout to stop system
+		if ( ++analyzer->firstAnalyzeTimes >= ANALYZER_FIRST_ANALYZE_TIMEOUT ) return -1;
 	}
 
-	std::vector<double> tempLineRatings( lineRatings );
-	std::vector<double> tempSideRatings( sideRatings );
-
-	// dependent ratings
-	for ( int i = 0; i < N_SECTIONS; i++ ) { // section
-		const sb::SectionInfo& sectionInfo = frameInfo.getSectionInfos()[i];
-		const int n_lines = static_cast<int>(sectionInfo.lines.size());
-
-		for ( int j = 0; j < n_lines; j++ ) { // 1st line
-			const std::pair<int, cv::Vec2d>& sectionLineInfo1 = sectionInfo.lines[j];
-			const sb::LineInfo& realLine1 = frameInfo.getRealLineInfos()[sectionLineInfo1.first];
-
-			int index1 = sectionLineInfo1.first;
-			double angle1 = realLine1.getAngle();
-			double length1 = realLine1.getLength();
-			double lowerX1 = sectionLineInfo1.second[0];
-			double upperX1 = sectionLineInfo1.second[1];
-
-			for ( int k = 0; k < n_lines; k++ ) { // 2nd line
-				if ( j == k ) continue;
-
-				const std::pair<int, cv::Vec2d>& sectionLineInfo2 = sectionInfo.lines[k];
-				const sb::LineInfo& realLine2 = frameInfo.getRealLineInfos()[sectionLineInfo2.first];
-
-				int index2 = sectionLineInfo2.first;
-				double angle2 = realLine2.getAngle();
-				double length2 = realLine2.getLength();
-				double lowerX2 = sectionLineInfo2.second[0];
-				double upperX2 = sectionLineInfo2.second[1];
-
-				// same lane
-				if ( tempSideRatings[index1] * tempSideRatings[index2] >= 0
-					&& abs( angle1 - angle2 ) < 10
-					&& abs( abs( lowerX1 - lowerX2 ) - _laneWidth ) < 10 ) {
-
-					lineRatings[index1] = MAX( tempLineRatings[index1], tempLineRatings[index2] ) + 1000;
-					lineRatings[index2] = lineRatings[index1];
-
-					if ( tempSideRatings[index1] < 0 || tempSideRatings[index2] < 0 ) {
-						sideRatings[index1] = MIN( tempSideRatings[index1], tempSideRatings[index2] ) - 1000;
-						sideRatings[index2] = sideRatings[index1];
-					}
-					if ( tempSideRatings[index1] > 0 || tempSideRatings[index2] > 0 ) {
-						sideRatings[index1] = MAX( tempSideRatings[index1], tempSideRatings[index2] ) + 1000;
-						sideRatings[index2] = sideRatings[index1];
-					}
-				}
-
-				// opposite lane
-				if ( tempSideRatings[index1] * tempSideRatings[index2] <= 0
-					&& abs( angle1 - angle2 ) < 15
-					&& abs( abs( lowerX1 - lowerX2 ) - _roadWidth ) < 20 ) {
-
-					lineRatings[index1] = MAX( tempLineRatings[index1], tempLineRatings[index2] ) + 1000;
-					lineRatings[index2] = lineRatings[index1];
-
-					double sideRating = MAX( abs( tempSideRatings[index1] ), abs( tempSideRatings[index2] ) );
-					if ( tempSideRatings[index1] < tempSideRatings[index2] ) {
-						tempSideRatings[index1] = -sideRating;
-						tempSideRatings[index2] = sideRating;
-					}
-					else if ( tempSideRatings[index1] > tempSideRatings[index2] ) {
-						tempSideRatings[index1] = sideRating;
-						tempSideRatings[index2] = -sideRating;
-					}
-
-				}
-			}
-		}
-	}
-
-	///// Debug /////
-
-	// create real image
-	const int W = 900;
-	const int H = 700;
-	cv::Mat realImage( frameInfo.getColorImage().rows + H,
-	                   frameInfo.getColorImage().cols + W, CV_8UC3,
-	                   cv::Scalar( 0, 0, 0 ) );
-
-	for ( int i = 0; i < N_LINES; i++ ) {
-		if ( lineRatings[i] < 2000 ) continue;
-
-		const auto& line = frameInfo.getRealLineInfos()[i];
-
-		cv::line( realImage,
-		          _debugFormatter.convertFromCoord( line.getStartingPoint() ) + cv::Point2d( W / 2, H ),
-		          _debugFormatter.convertFromCoord( line.getEndingPoint() ) + cv::Point2d( W / 2, H ),
-		          sideRatings[i] < 0 ? cv::Scalar( 0, 0, 255 ) : cv::Scalar( 0, 255, 255 ),
-		          1 );
-	}
-	for ( int i = 0; i < N_SECTIONS; i++ ) {
-		cv::line( realImage,
-		          _debugFormatter.convertFromCoord( oldLeftKnots[i] ) + cv::Point2d( W / 2, H ),
-		          _debugFormatter.convertFromCoord( oldLeftKnots[i + 1] ) + cv::Point2d( W / 2, H ),
-		          cv::Scalar( 170, 170, 170 ), 3 );
-		cv::line( realImage,
-		          _debugFormatter.convertFromCoord( oldRightKnots[i] ) + cv::Point2d( W / 2, H ),
-		          _debugFormatter.convertFromCoord( oldRightKnots[i + 1] ) + cv::Point2d( W / 2, H ),
-		          cv::Scalar( 170, 170, 170 ), 3 );
-	}
-
-	cv::imshow( "Test Analyzer", realImage );
-	cv::waitKey();
-
-	/*
-	// debug each lines
-	for ( int i = 0; i < N_LINES; i++ ) {
-		if ( lineRatings[i] < 2000 ) continue;
-
-		const sb::LineInfo& realLine = frameInfo.getRealLineInfos()[i];
-
-		cv::Mat tempImage = realImage.clone();
-		cv::line( tempImage,
-		          _debugFormatter.convertFromCoord( realLine.getStartingPoint() ) + cv::Point2d( W / 2, H ),
-		          _debugFormatter.convertFromCoord( realLine.getEndingPoint() ) + cv::Point2d( W / 2, H ),
-		          cv::Scalar( 0, 255, 0 ), 2 );
-
-		std::stringstream stringBuilder;
-
-		stringBuilder << "Line Rating: " << lineRatings[i];
-		cv::putText( tempImage,
-		             stringBuilder.str(),
-		             cv::Point( 20, 15 ),
-		             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
-
-		stringBuilder.str( "" );
-
-		stringBuilder << "Side Rating: " << sideRatings[i];
-		cv::putText( tempImage,
-		             stringBuilder.str(),
-		             cv::Point( 20, 35 ),
-		             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
-
-		cv::imshow( "Test2", tempImage );
-		cv::waitKey();
-	}
-
-	*/
-
-	///// Update /////
-
-	//** situation for no lines
-	std::vector<cv::Point2d> leftKnots( oldLeftKnots );
-	std::vector<cv::Point2d> rightKnots( oldRightKnots );
-
-	// first couple of knots
-	{
-		double sumPositionXOfLeftLane = 0;
-		double sumPositionXOfRightLane = 0;
-		int n1 = 0;
-		int n2 = 0;
-		for ( int i = 0; i < frameInfo.getSectionInfos().front().lines.size(); i++ ) {
-			int lineIndex = frameInfo.getSectionInfos().front().lines[i].first;
-
-			if ( lineRatings[lineIndex] < 2000 ) continue;
-
-			if ( sideRatings[lineIndex] < 0 ) {
-				sumPositionXOfLeftLane += frameInfo.getSectionInfos().front().lines[i].second[0];
-				n1++;
-			}
-			if ( sideRatings[lineIndex] > 0 ) {
-				sumPositionXOfRightLane += frameInfo.getSectionInfos().front().lines[i].second[0];
-				n2++;
-			}
+	// track analyze
+	if ( analyzer->trackAnalyzeTimes < ANALYZER_TRACK_ANALYZE_TIMEOUT ) {
+		if ( trackAnalyze( analyzer, frameInfo, roadInfo ) >= 0 ) {
+			// success, to next frame
+			analyzer->trackAnalyzeTimes = -1;
+			return 0;
 		}
 
-		if ( n1 > 0 ) {
-			leftKnots[0].x = sumPositionXOfLeftLane / n1;
-		}
-		if ( n2 > 0 ) {
-			rightKnots[0].x = sumPositionXOfRightLane / n2;
-		}
-	}
-
-	// left knots
-	{
-		std::vector<double> angles( oldAngles );
-		for ( int i = 0; i < N_SECTIONS; i++ ) {
-			const sb::SectionInfo& sectionInfo = frameInfo.getSectionInfos()[i];
-
-			double sumRotation = 0;
-			int n = 0;
-
-			for ( int j = 0; j < sectionInfo.lines.size(); j++ ) {
-				int lineIndex = sectionInfo.lines[j].first;
-
-				if ( lineRatings[lineIndex] < 2000 ) continue;
-
-				sumRotation += frameInfo.getRealLineInfos()[lineIndex].getAngle();
-				n++;
-			}
-
-			if ( n > 0 ) {
-				angles[i] = sumRotation / n;
-			}
-		}
-
-		for ( int i = 0; i < N_SECTIONS; i++ ) {
-			const int upperRow = static_cast<int>(leftKnots[i + 1].y);
-
-			const sb::Line upperLine( cv::Point2d( 0, upperRow ), cv::Point2d( 1, upperRow ) );
-
-			sb::Line line;
-
-			line = sb::Line( angles[i], leftKnots[i] );
-
-			sb::Line::findIntersection( line, upperLine, leftKnots[i + 1] );
-
-			line = sb::Line( angles[i], rightKnots[i] );
-
-			sb::Line::findIntersection( line, upperLine, rightKnots[i + 1] );
+		// increase hops to check for timeout to re-first-analyze
+		if ( ++analyzer->trackAnalyzeTimes >= ANALYZER_TRACK_ANALYZE_TIMEOUT ) {
+			analyzer->firstAnalyzeTimes = -1;
+			analyzer->trackAnalyzeTimes = ANALYZER_TRACK_ANALYZE_TIMEOUT;
 		}
 	}
-
-	roadInfo.setLeftKnots( leftKnots );
-	roadInfo.setRightKnots( rightKnots );
 
 	return 0;
 }
 
-void sb::Analyzer::release() { }
+void sb::release( sb::Analyzer* analyzer )
+{
+	analyzer->firstAnalyzeTimes = -1;
+	analyzer->trackAnalyzeTimes = ANALYZER_TRACK_ANALYZE_TIMEOUT;
+
+	sb::release( analyzer->repo );
+	delete analyzer->repo;
+}
+
+int sb::firstAnalyze( sb::Analyzer* analyzer,
+                      sb::FrameInfo* frameInfo,
+                      sb::RoadInfo* roadInfo )
+{
+	findLanes( analyzer, frameInfo );
+
+	analyzeResult( analyzer, frameInfo, roadInfo );
+
+	if ( analyzer->roadState == sb::RoadState::UNKNOWN ) return -1;
+
+	return 0;
+}
+
+int sb::trackAnalyze( sb::Analyzer* analyzer,
+                      sb::FrameInfo* frameInfo,
+                      sb::RoadInfo* roadInfo )
+{
+	trackLanes( analyzer, frameInfo );
+
+	analyzeResult( analyzer, frameInfo, roadInfo );
+
+	if ( analyzer->roadState == sb::RoadState::UNKNOWN ) return -1;
+
+	return 0;
+}
+
+void sb::findLanes( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo )
+{
+	findBothLanes( analyzer, frameInfo );
+
+	// release other blobs
+	for ( auto it_blob = frameInfo->blobs.begin(); it_blob != frameInfo->blobs.end(); ++it_blob ) {
+		sb::Blob* blob = *it_blob;
+		if ( blob == analyzer->repo->leftBlob || blob == analyzer->repo->rightBlob ) continue;
+
+		sb::release( blob );
+		delete blob;
+		*it_blob = nullptr;
+	}
+}
+
+void sb::findBothLanes( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo )
+{
+	if ( frameInfo->blobs.empty() ) {
+		analyzer->roadState = sb::RoadState::UNKNOWN;
+		return;
+	}
+
+	// allocate road width repo
+	if ( analyzer->repo->roadWidths.empty() ) {
+		analyzer->repo->roadWidths.assign( frameInfo->blobs.front()->childBlobs.size(), 0 );
+	}
+
+	// two largest blob, to left most is left lane, the right most is right lane
+	Blob* largestBlobs[2] = { nullptr };
+	for ( auto cit_blob = frameInfo->blobs.cbegin(); cit_blob != frameInfo->blobs.cend(); ++cit_blob ) {
+		sb::Blob* blob = *cit_blob;
+
+		if ( largestBlobs[0] == nullptr || blob->size > largestBlobs[0]->size ) {
+			largestBlobs[1] = largestBlobs[0];
+			largestBlobs[0] = blob;
+		}
+		else if ( largestBlobs[1] == nullptr || blob->size > largestBlobs[1]->size ) {
+			largestBlobs[1] = blob;
+		}
+	}
+
+	// both line must be obtained, and in good condition
+	if ( largestBlobs[0] == nullptr || largestBlobs[1] == nullptr
+		|| largestBlobs[0]->size < MIN_ACCEPTABLE_FULL_LANE_BLOB_OBJECTS_COUNT
+		|| largestBlobs[1]->size < MIN_ACCEPTABLE_FULL_LANE_BLOB_OBJECTS_COUNT
+		|| std::count_if( largestBlobs[0]->childBlobs.cbegin(), largestBlobs[0]->childBlobs.cend(),
+		                  []( sb::Blob* b ) { return b->size > MIN_ACCEPTABLE_CHILD_BLOB_OBJECTS_COUNT; } ) < 3
+		|| std::count_if( largestBlobs[1]->childBlobs.cbegin(), largestBlobs[1]->childBlobs.cend(),
+		                  []( sb::Blob* b ) { return b->size > MIN_ACCEPTABLE_CHILD_BLOB_OBJECTS_COUNT; } ) < 3 ) {
+		analyzer->roadState = sb::RoadState::UNKNOWN;
+		return;
+	}
+
+	// largestBlobs[0] is left, largestBlobs[1] is right
+	if ( largestBlobs[1]->origin.x < largestBlobs[0]->origin.x ) {
+		auto tmp = largestBlobs[1];
+		largestBlobs[1] = largestBlobs[0];
+		largestBlobs[0] = tmp;
+	}
+
+	sb::release( analyzer->repo );
+	analyzer->repo->leftBlob = largestBlobs[0];
+	analyzer->repo->rightBlob = largestBlobs[1];
+	analyzer->roadState = sb::RoadState::BOTH_LANE_DETECTED;
+}
+
+void sb::trackLanes( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo )
+{
+	bool trackSucceeded = false;
+
+	for ( auto cit_next_state = analyzer->repo->possibleNextStates.cbegin(); cit_next_state != analyzer->repo->possibleNextStates.cend(); ++cit_next_state ) {
+		switch ( *cit_next_state ) {
+		case sb::RoadState::BOTH_LANE_DETECTED: {
+			trackBothLanes( analyzer, frameInfo );
+			if ( analyzer->roadState == sb::RoadState::BOTH_LANE_DETECTED ) trackSucceeded = true;
+		}
+			break;
+
+		case sb::RoadState::IGNORE_LEFT_LANE: {
+			trackRightLane( analyzer, frameInfo );
+			if ( analyzer->roadState == sb::RoadState::IGNORE_LEFT_LANE ) trackSucceeded = true;
+		}
+			break;
+
+		case sb::RoadState::IGNORE_RIGHT_LANE: {
+			trackLeftLane( analyzer, frameInfo );
+			if ( analyzer->roadState == sb::RoadState::IGNORE_RIGHT_LANE ) trackSucceeded = true;
+		}
+			break;
+		}
+
+		if ( trackSucceeded ) break;
+	}
+
+	// release other blobs
+	for ( auto it_blob = frameInfo->blobs.begin(); it_blob != frameInfo->blobs.end(); ++it_blob ) {
+		sb::Blob* blob = *it_blob;
+		if ( blob == analyzer->repo->leftBlob || blob == analyzer->repo->rightBlob ) continue;
+
+		sb::release( blob );
+		delete blob;
+		*it_blob = nullptr;
+	}
+}
+
+void sb::trackBothLanes( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo )
+{
+	// two largest blob, to left most is left lane, the right most is right lane
+	Blob* largestBlobs[2] = { nullptr };
+	for ( auto cit_blob = frameInfo->blobs.cbegin(); cit_blob != frameInfo->blobs.cend(); ++cit_blob ) {
+		sb::Blob* blob = *cit_blob;
+
+		if ( largestBlobs[0] == nullptr || blob->size > largestBlobs[0]->size ) {
+			largestBlobs[1] = largestBlobs[0];
+			largestBlobs[0] = blob;
+		}
+		else if ( largestBlobs[1] == nullptr || blob->size > largestBlobs[1]->size ) {
+			largestBlobs[1] = blob;
+		}
+	}
+
+	// both line must be obtained, and in good condition
+	if ( largestBlobs[0] == nullptr || largestBlobs[1] == nullptr
+		|| largestBlobs[0]->size < MIN_ACCEPTABLE_FULL_LANE_BLOB_OBJECTS_COUNT
+		|| largestBlobs[1]->size < MIN_ACCEPTABLE_FULL_LANE_BLOB_OBJECTS_COUNT
+		|| std::count_if( largestBlobs[0]->childBlobs.cbegin(), largestBlobs[0]->childBlobs.cend(),
+		                  []( sb::Blob* blob ) { return blob->size > MIN_ACCEPTABLE_CHILD_BLOB_OBJECTS_COUNT; } ) < 3
+		|| std::count_if( largestBlobs[1]->childBlobs.cbegin(), largestBlobs[1]->childBlobs.cend(),
+		                  []( sb::Blob* blob ) { return blob->size > MIN_ACCEPTABLE_CHILD_BLOB_OBJECTS_COUNT; } ) < 3 ) {
+		analyzer->roadState = sb::RoadState::UNKNOWN;
+		return;
+	}
+
+	// largestBlobs[0] is left, largestBlobs[1] is right
+	if ( largestBlobs[1]->origin.x < largestBlobs[0]->origin.x ) {
+		auto tmp = largestBlobs[1];
+		largestBlobs[1] = largestBlobs[0];
+		largestBlobs[0] = tmp;
+	}
+
+	sb::release( analyzer->repo );
+	analyzer->repo->leftBlob = largestBlobs[0];
+	analyzer->repo->rightBlob = largestBlobs[1];
+	analyzer->roadState = sb::RoadState::BOTH_LANE_DETECTED;
+}
+
+void sb::trackLeftLane( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo )
+{
+	sb::Blob* largestBlob = nullptr;
+	for ( auto cit_blob = frameInfo->blobs.cbegin(); cit_blob != frameInfo->blobs.cend(); ++cit_blob ) {
+		sb::Blob* blob = *cit_blob;
+
+		if ( abs( blob->origin.x - analyzer->repo->leftBlob->origin.x ) > MAX_ACCEPTABLE_LANE_POSITION_DIFF ) continue;
+
+		if ( largestBlob == nullptr || blob->size > largestBlob->size ) {
+			largestBlob = blob;
+		}
+	}
+
+	if ( largestBlob == nullptr
+		|| largestBlob->size < MIN_ACCEPTABLE_FULL_LANE_BLOB_OBJECTS_COUNT
+		|| std::count_if( largestBlob->childBlobs.cbegin(), largestBlob->childBlobs.cend(),
+		                  []( sb::Blob* blob ) { return blob->size > MIN_ACCEPTABLE_CHILD_BLOB_OBJECTS_COUNT; } ) < 3 ) {
+		analyzer->roadState = sb::RoadState::UNKNOWN;
+		return;
+	}
+
+	sb::release( analyzer->repo );
+	analyzer->repo->leftBlob = largestBlob;
+	analyzer->roadState = sb::RoadState::IGNORE_RIGHT_LANE;
+}
+
+void sb::trackRightLane( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo )
+{
+	sb::Blob* largestBlob = nullptr;
+	for ( auto cit_blob = frameInfo->blobs.cbegin(); cit_blob != frameInfo->blobs.cend(); ++cit_blob ) {
+		sb::Blob* blob = *cit_blob;
+
+		if ( abs( blob->origin.x - analyzer->repo->rightBlob->origin.x ) > MAX_ACCEPTABLE_LANE_POSITION_DIFF ) continue;
+
+		if ( largestBlob == nullptr || blob->size > largestBlob->size ) {
+			largestBlob = blob;
+		}
+	}
+
+	if ( largestBlob == nullptr
+		|| largestBlob->size < MIN_ACCEPTABLE_FULL_LANE_BLOB_OBJECTS_COUNT
+		|| std::count_if( largestBlob->childBlobs.cbegin(), largestBlob->childBlobs.cend(),
+		                  []( sb::Blob* blob ) { return blob->size > MIN_ACCEPTABLE_CHILD_BLOB_OBJECTS_COUNT; } ) < 3 ) {
+		analyzer->roadState = sb::RoadState::UNKNOWN;
+		return;
+	}
+
+	sb::release( analyzer->repo );
+	analyzer->repo->rightBlob = largestBlob;
+	analyzer->roadState = sb::RoadState::IGNORE_LEFT_LANE;
+}
+
+void sb::analyzeWithBothLane( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo, sb::RoadInfo* roadInfo )
+{
+	analyzer->repo->possibleNextStates.clear();
+	analyzer->knots.reserve( analyzer->repo->leftBlob->childBlobs.size() );
+
+	auto cit_left_blob = analyzer->repo->leftBlob->childBlobs.cbegin(); // left child blobs
+	auto cit_right_blob = analyzer->repo->rightBlob->childBlobs.cbegin(); // right child blobs
+	auto it_road_width = analyzer->repo->roadWidths.begin(); // for update road width repo
+
+	int voteIgnoreLeft = 0;
+	int voteIgnoreRight = 0;
+
+	for ( ; cit_left_blob != analyzer->repo->leftBlob->childBlobs.cend(); ++cit_left_blob , ++cit_right_blob , ++it_road_width ) {
+		sb::Blob* leftBlob = *cit_left_blob;
+		sb::Blob* rightBlob = *cit_right_blob;
+
+		sb::LaneKnot first;
+		if ( leftBlob->size > MIN_ACCEPTABLE_CHILD_BLOB_OBJECTS_COUNT ) {
+			first.position = leftBlob->origin;
+			first.type = 1;
+		}
+		else { // error left child blob
+			first.type = -1;
+		}
+
+		sb::LaneKnot second;
+		if ( rightBlob->size > MIN_ACCEPTABLE_CHILD_BLOB_OBJECTS_COUNT ) {
+			second.position = rightBlob->origin;
+			second.type = 1;
+		}
+		else { // error right child blob
+			second.type = -1;
+		}
+
+		analyzer->knots.push_back( std::make_pair( first, second ) );
+
+		if ( first.type > 0 && second.type > 0 ) { // good pair of lane
+			roadInfo->target = (first.position + second.position) * 0.5; // calculate road target
+
+			// update road width repo
+			if ( *it_road_width == 0 || (leftBlob->box.tl().x > 1 && rightBlob->box.br().x < frameInfo->bgrImage.cols - 2) ) {
+				*it_road_width = second.position.x - first.position.x;
+			}
+		}
+
+		if ( first.type <= 0 || leftBlob->box.tl().x < 5 ) voteIgnoreLeft++;
+		if ( second.type <= 0 || rightBlob->box.br().x >= frameInfo->bgrImage.cols - 5 ) voteIgnoreRight++;
+	}
+
+	analyzer->repo->possibleNextStates.push_back( sb::RoadState::BOTH_LANE_DETECTED );
+	if ( voteIgnoreLeft >= 2 ) analyzer->repo->possibleNextStates.push_back( sb::RoadState::IGNORE_LEFT_LANE );
+	if ( voteIgnoreRight >= 2 ) analyzer->repo->possibleNextStates.push_back( sb::RoadState::IGNORE_RIGHT_LANE );
+}
+
+void sb::analyzeWithoutLeftLane( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo, sb::RoadInfo* roadInfo )
+{
+	analyzer->repo->possibleNextStates.clear();
+	analyzer->knots.reserve( analyzer->repo->rightBlob->childBlobs.size() );
+
+	auto cit_right_blob = analyzer->repo->rightBlob->childBlobs.cbegin(); // road child blobs
+	auto cit_road_width = analyzer->repo->roadWidths.cbegin(); // for estimate road center
+
+	int voteForBothLane = 0;
+
+	for ( ; cit_right_blob != analyzer->repo->rightBlob->childBlobs.cend(); ++cit_right_blob , ++cit_road_width ) {
+		sb::Blob* rightBlob = *cit_right_blob;
+
+		sb::LaneKnot first;
+		first.type = -1;
+
+		sb::LaneKnot second;
+		if ( rightBlob->size > MIN_ACCEPTABLE_CHILD_BLOB_OBJECTS_COUNT ) {
+			second.position = rightBlob->origin;
+			second.type = 1;
+		}
+		else { // error right lane
+			second.type = -1;
+		}
+
+		analyzer->knots.push_back( std::make_pair( first, second ) );
+
+		// calculate road center
+		if ( second.type > 0 ) {
+			roadInfo->target = second.position - cv::Point( (*cit_road_width) / 2, 0 );
+
+			if ( second.position.x - *cit_road_width > 0 ) voteForBothLane++;
+		}
+	}
+
+	if ( voteForBothLane >= 2 ) analyzer->repo->possibleNextStates.push_back( sb::RoadState::BOTH_LANE_DETECTED );
+	analyzer->repo->possibleNextStates.push_back( sb::RoadState::IGNORE_LEFT_LANE );
+}
+
+void sb::analyzeWithoutRightLane( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo, sb::RoadInfo* roadInfo )
+{
+	analyzer->repo->possibleNextStates.clear();
+	analyzer->knots.reserve( analyzer->repo->leftBlob->childBlobs.size() );
+
+	auto cit_left_blob = analyzer->repo->leftBlob->childBlobs.cbegin(); // road child blobs
+	auto cit_road_width = analyzer->repo->roadWidths.cbegin(); // for estimate road center
+
+	int voteForBothLane = 0;
+
+	for ( ; cit_left_blob != analyzer->repo->leftBlob->childBlobs.cend(); ++cit_left_blob , ++cit_road_width ) {
+		sb::Blob* leftBlob = *cit_left_blob;
+
+		sb::LaneKnot first;
+		if ( leftBlob->size > MIN_ACCEPTABLE_CHILD_BLOB_OBJECTS_COUNT ) {
+			first.position = leftBlob->origin;
+			first.type = 1;
+		}
+		else {
+			first.type = -1;
+		}
+
+		sb::LaneKnot second;
+		second.type = -1;
+
+		analyzer->knots.push_back( std::make_pair( first, second ) );
+
+		// calculate road center
+		if ( first.type > 0 ) {
+			roadInfo->target = first.position + cv::Point( (*cit_road_width) / 2, 0 );
+
+			if ( first.position.x + *cit_road_width < frameInfo->bgrImage.cols ) voteForBothLane++;
+		}
+	}
+
+	if ( voteForBothLane >= 2 ) analyzer->repo->possibleNextStates.push_back( sb::RoadState::BOTH_LANE_DETECTED );
+	analyzer->repo->possibleNextStates.push_back( sb::RoadState::IGNORE_RIGHT_LANE );
+}
+
+void sb::analyzeResult( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo, sb::RoadInfo* roadInfo )
+{
+	analyzer->knots.clear();
+
+	switch ( analyzer->roadState ) {
+
+	case sb::RoadState::BOTH_LANE_DETECTED: {
+		sb::analyzeWithBothLane( analyzer, frameInfo, roadInfo );
+	}
+		break;
+
+	case sb::RoadState::IGNORE_LEFT_LANE: {
+		analyzeWithoutLeftLane( analyzer, frameInfo, roadInfo );
+	}
+		break;
+
+	case sb::RoadState::IGNORE_RIGHT_LANE: {
+		analyzeWithoutRightLane( analyzer, frameInfo, roadInfo );
+	}
+		break;
+
+	case sb::RoadState::UNKNOWN: {
+		roadInfo->target = cv::Point( 0, 0 );
+	}
+		break;
+	}
+}

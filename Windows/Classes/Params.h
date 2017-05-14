@@ -5,15 +5,20 @@
 
 #define PARAMS_YAML_FIELD_NAME "Params"
 
+
 namespace sb
 {
 struct Params
 {
 	cv::Size COLOR_FRAME_SIZE = cv::Size( 640, 480 );
-	cv::Size CROPPED_FRAME_SIZE = cv::Size( 640, 240 );
-
-	std::vector<int> SEPERATE_ROWS;
+	cv::Rect CROP_BOX = cv::Rect( 0, 0, 0, 0 );
 	double CONVERT_COORD_COEF = 1.0 / 40;
+
+	// TODO: to float
+	double MIN_LANE_WIDTH = 2;
+	double MAX_LANE_WIDTH = 15;
+	double MIN_ROAD_WIDTH = 60;
+	double MAX_ROAD_WIDTH = 100;
 
 	int EDGE_DETECTOR_KERNEL_SIZE = 3;
 	double EDGE_DETECTOR_LOW_THRESH = 100;
@@ -31,18 +36,21 @@ struct Params
 	cv::Point2f WARP_SRC_QUAD[4];
 	cv::Point2f WARP_DST_QUAD[4];
 
-	std::vector<double> INITIAL_ROTATION_OF_LANES;
-	double INITIAL_POSITION_OF_LEFT_LANE = -0.7;
-	double INITIAL_POSITION_OF_RIGHT_LANE = 0.7;
-
-	void load( const cv::String& yamlFileName );
+	int MIN_STEERING_ANGLE = -200;
+	int MAX_STEERING_ANGLE = 200;
+	int MAX_VELOCITY = 45;
+	int INITIAL_VELOCITY = 10;
 
 	void read( const cv::FileNode& node );
 
-	void save( const cv::String& yamlFileName ) const;
-
 	void write( cv::FileStorage& fs ) const;
 };
+
+void release( sb::Params* params );
+
+void load( sb::Params* params, const cv::String& yamlFileName );
+
+void save( sb::Params* params, const cv::String& yamlFileName );
 
 void write( cv::FileStorage& fs, const std::string&, const sb::Params& data );
 

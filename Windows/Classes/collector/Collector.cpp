@@ -1,12 +1,12 @@
 #include "Collector.h"
 
-int sb::Collector::init( const sb::Params& params )
+int sb::init( sb::Collector* collector, sb::Params* params )
 {
 	// sample init
 
-	_tempCap = cv::VideoCapture( VIDEO_TEST_PATH );
+	collector->tempCap = cv::VideoCapture( "../../Debug/sample-2.avi" );
 
-	if( !_tempCap.isOpened() ) {
+	if ( !collector->tempCap.isOpened() ) {
 		std::cerr << "Init stream failed." << std::endl;
 		return -1;
 	}
@@ -14,28 +14,22 @@ int sb::Collector::init( const sb::Params& params )
 	return 0;
 }
 
-int sb::Collector::collect( sb::RawContent& rawContent )
+int sb::collect( sb::Collector* collector, sb::RawContent* rawContent )
 {
 	// sample collect
 
-	cv::Mat colorImage;
+	collector->tempCap >> rawContent->colorImage;
 
-	_tempCap >> colorImage;
-
-	if(colorImage.empty() ) {
+	if ( rawContent->colorImage.empty() ) {
 		std::cerr << "Stream disconnected." << std::endl;
 		return -1;
 	}
 
-	rawContent.setColorImage( colorImage );
-
 	return 0;
 }
 
-void sb::Collector::release()
+void sb::release( sb::Collector* collector )
 {
 	// sample release
-
-	_tempCap.release();
-
+	collector->tempCap.release();
 }

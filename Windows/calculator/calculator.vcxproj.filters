@@ -43,7 +43,10 @@
     <ClCompile Include="..\Classes\calculator\LineInfo.cpp">
       <Filter>calculator</Filter>
     </ClCompile>
-    <ClCompile Include="..\Classes\calculator\SectionInfo.cpp">
+    <ClCompile Include="..\Classes\Timer.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Classes\calculator\Blob.cpp">
       <Filter>calculator</Filter>
     </ClCompile>
   </ItemGroup>
@@ -81,7 +84,10 @@
     <ClInclude Include="..\Classes\calculator\LineInfo.h">
       <Filter>calculator</Filter>
     </ClInclude>
-    <ClInclude Include="..\Classes\calculator\SectionInfo.h">
+    <ClInclude Include="..\Classes\Timer.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\calculator\Blob.h">
       <Filter>calculator</Filter>
     </ClInclude>
   </ItemGroup>

@@ -5,41 +5,29 @@
 
 namespace sb
 {
-class LineInfo
+struct LineInfo
 {
-private:
-	sb::Line _line;
+	// TODO: to float
 
-	double _length;
+	sb::Line line;
 
-	double _angle;
+	double length;
 
-	cv::Point2d _middlePoint;
+	double angle;
 
-	cv::Vec3b _averageColor;
+	cv::Point2d middlePoint;
 
-public:
-	LineInfo( const sb::Line& line,
-	          const cv::Vec3b& averageColor = cv::Vec3b( 0, 0, 0 ) );
+	cv::Point2d topPoint;
 
-	const sb::Line& getLine() const;
+	cv::Point2d bottomPoint;
 
-	void setLine( const sb::Line& line );
-
-	const cv::Point2d& getStartingPoint() const;
-
-	const cv::Point2d& getEndingPoint() const;
-
-	double getLength() const;
-
-	double getAngle() const;
-
-	const cv::Vec3b& getAverageColor() const;
-
-	const cv::Point2d& getMiddlePoint() const;
-
-	void setAverageColor( const cv::Vec3b& averageColor );
+	cv::Point2d centerPoint;
 };
+
+void release( sb::LineInfo* lineInfo );
+
+void create( sb::LineInfo* lineInfo, const sb::Line& line );
+
 }
 
 #endif //!__SB_LINE_INFO_H__

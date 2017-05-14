@@ -1,4 +1,4 @@
-#include <opencv2/opencv.hpp>
+﻿#include <opencv2/opencv.hpp>
 
 #define WINDOW_NAME "Window"
 
@@ -18,6 +18,9 @@ struct WarpData
 		cv::Point2f( -1, -1 ),
 		cv::Point2f( -1, -1 ) };
 
+	double maxViewWidth;
+	double maxViewHeight;
+
 	cv::String fileToSave;
 };
 
@@ -31,7 +34,7 @@ int parseCommands( const int argc, const char** argv,
 
 void saveData( WarpData* warpData );
 
-void onMouse( int event, int x, int y, int flags, void* userdata );
+void onMouseGeneratingWarpMatrix( int event, int x, int y, int flags, void* userdata );
 
 int main( const int argc, const char** argv )
 {
@@ -54,17 +57,23 @@ int doModeGenerate( const int argc, const char** argv )
 	if ( parseCommands( argc, argv, warpData.image, warpData.fileToSave ) < 0 )
 		return -1;
 
+	std::cout << "Enter max view width: ";
+	std::cin >> warpData.maxViewWidth;
+
+	warpData.maxViewHeight = 1.0 * warpData.image.rows / warpData.image.cols * warpData.maxViewWidth;
+	std::cout << "Your max view height must be " << warpData.maxViewHeight << std::endl;
+
 	cv::namedWindow( WINDOW_NAME, CV_WINDOW_KEEPRATIO );
 
 	cv::imshow( WINDOW_NAME, warpData.image );
 
-	cv::setMouseCallback( WINDOW_NAME, onMouse, &warpData );
+	cv::setMouseCallback( WINDOW_NAME, onMouseGeneratingWarpMatrix, &warpData );
 
-	cv::waitKey( 0 );
-
-	saveData( &warpData );
+	cv::waitKey();
 
 	cv::setMouseCallback( WINDOW_NAME, NULL );
+
+	saveData( &warpData );
 
 	return 0;
 }
@@ -72,9 +81,9 @@ int doModeGenerate( const int argc, const char** argv )
 int doModeTest( const int argc, const char** argv )
 {
 	cv::Mat srcImage;
-	
+
 	cv::Mat dstImage;
-	
+
 	cv::String fileToLoad;
 
 	// load source image and yaml
@@ -88,17 +97,17 @@ int doModeTest( const int argc, const char** argv )
 
 		// load srcQuad and dstQuad
 		std::vector<cv::Point2f> srcQuadVec;
-		std::vector<cv::Point2f> dstQuadVec; 
-		
+		std::vector<cv::Point2f> dstQuadVec;
+
 		cv::FileStorage fs( fileToLoad, cv::FileStorage::READ );
 		fs["WARP_SRC_QUAD"] >> srcQuadVec;
 		fs["WARP_DST_QUAD"] >> dstQuadVec;
 		fs.release();
-		
+
 		std::copy( srcQuadVec.begin(), srcQuadVec.end(), srcQuad );
 		std::copy( dstQuadVec.begin(), dstQuadVec.end(), dstQuad );
 
-		cv::Mat warpMat = cv::getPerspectiveTransform( srcQuad, dstQuad );		
+		cv::Mat warpMat = cv::getPerspectiveTransform( srcQuad, dstQuad );
 
 		cv::warpPerspective( srcImage, dstImage, warpMat, srcImage.size() );
 	}
@@ -136,116 +145,83 @@ int parseCommands( const int argc, const char** argv,
 
 void saveData( WarpData* warpData )
 {
-	// swap the bottom left quad and bottom right quad
-	{
-		cv::Point2f temp;
+	warpData->srcQuad[2].x = 0;
+	warpData->srcQuad[3].x = static_cast<float>(warpData->image.cols - 1);
 
-		temp = warpData->srcQuad[2];
-		warpData->srcQuad[2] = warpData->srcQuad[3];
-		warpData->srcQuad[3] = temp;
-
-		temp = warpData->dstQuad[2];
-		warpData->dstQuad[2] = warpData->dstQuad[3];
-		warpData->dstQuad[3] = temp;
-	}
+	warpData->dstQuad[0] = cv::Point2d( 0, 0 );
+	warpData->dstQuad[1] = cv::Point2d( warpData->image.cols - 1, 0 );
+	warpData->dstQuad[2] = cv::Point2d( 0, warpData->image.rows - 1 );
+	warpData->dstQuad[3] = cv::Point2d( warpData->image.cols - 1, warpData->image.rows - 1 );
 
 	// save to disk
 	cv::FileStorage fs( warpData->fileToSave, cv::FileStorage::WRITE );
 	fs << "WARP_SRC_QUAD" << std::vector<cv::Point2f>( warpData->srcQuad, warpData->srcQuad + 4 );
 	fs << "WARP_DST_QUAD" << std::vector<cv::Point2f>( warpData->dstQuad, warpData->dstQuad + 4 );
+	fs << "CONVERT_COEF" << warpData->maxViewWidth / warpData->image.cols;
 	fs.release();
 }
 
-void onMouse( int event, int x, int y, int flags, void* userdata )
+void onMouseGeneratingWarpMatrix( int event, int x, int y, int flags, void* userdata )
 {
 	WarpData* warpData = static_cast<WarpData*>(userdata);
 
 	switch ( event ) {
 	case cv::EVENT_LBUTTONDOWN: {
 
-		for ( int i = 0; i < 4; i++ ) {
-			if ( warpData->srcQuad[i].x < 0 ) {
-				warpData->srcQuad[i] = cv::Point2f( static_cast<float>(x), static_cast<float>(y) );
-				return;
-			}
+		if ( warpData->srcQuad[0].x < 0 || warpData->srcQuad[1].x < 0 ) {
+			int center = warpData->image.cols / 2;
+			int offsetX = abs( x - center );
+
+			warpData->srcQuad[0].x = static_cast<float>(center - offsetX);
+			warpData->srcQuad[1].x = static_cast<float>(center + offsetX);
 		}
-		for ( int i = 0; i < 4; i++ ) {
-			if ( warpData->dstQuad[i].x < 0 ) {
-				warpData->dstQuad[i] = cv::Point2f( static_cast<float>(x), static_cast<float>(y) );
-				return;
-			}
+		else if ( warpData->srcQuad[0].y < 0 || warpData->srcQuad[1].y < 0 ) {
+			warpData->srcQuad[0].y = static_cast<float>(y);
+			warpData->srcQuad[1].y = static_cast<float>(y);
 		}
+		else if ( warpData->srcQuad[2].y < 0 || warpData->srcQuad[3].y < 0 ) {
+			warpData->srcQuad[2].y = static_cast<float>(y);
+			warpData->srcQuad[3].y = static_cast<float>(y);
+		}
+
 	}
 		break;
 
 	case cv::EVENT_MOUSEMOVE: {
 		cv::Mat tempImage = warpData->image.clone();
 
-		int i;
-		for ( i = 0; i < 4; i++ ) {
-			if ( warpData->srcQuad[i].x < 0 ) break;
+		cv::putText( tempImage,
+		             "Indicate your real width and height in the image",
+		             cv::Point( 20, 15 ),
+		             cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar( 0, 255, 255 ), 1 );
 
-			cv::circle( tempImage, warpData->srcQuad[i], 3, cv::Scalar( 0, 0, 255 ), -1 );
+		if ( warpData->srcQuad[0].x < 0 || warpData->srcQuad[1].x < 0 ) {
+			int center = warpData->image.cols / 2;
+			int offsetX = abs( x - center );
 
-			if ( i > 0 ) {
-				cv::line( tempImage,
-				          warpData->srcQuad[i - 1],
-				          warpData->srcQuad[i],
-				          cv::Scalar( 0, 255, 0 ), 2 );
-			}
+			double x0 = static_cast<float>(center - offsetX);
+			double x1 = static_cast<float>(center + offsetX);
 
-			if ( i == 3 ) {
-				cv::line( tempImage,
-				          warpData->srcQuad[0],
-				          warpData->srcQuad[3],
-				          cv::Scalar( 0, 255, 0 ), 2 );
-			}
-		}
-
-		if ( i > 0 && i < 4 ) {
 			cv::line( tempImage,
-			          warpData->srcQuad[i - 1],
-			          cv::Point2f( static_cast<float>(x), static_cast<float>(y) ),
+			          cv::Point2d( x0, 0 ),
+			          cv::Point2d( x0, warpData->image.rows - 1 ),
 			          cv::Scalar( 0, 255, 0 ), 2 );
-			if ( i == 3 ) {
-				cv::line( tempImage,
-				          warpData->srcQuad[0],
-				          cv::Point2f( static_cast<float>(x), static_cast<float>(y) ),
-				          cv::Scalar( 0, 255, 0 ), 2 );
-			}
-		}
-
-		for ( i = 0; i < 4; i++ ) {
-			if ( warpData->dstQuad[i].x < 0 ) break;
-
-			cv::circle( tempImage, warpData->dstQuad[i], 3, cv::Scalar( 0, 0, 255 ), -1 );
-
-			if ( i > 0 ) {
-				cv::line( tempImage,
-				          warpData->dstQuad[i - 1],
-				          warpData->dstQuad[i],
-				          cv::Scalar( 0, 255, 255 ), 2 );
-			}
-
-			if ( i == 3 ) {
-				cv::line( tempImage,
-				          warpData->dstQuad[0],
-				          warpData->dstQuad[3],
-				          cv::Scalar( 0, 255, 255 ), 2 );
-			}
-		}
-
-		if ( i > 0 && i < 4 ) {
 			cv::line( tempImage,
-			          warpData->dstQuad[i - 1],
-			          cv::Point2f( static_cast<float>(x), static_cast<float>(y) ),
-			          cv::Scalar( 0, 255, 255 ), 2 );
-			if ( i == 3 ) {
-				cv::line( tempImage,
-				          warpData->dstQuad[0],
-				          cv::Point2f( static_cast<float>(x), static_cast<float>(y) ),
-				          cv::Scalar( 0, 255, 255 ), 2 );
-			}
+			          cv::Point2d( x1, 0 ),
+			          cv::Point2d( x1, warpData->image.rows - 1 ),
+			          cv::Scalar( 0, 255, 0 ), 2 );
+		}
+		else if ( warpData->srcQuad[0].y < 0 || warpData->srcQuad[1].y < 0 ) {
+			cv::line( tempImage,
+			          cv::Point2d( 0, y ),
+			          cv::Point2d( warpData->image.cols - 1, y ),
+			          cv::Scalar( 0, 255, 0 ), 2 );
+		}
+		else if ( warpData->srcQuad[2].y < 0 || warpData->srcQuad[3].y < 0 ) {
+			cv::line( tempImage,
+			          cv::Point2d( 0, y ),
+			          cv::Point2d( warpData->image.cols - 1, y ),
+			          cv::Scalar( 0, 255, 0 ), 2 );
 		}
 
 		cv::imshow( WINDOW_NAME, tempImage );

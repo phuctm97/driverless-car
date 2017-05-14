@@ -3,6 +3,8 @@
 
 #include "../Include.h"
 
+// TODO: to float
+
 namespace sb
 {
 // Line Mapping: ax + by + c = 0
@@ -74,6 +76,10 @@ public:
 
 	double getDistance( const cv::Point2d& point ) const;
 
+	cv::Point2d getNormalizedHorizontalVector() const;
+
+	cv::Point2d getNormalizedVerticalVector() const;
+
 	sb::Line rotate( double alpha,
 	                 bool degree = true ) const;
 
@@ -126,3 +132,4 @@ void write( cv::FileStorage& fs, const std::string&, const sb::Line& data );
 void read( const cv::FileNode& node, sb::Line& data, const sb::Line& defaultData = sb::Line() );
 }
 #endif //!__SB_LINE_H__
+

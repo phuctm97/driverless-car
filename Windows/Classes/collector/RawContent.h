@@ -1,25 +1,20 @@
 #ifndef __SB_RAW_CONTENT_H__
 #define __SB_RAW_CONTENT_H__
 
-#include <opencv2/opencv.hpp>
 #include "../Params.h"
 
 namespace sb
 {
-class RawContent
+
+struct RawContent
 {
-private:
-	cv::Mat _colorImage;
-
-public:
-	RawContent() {}
-
-	void create( const sb::Params& params );
-
-	const cv::Mat& getColorImage() const;
-
-	void setColorImage( const cv::Mat& colorImage );
+	cv::Mat colorImage;
 };
+
+void create( sb::RawContent* rawContent, sb::Params* params );
+
+void release( sb::RawContent* rawContent );
+
 }
 
 #endif //!__SB_RAW_CONTENT_H__

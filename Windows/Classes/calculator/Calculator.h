@@ -2,45 +2,36 @@
 #define __SB_CALCULATOR_H__
 
 #include "../Params.h"
+#include "../Timer.h"
 #include "../collector/RawContent.h"
 #include "FrameInfo.h"
+#include "EdgeDetector.h"
+
+#define MIN_ACCEPTABLE_BLOB_OBJECTS_COUNT 20
 
 namespace sb
 {
-class Calculator
+struct Calculator
 {
-private:
-	sb::Formatter _formatter;
-	sb::EdgeDetector _edgeDetector;
-	sb::LineDetector _lineDetector;
+	sb::EdgeDetector edgeDetector;
 
-public:
-	Calculator() {};
+	double binarizeThesh;
 
-	int init( const sb::Params& params );
+	cv::Rect cropBox;
 
-	int calculate( const sb::RawContent& rawContent,
-	               sb::FrameInfo& frameInfo ) const;
-
-	void release();
-
-	double convertXToCoord( double x ) const;
-
-	double convertYToCoord( double y ) const;
-
-	cv::Point2d convertToCoord( const cv::Point2d& point ) const;
-
-	double convertXFromCoord( double x ) const;
-
-	double convertYFromCoord( double y ) const;
-
-	cv::Point2d convertFromCoord( const cv::Point2d& point ) const;
-
-private:
-	void calculateLineInfos( const std::vector<sb::Line>& lines,
-													 const cv::Mat& colorImage,
-													 std::vector<sb::LineInfo>& outputLineInfos ) const;
+	std::vector<cv::Rect> splitBoxes;
 };
+
+int init( sb::Calculator* calculator, sb::Params* params );
+
+int calculate( sb::Calculator* calculator,
+               sb::RawContent* rawContent,
+               sb::FrameInfo* frameInfo );
+
+void release( sb::Calculator* calculator );
+
+void findBlobs( sb::Calculator* calculator, sb::FrameInfo* frameInfo );
+
 }
 
 #endif //!__SB_CALCULATOR_H__
