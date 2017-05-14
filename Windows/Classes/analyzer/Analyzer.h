@@ -81,3 +81,4 @@ void release( sb::Analyzer* analyzer );
 }
 
 #endif //!__SB_ANALYZER_H__
+

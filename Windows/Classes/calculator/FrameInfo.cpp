@@ -21,3 +21,30 @@ void sb::release( sb::FrameInfo* frameInfo, bool releaseBlobs )
 
 	frameInfo->blobs.clear();
 }
+<<<<<<< HEAD
+=======
+
+double sb::FrameInfo::convertYFromCoord( double y ) const
+{
+	return _colorImage.rows - (y / _convertCoordCoef);
+}
+
+cv::Point2d sb::FrameInfo::convertFromCoord( const cv::Point2d& point ) const
+{
+	return cv::Point2d(
+	                   convertXFromCoord( point.x ),
+	                   convertYFromCoord( point.x )
+	                  );
+}
+
+double sb::FrameInfo::convertToRotation( double angle ) const
+{
+	return 90 - angle;
+}
+
+double sb::FrameInfo::convertFromRotation( double rotation ) const
+{
+	return 90 - rotation;
+}*/
+
+>>>>>>> master

@@ -167,3 +167,4 @@ void sb::findBlobs( sb::Calculator* calculator, sb::FrameInfo* frameInfo )
 
 	}
 }
+

@@ -122,6 +122,7 @@ cv::Point2d sb::Formatter::convertFromCoord( const cv::Point2d& point ) const
 	                  );
 }
 
+<<<<<<< HEAD
 cv::Rect2d sb::Formatter::convertFromCoord( const cv::Rect2d& rect ) const
 {
 	return cv::Rect2d(
@@ -131,3 +132,5 @@ cv::Rect2d sb::Formatter::convertFromCoord( const cv::Rect2d& rect ) const
 	                  rect.height / _convertCoordCoef
 	                 );
 }
+=======
+>>>>>>> master

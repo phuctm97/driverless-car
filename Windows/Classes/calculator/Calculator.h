@@ -35,3 +35,4 @@ void findBlobs( sb::Calculator* calculator, sb::FrameInfo* frameInfo );
 }
 
 #endif //!__SB_CALCULATOR_H__
+

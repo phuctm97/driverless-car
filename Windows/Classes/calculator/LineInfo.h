@@ -31,3 +31,4 @@ void create( sb::LineInfo* lineInfo, const sb::Line& line );
 }
 
 #endif //!__SB_LINE_INFO_H__
+

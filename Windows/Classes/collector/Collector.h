@@ -19,3 +19,4 @@ void release( sb::Collector* collector );
 }
 
 #endif //!__SB_COLLECTOR_H__
+

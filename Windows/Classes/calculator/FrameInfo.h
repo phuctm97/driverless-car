@@ -23,3 +23,4 @@ void release( sb::FrameInfo* frameInfo, bool releaseBlobs = true );
 }
 
 #endif //!__SB_FRAME_INFO_H__
+

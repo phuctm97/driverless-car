@@ -49,6 +49,9 @@
     <ClCompile Include="..\Classes\calculator\Blob.cpp">
       <Filter>calculator</Filter>
     </ClCompile>
+    <ClCompile Include="..\Classes\Timer.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Classes\Include.h">
@@ -89,6 +92,9 @@
     </ClInclude>
     <ClInclude Include="..\Classes\calculator\Blob.h">
       <Filter>calculator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\Timer.h">
+      <Filter>shared</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

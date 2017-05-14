@@ -36,10 +36,22 @@ struct Params
 	cv::Point2f WARP_SRC_QUAD[4];
 	cv::Point2f WARP_DST_QUAD[4];
 
+<<<<<<< HEAD
+=======
+	std::vector<double> INITIAL_ROTATION_OF_LANES;
+	double INITIAL_POSITION_OF_LEFT_LANE = -0.7;
+	double INITIAL_POSITION_OF_RIGHT_LANE = 0.7;
+
+>>>>>>> master
 	int MIN_STEERING_ANGLE = -200;
 	int MAX_STEERING_ANGLE = 200;
 	int MAX_VELOCITY = 45;
 	int INITIAL_VELOCITY = 10;
+<<<<<<< HEAD
+=======
+
+	void load( const cv::String& yamlFileName );
+>>>>>>> master
 
 	void read( const cv::FileNode& node );
 

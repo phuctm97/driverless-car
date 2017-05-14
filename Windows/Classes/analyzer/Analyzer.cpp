@@ -105,10 +105,19 @@ void sb::findBothLanes( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo )
 		return;
 	}
 
+<<<<<<< HEAD
 	// allocate road width repo
 	if ( analyzer->repo->roadWidths.empty() ) {
 		analyzer->repo->roadWidths.assign( frameInfo->blobs.front()->childBlobs.size(), 0 );
 	}
+=======
+	/*// create real image
+	const int W = 900;
+	const int H = 700;
+	cv::Mat realImage( frameInfo.getColorImage().rows + H,
+	                   frameInfo.getColorImage().cols + W, CV_8UC3,
+	                   cv::Scalar( 0, 0, 0 ) );
+>>>>>>> master
 
 	// two largest blob, to left most is left lane, the right most is right lane
 	Blob* largestBlobs[2] = { nullptr };
@@ -143,11 +152,16 @@ void sb::findBothLanes( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo )
 		largestBlobs[0] = tmp;
 	}
 
+<<<<<<< HEAD
 	sb::release( analyzer->repo );
 	analyzer->repo->leftBlob = largestBlobs[0];
 	analyzer->repo->rightBlob = largestBlobs[1];
 	analyzer->roadState = sb::RoadState::BOTH_LANE_DETECTED;
 }
+=======
+	cv::imshow( "Test Analyzer", realImage );
+	cv::waitKey();*/
+>>>>>>> master
 
 void sb::trackLanes( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo )
 {
@@ -413,6 +427,7 @@ void sb::analyzeWithoutRightLane( sb::Analyzer* analyzer, sb::FrameInfo* frameIn
 	analyzer->repo->possibleNextStates.push_back( sb::RoadState::IGNORE_RIGHT_LANE );
 }
 
+<<<<<<< HEAD
 void sb::analyzeResult( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo, sb::RoadInfo* roadInfo )
 {
 	analyzer->knots.clear();
@@ -440,3 +455,7 @@ void sb::analyzeResult( sb::Analyzer* analyzer, sb::FrameInfo* frameInfo, sb::Ro
 		break;
 	}
 }
+=======
+void sb::Analyzer::release() { }
+
+>>>>>>> master
